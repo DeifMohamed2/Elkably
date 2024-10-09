@@ -5,7 +5,7 @@ const homeController = require('../controllers/homeController');
 
 const router = express.Router();
 
-router.get("/", homeController.home_page);
+router.get('/', homeController.public_login_get);
 router.get("/login", homeController.public_login_get);
 router.post("/login", homeController.public_login_post);
 router.get("/Register", homeController.public_Register_get);

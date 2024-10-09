@@ -161,17 +161,17 @@ const public_Register_post = async (req, res) => {
   let videosInfo = [];
 
   if (Grade === 'Grade1') {
-    await User.findOne({ Grade: Grade, Code: 874325 }).then((result) => {
+    await User.findOne({ Grade: Grade, Code: 933877 }).then((result) => {
       quizesInfo = result.quizesInfo;
       videosInfo = result.videosInfo;
     });
   } else if (Grade === 'Grade2') {
-    await User.findOne({ Grade: Grade, Code: 736624 }).then((result) => {
+    await User.findOne({ Grade: Grade, Code: 620106 }).then((result) => {
       quizesInfo = result.quizesInfo;
       videosInfo = result.videosInfo;
     });
   } else if (Grade === 'Grade3') {
-    await User.findOne({ Grade: Grade, Code: 887426 }).then((result) => {
+    await User.findOne({ Grade: Grade, Code: 679092 }).then((result) => {
       quizesInfo = result.quizesInfo;
       videosInfo = result.videosInfo;
     });

@@ -45,7 +45,7 @@ const authMiddleware =async (req,res,next)=>{
 // ================== All get Pages Route  ====================== //
 
 
-router.get("/dash",authMiddleware, teacherController.dash_get);
+router.get('/dash', authMiddleware, teacherController.addCardGet);
 
 router.get("/addVideo",authMiddleware, teacherController.addVideo_get);
 

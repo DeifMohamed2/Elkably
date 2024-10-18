@@ -1122,7 +1122,7 @@ main .student-table a {
   margin: 1rem auto;
   color: var(--color-primary);
 }
-main .student-table input{
+main .student-table .serachOnaddCard{
   border-radius: var(--border-radius-2);
   padding: 0.3rem;
   width: 10rem;
@@ -1135,6 +1135,17 @@ main .student-table input{
   background: var(--color-white);
   border: 2px solid #fff;
 }
+main .student-table input {
+   border-radius: var(--border-radius-2);
+  padding: 0.2rem;
+  width: 5rem;
+  text-align: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--color-white);
+  border: 2px solid #fff;
+}
+
 main .student-table table .approve {
   padding-bottom: 10px;
   padding-left: 20px;

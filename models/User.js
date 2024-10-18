@@ -2,123 +2,95 @@ const mongoose = require('mongoose')
 const { required } = require('nodemon/lib/config')
 const Schema = mongoose.Schema
 
-const userSchema = new Schema({
-
+const userSchema = new Schema(
+  {
     Username: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
 
     Password: {
-        type: String,
-        required: true,
-        unique: false
+      type: String,
+      default: '3131',
+      required: false,
     },
-    PasswordWithOutHash : {
-        type: String,
-        required: true,
-        unique: false
-    },
-    gov: {
-        type: String,
-        required: true,
 
-    },
-    Markez: {
-        type: String,
-        required: true,
-
-    },
     Grade: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
-    gender: {
-        type: String,
-        required: true,
+    centerName: {
+      type: String,
+      required: true,
     },
+    groupTime: {
+      type: String,
+      required: true,
+    },
+
     phone: {
-        type: String,
-        required: true,
-        unique: true
+      type: String,
+      required: true,
+      unique: true,
     },
 
     parentPhone: {
-        type: String,
-        required: true,
-        unique: false
+      type: String,
+      required: true,
+      unique: false,
     },
-    place: {
+
+    cardId: {
         type: String,
-        required: true,
+        required: false,
+        default: null
+    },
+
+    AttendanceHistory: {
+        type: Array,
+        required: false,
+        default: []
     },
     Code: {
-        type: Number,
-        required: true,
-        unique: true
+      type: Number,
+      required: true,
+      unique: true,
     },
-    userPhoto: {
-        type: String,
-        required: false,
+    absences: {
+      type: Number,
+      required: true,
+      default: 0,
     },
+
+    balance: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    amountRemaining: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    
+
     subscribe: {
-        type: Boolean,
-        required: true,
+      type: Boolean,
+      required: true,
     },
 
-    quizesInfo: {
-        type: Array,
-        required: true,
-    },
-    videosInfo: {
-        type: Array,
-        required: true,
-    },
-    chaptersPaid: {
-        type: Array,
-        required: false,
-    },
-    videosPaid: {
-        type: Array,
-        required: false,
-    },
-    examsPaid: {
-        type: Array,
-        required: false,
-    },
-    PDFsPaid: {
-        type: Array,
-        required: false,
-    },
     isTeacher: {
-        type: Boolean,
-        required: true,
+      type: Boolean,
+      required: true,
     },
-    totalScore: {
-        type: Number,
-        required: true
-    },
-    examsEnterd: {
-        type: Number,
-        required: true
-    },
-    totalQuestions:
-    {
-        type: Number,
-        required: true
-    },
-    totalSubscribed: {
-        type: Number,
-        required: true
-    },
-    ARorEN: {
-        type: String,
-        required: true
-    }
 
 
 
-}, { timestamps: true });
+
+  },
+  { timestamps: true }
+);
 
 const User = mongoose.model('User', userSchema)
 

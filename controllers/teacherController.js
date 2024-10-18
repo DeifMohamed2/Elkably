@@ -1,5 +1,6 @@
 const Quiz = require('../models/Quiz');
 const User = require('../models/User');
+const Group  = require('../models/Group');
 const Chapter = require('../models/Chapter');
 const Code = require('../models/Code');
 const Card = require('../models/Card');
@@ -8,6 +9,7 @@ const mongoose = require('mongoose');
 
 const waapi = require('@api/waapi');
 const waapiAPI = process.env.WAAPIAPI;
+console.log(waapiAPI);
 waapi.auth(`${waapiAPI}`);
 
 const Excel = require('exceljs');
@@ -2378,6 +2380,7 @@ const PDFPost_post = async (req, res) => {
 
 
 // =================================================== Add Card  &&  Attendance =================================================== //
+
 const addCardGet = async (req, res) => {
 
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
@@ -2391,35 +2394,37 @@ const addCardToStudent = async (req, res) => {
   if (!studentCode || !assignedCard) {
     return res
       .status(400)
-      .json({ message: 'studentCode and assignedCard are required' , Username   : null});
+      .json({ message: 'studentCode and assignedCard are required' , Username  : null});
   }
 
   try {
-    const userByCode = await User.findOne(
-      { Code: studentCode },
-      { Username: 1, Code: 1 } 
-    );
+    const userByCode = await User.findOne({ Code: studentCode }, { cardId :1 , Username : 1 , Code : 1 });
+    const userHasCard = await User.findOne({ cardId: assignedCard });
     if (!userByCode) {
-      return res.status(400).json({ message: 'هاذا الطالب غير موجود تأكد من الكود' ,Username   : null});
+      return res.status(400).json({ message: 'This student does not exist, please verify the code' ,Username   : ''});
     }
 
-    const cardByCode = await Card.findOne({ userCode: userByCode.Code });
-    if (cardByCode) {
-      return res.status(400).json({ message: 'هاذا الطالب لديه بطاقه بالفعل' ,Username   : userByCode.Username});
+    if(userByCode.cardId){
+      return res.status(400).json({ message: 'This student already has a card.' ,Username   : userByCode.Username});
     }
 
-    const card = new Card({ 
-      cardId: assignedCard,
-      userId: userByCode._id,
-      userCode : userByCode.Code,
-    })
-    card.save().then((result) => {
-        return res.status(200).json({ message: 'تم اضافه بيانات الكارت للطالب بنجاح'  ,Username   : userByCode.Username}); 
-    }).catch((err) => {
-      console.error(err);
-      return res.status(500).json({ message: 'يبدو ان هناك خطأ ما '  ,Username   : null});
-    })
+    if (userHasCard) {
+      return res.status(400).json({ message: "This card has already been used." ,Username   : `Used by ${userHasCard.Username}`});
+    }
 
+    
+
+      await User.updateOne(
+        { Code: studentCode },
+        {
+          cardId: assignedCard,
+        }
+      ).then((result) => {
+        return res.status(200).json({ message: 'تم اضافه الكارت للطالب بنجاح' ,Username   : userByCode.Username});
+      }).catch((err) => {
+        console.error(err);
+        return res.status(500).json({ message: 'يبدو ان هناك خطأ ما ' ,Username   : null});
+      });
 
   } catch (error) {
     console.error('Error adding card:', error);
@@ -2428,251 +2433,388 @@ const addCardToStudent = async (req, res) => {
 };
 
 
-const getAttendedUsers = async (req, res) => {
-   const { CardGrade, centerName, GroupTime } = req.body;
-    console.log(CardGrade, centerName, GroupTime);
-    try {
-        // Query the database to find the attendance record for the specified session
-        const attendanceRecord = await Attendance.findOne({
-            Grade: CardGrade,
-            CenterName: centerName,
-            GroupTime: GroupTime,
-            Date: new Date().toISOString().split('T')[0], // Check attendance for today
-        }).populate('Students', { Username: 1, Code: 1, phone: 1, parentPhone: 1 });
+const markAttendance = async (req, res) => {
+  const { Grade, centerName, GroupTime, attendId } = req.body;
 
-        if (!attendanceRecord) {
-            return res.status(404).json({ message: 'No attendance record found for this session.' });
-        }
-
-        // Return the list of attended students
-        res.status(200).json({ students: attendanceRecord.Students });
-    } catch (error) {
-        console.error('Error fetching attended students:', error);
-        res.status(500).json({ message: 'Server error. Please try again.' });
-    }
-};
-
-const attendUser = async (req, res) => {
-  const { CardGrade, centerName, GroupTime, CardType, attendeeID } = req.body;
-
-
-  if (!CardGrade || !centerName || !GroupTime || !CardType || !attendeeID) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
-
-  let studentDataByCard;
-  if (CardType=='Card') {
-       studentDataByCard = await Card.findOne({ cardId: attendeeID }).populate(
-         'userId',
-         {
-           Username: 1,
-           Code: 1,
-           parentPhone: 1,
-           phone: 1,
-         }
-       );
-
-  }else if (CardType=='Code') {
-        studentDataByCard = await Card.findOne({
-          userCode: attendeeID,
-        }).populate('userId', {
-          Username: 1,
-          Code: 1,
-          parentPhone: 1,
-          phone: 1,
-        });
-  }
-
-  if (!studentDataByCard) {
-    return res.status(400).json({ message: 'هذا الكارت غير موجود' });
-  }
-
-  const studentData = studentDataByCard.userId;
-
-  // Check if this attendance record already exists in the cardHistory
-  const existingHistory = studentDataByCard.cardHistory.some((history) => {
-    return (
-      history.centerName === centerName &&
-      history.GroupTime === GroupTime &&
-      new Date(history.dateOfAttend).toDateString() ===
-        new Date().toDateString() // Ensure same day comparison
-    );
-  });
-
-  if (existingHistory) {
-    return res
-      .status(400)
-      .json({ message: 'تم اضافه هذا الطالب من قبل' });
-  }
-
-  // Update the card history if not already recorded
-
-  if(CardType=='Card'){
-
-  await Card.findOneAndUpdate(
-    { cardId: attendeeID },
-    {
-      $push: {
-        cardHistory: {
-          centerName: centerName,
-          GroupTime: GroupTime,
-          isAttend: true,
-          dateOfAttend: new Date(),
-        },
-      },
-    }
-  );
-
-  }else if (CardType=='Code'){
-    await Card.findOneAndUpdate(
-      { userCode: attendeeID },
-      { 
-        $push: { 
-          cardHistory: {
-            centerName: centerName,
-            GroupTime: GroupTime,
-            isAttend: true,
-            dateOfAttend: new Date(),
-          },
-        },
-      }
-    );
-  }
-
-  // Find or create attendance record and populate students' data
-  const today = new Date().toISOString().split('T')[0]; // Getting the current date in 'YYYY-MM-DD' format
-
-  const attendanceRecord = await Attendance.findOneAndUpdate(
-    {
-      Grade: CardGrade,
-      CenterName: centerName,
-      Date: today,
-      GroupTime: GroupTime,
-    },
-    {
-      $addToSet: { Students: studentData._id }, // Ensure students are added without duplicates
-    },
-    { new: true, upsert: true }
-  ).populate('Students', { Username: 1, Code: 1, parentPhone: 1, phone: 1 });
-
-  if (attendanceRecord) {
-    return res
-      .status(200)
-      .json({ message: 'Attendance updated successfully', attendanceRecord });
-  } else {
-    return res.status(500).json({ message: 'يبدو ان هناك مشكله ما ' });
-  }
-};
-
-const removeAttendance = async (req, res) => {
-  const { studentId } = req.params;
-  const { CardGrade, centerName, GroupTime } = req.body;
   try {
-    // Find the attendance record
-    const today = new Date().toISOString().split('T')[0]; // Getting the current date in 'YYYY-MM-DD' format
-    const objectId = new mongoose.Types.ObjectId(studentId);
-
-    const attendanceRecord = await Attendance.findOneAndUpdate(
-      {
-        Grade: CardGrade,
-        CenterName: centerName,
-        Date: today,
-        GroupTime: GroupTime,
-      },
-      {
-        $pull: { Students: objectId }, // Remove the student from the attendance list
-      },
-      { new: true }
-    );
-
-    if (!attendanceRecord) {
-      return res.status(404).json({ message: 'Attendance record not found' });
-    }
-
-    // Optionally: Remove from the student's cardHistory as well
-    await Card.findOneAndUpdate(
-      { userId: studentId },
-      {
-        $pull: {
-          cardHistory: {
-            centerName: centerName,
-            GroupTime: GroupTime,
-            dateOfAttend: {
-              $gte: new Date(today),
-              $lt: new Date(today + 'T23:59:59Z'),
-            },
-          },
-        },
-      }
-    );
-
-    return res
-      .status(200)
-      .json({ message: 'Student attendance removed successfully' });
-  } catch (error) {
-    console.error('Error removing attendance:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-const convertAttendanceToExcel = async (req, res) => {
-  try {
-    const { CardGrade, centerName, GroupTime } = req.body;
-
-    // Query the database to find the attendance record for the specified session
-    const attendanceRecord = await Attendance.findOne({
-      Grade: CardGrade,
-      CenterName: centerName,
-      GroupTime: GroupTime,
-      Date: new Date().toISOString().split('T')[0], // Check attendance for today
-    }).populate('Students', { Username: 1, Code: 1, phone: 1, parentPhone: 1 });
-    let nphone = 0
-    req.io.emit('sendingToParents', {
-      nPhone: nphone,
+    const student = await User.findOne({
+      $or: [{ cardId: attendId }, { Code: attendId }],
     });
 
-    attendanceRecord['Students'].forEach(async(student) => {
-   
-      let message = 
-      `
-        تم حضور الطالب : ${student.Username} الان في سنتر ${centerName} في مجموعه الساعه ${GroupTime}
-      `
-      await waapi
-        .postInstancesIdClientActionSendMessage(
-          {
-            chatId: `2${student.parentPhone}@c.us`,
-            message: message,
-          },
-          { id: '22432' }
-        )
-        .then((result) => {
-          req.io.emit('sendingToParents', {
-            nPhone: ++nphone,
-          });
-        });
+    if (!student) {
+      return res.status(404).json({ message: 'Student Not found' });
+    }
 
+    // Check if student is in the group
+    const group = await Group.findOne({
+      CenterName: centerName,
+      Grade: Grade,
+      GroupTime: GroupTime,
+      students: student._id,
     });
 
+    if (!group) {
+      return res
+        .status(404)
+        .json({ message: 'Student Not Found in This Group' });
+    }
 
+    let message = '';
+    if (student.absences == 2) {
+      message = 'The student has 2 absences and 1 remaining';
+    }
+    // Check if student is already marked absent 3 times
+    if (student.absences >= 3) {
+      return res
+        .status(400)
+        .json({ message: 'Student has already been marked absent 3 times' });
+    }
+
+    // Mark student as present in today's attendance
+    const today = new Date().toISOString().split('T')[0];
+    let attendance = await Attendance.findOne({
+      date: today,
+      groupId: group._id,
+    });
+
+    if (!attendance) {
+      attendance = new Attendance({
+        date: today,
+        groupId: group._id,
+        studentsPresent: [],
+        studentsAbsent: [],
+        studentsLate: [],
+        isFinalized: false,
+      });
+    }
+
+    // Check if student is already marked as present
+    if (attendance.studentsPresent.includes(student._id)) {
+      return res
+        .status(400)
+        .json({ message: 'Student is already marked present' });
+    }
+    // Check if student is already marked as present
+    if (attendance.studentsLate.includes(student._id)) {
+      return res
+        .status(400)
+        .json({ message: 'Student is already marked Late' });
+    }
 
   
 
 
+    // Handle if attendance is finalized (late marking logic)
+    if (attendance.isFinalized) {
+      attendance.studentsAbsent = attendance.studentsAbsent.filter(
+        (id) => !id.equals(student._id)
+      );
+      attendance.studentsLate.push(student._id);
+      if(student.absences >0){
+       student.absences -= 1;
+      }
+      await attendance.save();
 
-    if (!attendanceRecord) {
-      return res.status(404).json({ message: 'No attendance record found for this session.' });
+      // Populate the students data for response
+      await attendance.populate('studentsLate');
+      await attendance.populate('studentsPresent');
+
+      
+const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأنه تم التحديث ابنكم قد *تأخر في الحضور اليوم*.\n
+وقد تم تسجيل حضوره *متأخرًا*.\n
+المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
+عدد مرات الغياب: *${student.absences}*.\n\n
+*يرجى الانتباه لمواعيد الحضور مستقبلًا*.\n\n
+*شكرًا لتعاونكم.*`;
+
+
+// Send the message via the waapi (already present)
+await waapi
+  .postInstancesIdClientActionSendMessage(
+    {
+      chatId: `2${student.parentPhone}@c.us`,
+      message: messageWappi,
+    },
+    { id: '23653' }
+  )
+
+  .then(({ data }) => {})
+  .catch((err) => {
+    console.log(err);
+  });
+
+
+
+
+
+      return res.status(200).json({
+        message: 'The Student Marked As Late \n' + message,
+        studentsPresent: attendance.studentsPresent,
+        studentsLate: attendance.studentsLate,
+      });
+    } else {
+      attendance.studentsPresent.push(student._id);
+      await attendance.save();
+
+      // Populate the students data for response
+      await attendance.populate('studentsLate');
+      await attendance.populate('studentsPresent');
+
+      return res.status(200).json({
+        message: 'Attendance marked successfully as present \n' + message,
+        studentsPresent: attendance.studentsPresent,
+        studentsLate: attendance.studentsLate,
+      });
     }
+  } catch (error) {
+    console.error('Error marking attendance:', error);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+};
+
+
+const getAttendedUsers = async (req, res) => {
+   const { Grade, centerName, GroupTime, attendId } = req.body;
+    const group = await Group.findOne({
+      CenterName: centerName,
+      Grade: Grade,
+      GroupTime: GroupTime,
+    });
+
+    if (!group) {
+      return res.status(404).json({ message: 'There are currently no students registered in this group' });
+    }
+
+    const today = new Date().toISOString().split('T')[0]; // Getting the current date in 'YYYY-MM-DD' format
+
+    const attendance= await Attendance.findOne({
+      groupId: group._id,
+      date: today,
+    }).populate('studentsPresent studentsLate');
+
+    if (!attendance) {
+      return res.status(404).json({ message: 'Attendance records have not been submitted yet' });
+    }
+
+    return res.status(200).json({ attendance });
+
+};
+
+
+const removeAttendance = async (req, res) => {
+  const { centerName, Grade, GroupTime } = req.body;
+  const studentId = req.params.studentId;
+
+  try {
+    // Fetch the student
+    const student = await User.findById(studentId);
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Find the group the student belongs to
+    const group = await Group.findOne({
+      CenterName: centerName,
+      Grade: Grade,
+      GroupTime: GroupTime,
+      students: student._id, // Ensure the student is part of this group
+    });
+
+    if (!group) {
+      return res
+        .status(404)
+        .json({ message: 'Student not found in this group' });
+    }
+
+    // Find today's attendance for the group
+    const today = new Date().toISOString().split('T')[0];
+    const attendance = await Attendance.findOne({
+      date: today,
+      groupId: group._id,
+    });
+
+    if (!attendance) {
+      return res
+        .status(404)
+        .json({ message: 'No attendance record found for today' });
+    }
+
+    // Check if the student is in the present or late lists
+    const isPresent = attendance.studentsPresent.some((id) =>
+      id.equals(student._id)
+    );
+    const isLate = attendance.studentsLate.some((id) => id.equals(student._id));
+
+    if (!isPresent && !isLate) {
+      return res
+        .status(400)
+        .json({ message: 'Student is not marked as present or late today' });
+    }
+
+    // Remove the student from studentsPresent if present
+    if (isPresent) {
+      attendance.studentsPresent = attendance.studentsPresent.filter(
+        (id) => !id.equals(student._id)
+      );
+    }
+
+    // Remove the student from studentsLate if late
+    if (isLate) {
+      attendance.studentsLate = attendance.studentsLate.filter(
+        (id) => !id.equals(student._id)
+      );
+    }
+
+    // Optionally, add the student to studentsAbsent if not already there
+    if (!attendance.studentsAbsent.includes(student._id)) {
+      attendance.studentsAbsent.push(student._id);
+    }
+
+    // Save the updated attendance record
+    await attendance.save();
+
+    return res.status(200).json({
+      message: 'Attendance removed successfully',
+      studentsPresent: attendance.studentsPresent,
+      studentsLate: attendance.studentsLate,
+      studentsAbsent: attendance.studentsAbsent,
+    });
+  } catch (error) {
+    console.error('Error removing attendance:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+const updateAmount = async (req, res) => {
+  const amountRemaining = req.body.amountRemaining || 0;
+  const studentId = req.params.studentId;
+
+  try {
+    const student = await User.findById(studentId);
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    student.amountRemaining = amountRemaining;
+    await student.save();
+    
+    return res.status(200).json({ message: 'Amount updated successfully' });
+  }
+  catch (error) {
+    console.error('Error updating amount:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const finalizeAttendance = async (req, res) => {
+  const { centerName, Grade, GroupTime } = req.body;
+
+  try {
+    // Find the group
+    const group = await Group.findOne({
+      CenterName: centerName,
+      Grade: Grade,
+      GroupTime: GroupTime,
+    });
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Find today's attendance record for the group
+    const today = new Date().toISOString().split('T')[0];
+
+    let attendance = await Attendance.findOne({
+      groupId: group._id,
+      date: today,
+    });
+
+    if (!attendance) {
+      return res
+        .status(404)
+        .json({ message: 'No attendance record found for today' });
+    }
+
+    if (attendance.isFinalized) {
+      return res.status(400).json({ message: 'Attendance already finalized' });
+    }
+
+    const groupStudentIds = group.students;
+
+    for (const studentId of groupStudentIds) {
+  
+      const isPresent = attendance.studentsPresent.some((id) =>
+        id.equals(studentId)
+      );
+      const isLate = attendance.studentsLate.some((id) => id.equals(studentId));
+
+      console.log( isPresent , isLate);
+      if (!isPresent && !isLate) {
+      
+        if (!attendance.studentsAbsent.includes(studentId)) {
+          attendance.studentsAbsent.push(studentId);
+
+          const student = await User.findById(studentId);
+         
+          if (student) {
+          
+            student.absences = (student.absences || 0) + 1;
+            await student.save();
+          }
+        }
+      }
+    }
+
+    attendance.isFinalized = true;
+    await attendance.save();
+    await attendance.populate('studentsAbsent');
+    await attendance.populate('studentsPresent');
+
+ 
+  
 
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet('Attendance Data');
 
-    const headerH1Row = worksheet.addRow(['Grade', 'Center Name', 'Group Time', 'Date']);
-  
-    const headerH2Row = worksheet.addRow([CardGrade, centerName, GroupTime, new Date().toISOString().split('T')[0]]);
+    // Add title row
+    const titleRow = worksheet.addRow(['Attendance Report']);
+    titleRow.font = { size: 27, bold: true };
+    worksheet.mergeCells('A1:H1');
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
+    // Add group info
+    const groupInfoRow = worksheet.addRow([
+      'Grade',
+      'Center Name',
+      'Group Time',
+      'Date',
+    ]);
+    groupInfoRow.font = { bold: true };
 
+    worksheet.addRow([Grade, centerName, GroupTime, today]);
 
-    const headerRow = worksheet.addRow(['#', 'Student Name', 'Student Code', 'Student Phone', 'Parent Phone']);
+    // Add present students section
+    let row = worksheet.addRow([]);
+    row = worksheet.addRow(['Present Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'ff1aad00' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add present students data
+    const headerRow = worksheet.addRow([
+      '#',
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+    ]);
     headerRow.font = { bold: true };
     headerRow.fill = {
       type: 'pattern',
@@ -2680,12 +2822,32 @@ const convertAttendanceToExcel = async (req, res) => {
       fgColor: { argb: 'FFFF00' },
     };
 
-    // Add user data to the worksheet with alternating row colors
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
+
     let c = 0;
-    attendanceRecord.Students.forEach((student) => {
+    let totalAmount = 0;
+    let totalAmountRemaining = 0;
+
+    attendance.studentsPresent.forEach(async(student) => {
       c++;
-      const row = worksheet.addRow([c, student.Username, student.Code, student.phone, student.parentPhone]);
-      // Apply alternating row colors
+      const row = worksheet.addRow([
+        c,
+        student.Username,
+        student.Code,
+        student.phone,
+        student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
+      ]);
+      row.font = { size: 13 };
+
+      // Add values to totals
+      totalAmount += student.balance;
+      totalAmountRemaining += student.amountRemaining;
+
       if (c % 2 === 0) {
         row.fill = {
           type: 'pattern',
@@ -2693,11 +2855,166 @@ const convertAttendanceToExcel = async (req, res) => {
           fgColor: { argb: 'DDDDDD' },
         };
       }
+
+const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
+وقد تم تسجيل حضوره *بنجاح*.\n
+المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
+عدد مرات الغياب: *${student.absences}*.\n\n
+*شكرًا لتعاونكم.*`;
+
+
+
+   // Send the message via the waapi (already present)
+   await waapi
+     .postInstancesIdClientActionSendMessage(
+       {
+         chatId: `2${student.parentPhone}@c.us`,
+         message: messageWappi,
+       },
+       { id: '23653' }
+     )
+
+     .then(({ data }) => {
+      
+     })
+     .catch((err) => {
+       console.log(err);
+     });
+
+
+
+
+    });
+
+    // Add total row for Present Students
+    const totalRowPresent = worksheet.addRow([
+      '',
+      '',
+      '',
+      '',
+      '',
+      'Total',
+      totalAmount,
+      totalAmountRemaining,
+    ]);
+    totalRowPresent.font = { bold: true };
+    totalRowPresent.getCell(6).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent.getCell(7).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent.getCell(8).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    // Add absent students section
+    row = worksheet.addRow(['Absent Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'FF0000' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add absent students data
+    const headerRow2 = worksheet.addRow([
+      '#',
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+    ]);
+    headerRow2.font = { bold: true };
+    headerRow2.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    let c2 = 0;
+    attendance.studentsAbsent.forEach(async(student) => {
+      c2++;
+      const row = worksheet.addRow([
+        c2,
+        student.Username,
+        student.Code,
+        student.phone,
+        student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
+      ]);
+      row.font = { size: 13 };
+
+
+      if (c2 % 2 === 0) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'DDDDDD' },
+        };
+      }
+
+
+
+let subMessage = '';
+if (student.absences >= 3) {
+  subMessage = `\n\n❌ *وفقًا لعدد مرات الغياب التي تم تسجيلها لابنكم*، يرجى العلم أنه *لن يتمكن من دخول الحصة القادمة*.`;
+}
+
+const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأن ابنكم *لم يحضر اليوم*.\n
+وقد تم تسجيل غيابه .\n
+عدد مرات الغياب: *${student.absences}*.${subMessage}\n\n
+*شكرًا لتعاونكم.*`;
+
+
+
+   // Send the message via the waapi (already present)
+   await waapi
+     .postInstancesIdClientActionSendMessage(
+       {
+         chatId: `2${student.parentPhone}@c.us`,
+         message: messageWappi,
+       },
+       { id: '23653' }
+     )
+
+     .then(({ data }) => {
+       
+     })
+     .catch((err) => {
+        console.log(err);
+     });
+
+ 
+
+    });
+
+ 
+
+    // Add borders to all cells
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
     });
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
-    // Set response headers for file download
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -2707,13 +3024,14 @@ const convertAttendanceToExcel = async (req, res) => {
       'attachment; filename=attendance_data.xlsx'
     );
 
-    // Send Excel file as response
     res.send(excelBuffer);
   } catch (error) {
-    console.error('Error generating Excel file:', error);
-    res.status(500).send('Error generating Excel file');
+    console.error('Error finalizing attendance:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
-}
+};
+
+
 
 
 // =================================================== END Add Card  &&  Attendance =================================================== //
@@ -2729,89 +3047,123 @@ const handelAttendanceGet = async (req, res) => {
 
 
 const getDates = async (req, res) => {
-  const { CardGrade, centerName, GroupTime } = req.body;
+  const { Grade, centerName, GroupTime } = req.body;
+  console.log(Grade, centerName, GroupTime);
   try {
-    const Dates = await Attendance.find({
-      Grade: CardGrade,
-      CenterName: centerName,
-      GroupTime: GroupTime,
-    }).distinct('Date');
-    if (!Dates) {
-      return res.status(404).json({ message: 'No attendance record found for this session.' });
+    const group = await Group.findOne({ Grade, CenterName: centerName, GroupTime });
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
     }
 
-    console.log(Dates);
-    res.status(200).json({ Dates });
+    const attendanceRecords = await Attendance.find({ groupId: group._id });
+    console.log(attendanceRecords);
+    if (!attendanceRecords) {
+      return res.status(404).json({ message: 'No attendance records found for this session.' });
+    }
+
+    const dates = attendanceRecords.map((record) => record.date);
+    res.status(200).json({ Dates: dates });
   } catch (error) {
-    console.error('Error fetching attendance dates:', error);
+    console.error('Error fetching dates:', error);
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
+
 }
 
 const getAttendees = async (req, res) => {
-  const { CardGrade, centerName, GroupTime, date } = req.body;
-  console.log(CardGrade, centerName, GroupTime, Date);
-  try {
-    const attendanceRecord = await Attendance.findOne({
-      Grade: CardGrade,
-      CenterName: centerName,
-      GroupTime: GroupTime,
-      Date: date,
-    }).populate('Students', { Username: 1, Code: 1, phone: 1, parentPhone: 1 });
+    const {Grade , centerName, GroupTime, date} = req.body;
 
-    if (!attendanceRecord) {
-      return res.status(404).json({ message: 'No attendance record found for this session.' });
-    }
+    try {
+      const group = await Group.findOne({ Grade, CenterName: centerName, GroupTime });
 
-    res.status(200).json({ students: attendanceRecord.Students });
-  } catch (error) {
-    console.error('Error fetching attendees:', error);
-    res.status(500).json({ message: 'Server error. Please try again.' });
-  }
+      if (!group) {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+
+      const attendance = await Attendance.findOne({ groupId: group._id, date }).populate('studentsPresent studentsAbsent studentsLate');
+
+      if (!attendance) {
+        return res.status(404).json({ message: 'No attendance record found for this session.' });
+      }
+
+      res.status(200).json({ attendance , message: 'Attendance record found successfully' });
+    } catch (error) {
+      console.error('Error fetching attendees:', error);
+      res.status(500).json({ message: 'Server error. Please try again.' });
+
 }
 
+}
 
 const convertAttendeesToExcel = async (req, res) => {
+  const { centerName, Grade, GroupTime } = req.body;
+
   try {
-    const { CardGrade, centerName, GroupTime, date } = req.body;
-
-    // Query the database to find the attendance record for the specified session
-    const attendanceRecord = await Attendance.findOne({
-      Grade: CardGrade,
+    // Find the group
+    const group = await Group.findOne({
       CenterName: centerName,
+      Grade: Grade,
       GroupTime: GroupTime,
-      Date: date,
-    }).populate('Students', { Username: 1, Code: 1, phone: 1, parentPhone: 1 });
+    });
 
-    if (!attendanceRecord) {
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Find today's attendance record for the group
+    const today = new Date().toISOString().split('T')[0];
+
+    let attendance = await Attendance.findOne({
+      groupId: group._id,
+      date: today,
+    }).populate('studentsPresent studentsAbsent studentsLate');
+
+    if (!attendance) {
       return res
         .status(404)
-        .json({ message: 'No attendance record found for this session.' });
+        .json({ message: 'No attendance record found for today' });
     }
+
+  
 
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet('Attendance Data');
 
-    const headerH1Row = worksheet.addRow([
+    // Add title row
+    const titleRow = worksheet.addRow(['Attendance Report']);
+    titleRow.font = { size: 27, bold: true };
+    worksheet.mergeCells('A1:H1');
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add group info
+    const groupInfoRow = worksheet.addRow([
       'Grade',
       'Center Name',
       'Group Time',
       'Date',
     ]);
+    groupInfoRow.font = { bold: true };
 
-    const headerH2Row = worksheet.addRow([
-      CardGrade,
-      centerName,
-      GroupTime,
-      new Date().toISOString().split('T')[0],
-    ]);
+    worksheet.addRow([Grade, centerName, GroupTime, today]);
 
+    // Add present students section
+    let row = worksheet.addRow([]);
+    row = worksheet.addRow(['Present Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'ff1aad00' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add present students data
     const headerRow = worksheet.addRow([
       '#',
       'Student Name',
       'Student Code',
-      'Student Phone',
+      'Phone',
       'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
     ]);
     headerRow.font = { bold: true };
     headerRow.fill = {
@@ -2820,9 +3172,15 @@ const convertAttendeesToExcel = async (req, res) => {
       fgColor: { argb: 'FFFF00' },
     };
 
-    // Add user data to the worksheet with alternating row colors
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
+
     let c = 0;
-    attendanceRecord.Students.forEach((student) => {
+    let totalAmount = 0;
+    let totalAmountRemaining = 0;
+
+    attendance.studentsPresent.forEach((student) => {
       c++;
       const row = worksheet.addRow([
         c,
@@ -2830,8 +3188,16 @@ const convertAttendeesToExcel = async (req, res) => {
         student.Code,
         student.phone,
         student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
       ]);
-      // Apply alternating row colors
+      row.font = { size: 13 };
+
+      // Add values to totals
+      totalAmount += student.balance;
+      totalAmountRemaining += student.amountRemaining;
+
       if (c % 2 === 0) {
         row.fill = {
           type: 'pattern',
@@ -2841,9 +3207,190 @@ const convertAttendeesToExcel = async (req, res) => {
       }
     });
 
+    // Add total row for Present Students
+    const totalRowPresent = worksheet.addRow([
+      '',
+      '',
+      '',
+      '',
+      '',
+      'Total',
+      totalAmount,
+      totalAmountRemaining,
+    ]);
+    totalRowPresent.font = { bold: true ,size: 15};
+    totalRowPresent.getCell(6).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent.getCell(7).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent.getCell(8).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    // Add absent students section
+    row = worksheet.addRow(['Absent Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'FF0000' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add absent students data
+    const headerRow2 = worksheet.addRow([
+      '#',
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+    ]);
+    headerRow2.font = { bold: true };
+    headerRow2.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    let c2 = 0;
+ 
+
+    attendance.studentsAbsent.forEach((student) => {
+      c2++;
+      const row = worksheet.addRow([
+        c2,
+        student.Username,
+        student.Code,
+        student.phone,
+        student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
+      ]);
+      row.font = { size: 13 };
+
+  
+
+      if (c2 % 2 === 0) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'DDDDDD' },
+        };
+      }
+    });
+
+
+
+    // Add late students section
+    row = worksheet.addRow(['Late Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'FFA500' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add late students data
+    const headerRow3 = worksheet.addRow([
+      '#',
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+    ]);
+    headerRow3.font = { bold: true };
+    headerRow3.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    let c3 = 0;
+    let totalAmountLate = 0;
+    let totalAmountRemainingLate = 0;
+
+    attendance.studentsLate.forEach((student) => {
+      c3++;
+      const row = worksheet.addRow([
+        c3,
+        student.Username,
+        student.Code,
+        student.phone,
+        student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
+      ]);
+      row.font = { size: 13 };
+
+      // Add values to totals
+      totalAmountLate += student.balance;
+      totalAmountRemainingLate += student.amountRemaining;
+
+      if (c3 % 2 === 0) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'DDDDDD' },
+        };
+      }
+    });
+
+    // Add total row for Late Students
+    const totalRowLate = worksheet.addRow([
+      '',
+      '',
+      '',
+      '',
+      '',
+      'Total',
+      totalAmountLate,
+      totalAmountRemainingLate,
+    ]);
+    totalRowLate.font = { bold: true  ,size: 15};
+    totalRowLate.getCell(6).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowLate.getCell(7).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowLate.getCell(8).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+
+
+
+
+
+    // Add borders to all cells
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
-    // Set response headers for file download
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -2853,11 +3400,10 @@ const convertAttendeesToExcel = async (req, res) => {
       'attachment; filename=attendance_data.xlsx'
     );
 
-    // Send Excel file as response
     res.send(excelBuffer);
   } catch (error) {
-    console.error('Error generating Excel file:', error);
-    res.status(500).send('Error generating Excel file');
+    console.error('Error finalizing attendance:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -3068,11 +3614,13 @@ module.exports = {
   PDFPost_post,
 
   addCardGet,
+  markAttendance,
+  finalizeAttendance,
+
   addCardToStudent,
   getAttendedUsers,
-  attendUser,
   removeAttendance,
-  convertAttendanceToExcel,
+  updateAmount,
 
 
   

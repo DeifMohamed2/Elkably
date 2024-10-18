@@ -224,12 +224,17 @@ router.post('/addCard', authMiddleware, teacherController.addCardToStudent);
 
 router.post('/addCard/getAttendedUsers', authMiddleware, teacherController.getAttendedUsers);
 
+router.post('/addCard/markAttendance',authMiddleware,teacherController.markAttendance);
 
-router.post('/addCard/attendUser', authMiddleware, teacherController.attendUser);
 
 router.delete('/addCard/removeAttendance/:studentId',authMiddleware,teacherController.removeAttendance);
 
-router.post('/addCard/convertAttendanceToExcel',authMiddleware,teacherController.convertAttendanceToExcel);
+router.post('/addCard/updateAmount/:studentId',authMiddleware,teacherController.updateAmount);
+
+router.post('/addCard/finalizeAttendance',authMiddleware,teacherController.finalizeAttendance);
+
+
+
 
 
 
@@ -238,6 +243,7 @@ router.post('/addCard/convertAttendanceToExcel',authMiddleware,teacherController
 
 
 // ================== Handel Attendace ====================== //
+
 
 
 router.get('/handelAttendance', authMiddleware, teacherController.handelAttendanceGet);

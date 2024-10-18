@@ -1,5 +1,5 @@
 const User = require('../models/User');
-
+const Group = require('../models/Group');
 const waapi = require('@api/waapi');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -84,16 +84,16 @@ const public_Register_get = (req, res) => {
 
 const public_Register_post = async (req, res) => {
   const {
-    Password,
     Username,
-    gov,
-    Markez,
-    schoolName,
     Grade,
-    gender,
     phone,
     parentPhone,
     place,
+    Password,
+    centerName,
+    groupTime,
+    balance,
+
     // verificationCode,
   } = req.body;
 
@@ -105,11 +105,6 @@ const public_Register_post = async (req, res) => {
   //   errors.verificationCode = '- كود التفعيل غير صحيح';
   // }
 
-  // Check if the password is at least 7 characters long
-  if (Password.length < 7) {
-    req.body.Password = '';
-    errors.password = '- كلمة المرور يجب ان لا تقل عن 7';
-  }
   let Code = Math.floor(Math.random() * 400000 + 600000);
 
   // Check if the phone number has 11 digits
@@ -133,12 +128,7 @@ const public_Register_post = async (req, res) => {
     // Set an error message for this condition
     errors.phone = '- رقم هاتف الطالب لا يجب ان يساوي رقم هاتف ولي الامر';
   }
-  if (!gender) {
-    errors.gender = '- يجب اختيار نوع الجنس';
-  }
-  if (!gov) {
-    errors.gov = '- يجب اختيار محافظة';
-  }
+
   if (!Grade) {
     errors.Grade = '- يجب اختيار الصف الدراسي';
   }
@@ -155,82 +145,65 @@ const public_Register_post = async (req, res) => {
     });
   }
 
-  // auth Of jwt
-
-  let quizesInfo = [];
-  let videosInfo = [];
-
-  if (Grade === 'Grade1') {
-    await User.findOne({ Grade: Grade, Code: 933877 }).then((result) => {
-      quizesInfo = result.quizesInfo;
-      videosInfo = result.videosInfo;
-    });
-  } else if (Grade === 'Grade2') {
-    await User.findOne({ Grade: Grade, Code: 620106 }).then((result) => {
-      quizesInfo = result.quizesInfo;
-      videosInfo = result.videosInfo;
-    });
-  } else if (Grade === 'Grade3') {
-    await User.findOne({ Grade: Grade, Code: 679092 }).then((result) => {
-      quizesInfo = result.quizesInfo;
-      videosInfo = result.videosInfo;
-    });
-  }
-
-  const hashedPassword = await bcrypt.hash(Password, 10);
+  const hashedPassword = await bcrypt.hash('1qaz2wsx', 10);
 
   try {
     const user = new User({
       Username: Username,
       Password: hashedPassword,
-      PasswordWithOutHash: Password,
-      gov: gov,
-      Markez: Markez,
-      schoolName: schoolName,
+      passwordWithoutHash: Password,
       Grade: Grade,
-      gender: gender,
+      Code: Code,
       phone: phone,
       parentPhone: parentPhone,
       place: place,
-      Code: Code,
+      centerName: centerName,
+      groupTime: groupTime,
       subscribe: false,
-      quizesInfo: quizesInfo,
-      videosInfo: videosInfo,
-      totalScore: 0,
-      examsEnterd: 0,
-      totalQuestions: 0,
-      totalSubscribed: 0,
+      balance: balance,
+
       isTeacher: false,
-      ARorEN: 'AR',
-      chaptersPaid: [],
-      videosPaid: [],
-      examsPaid: [],
-      // Add other fields as needed
     });
     user
       .save()
-      .then((result) => {
-        res
-          .status(201)
-          .redirect('Register?StudentCode=' + encodeURIComponent(Code));
+      .then(async (result) => {
+        await Group.findOneAndUpdate(
+          { Grade: Grade, CenterName: centerName, GroupTime: groupTime },
+          { $push: { students: result._id } },
+          { new: true, upsert: true }
+        )
+          .then(() => {
+            res
+              .status(201)
+              .redirect('Register?StudentCode=' + encodeURIComponent(Code));
+          })
+          .catch((err) => {
+            console.log(err);
+          });
       })
+
       .catch((error) => {
+        console.log('Error caught:', error);
         if (error.name === 'MongoServerError' && error.code === 11000) {
-          // Duplicate key error
-          errors.emailDub = 'هذا الرقم مستخدم من قبل';
-          // Handle the error as needed
+          const field = Object.keys(error.keyPattern)[0]; // Log the field causing the duplicate
+          console.log('Duplicate field:', field); // Log the duplicate field for clarity
+          if (field === 'phone') {
+            errors.phone = 'هذا الرقم مستخدم من قبل';
+          } else {
+            errors[field] = `The ${field} is already in use.`;
+          }
           res.render('Register', {
             title: 'Register Page',
             errors: errors,
             firebaseError: '',
-            formData: req.body, // Pass the form data back to pre-fill the form
+            formData: req.body,
           });
         } else {
-          // Handle other errors
           console.error(error);
           res.status(500).json({ message: 'Internal Server Error' });
         }
       });
+
   } catch (error) {
     if (error.name === 'MongoServerError' && error.code === 11000) {
       // Duplicate key error

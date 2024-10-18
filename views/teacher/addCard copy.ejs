@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+    <%- include("./partials/head.ejs") %>
+
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+
+<body>
+
+    <style>
+
+ #reader {
+            width: 300px;
+            height: 300px;
+            margin: auto;
+            border-radius: 10px;
+                        border: 2px solid #ffffff;
+            display: none;
+
+        }
+        #qr-code {
+            margin-top: 20px;
+        }
+
+        .chapter_Box form input {
+            border-radius: 10px;
+            background-color: transparent;
+            border: 2px solid #ffffff;
+            color: #ffffff !important;
+            text-align: center;
+            font-size: larger;
+            font-weight: 900;
+            transition: all 0.3s;
+        }
+
+        .chapter_Box form input:focus {
+            border: 2px solid #affff3;
+            background-color: transparent;
+            color: #ffffff !important;
+        }
+
+
+        .chapter_Box form button {
+            margin-top: 1rem;
+            border-radius: 10px;
+        }
+        
+        .spinner {
+                    
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: conic-gradient(#0000 10%,#474bff);
+            -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 9px),#000 0);
+            animation: spinner-zp9dbg 1s infinite linear;
+        }
+
+#Message {
+    display: none;
+    color: #ffd904;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+@keyframes spinner-zp9dbg {
+   to {
+      transform: rotate(1turn);
+   }
+}
+
+@media (max-width: 768px) {
+    #myTable{
+        font-size: 10px
+    }
+    
+}
+        
+    </style>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-2" >
+                <%- include("./partials/nav.ejs") %>
+            </div>
+            <!--------------------END ASIDE  ------------------>
+   <!-- Modal -->
+
+
+
+<!--  END Modal -->
+            <div class="col-lg-10 ">
+                <main>
+                    <div class="row">
+                     
+                        <div class=" col-md-4 ">
+                            <div class="left" style="margin-top: 0.2rem;">
+                                <%- include("./partials/top.ejs") %> 
+
+                            </div>
+                        </div>
+
+                       
+                    </div>
+
+
+                    <div class="text-center">
+                                <button type="button" id="ShowStudentCardAdded" class="btn btn-secondary btn-lg px-4">اظهار اضافه كارت طالب</button>
+                     </div>
+                    
+                 <div class="row justify-content-center d-none" id="boxOfCardAdded">
+                    <div class="col-md-8">
+                        <div class=" p-4 chapter_Box">
+                            <h2 class="text-center mb-4">اضف كارت الي طالب</h2>
+                            <form action="/teacher/addCardToStudent" method="post" >
+                                <div class="row align-items-center">
+                                    <!-- Code -->
+                                    <div class="col-md-5 mb-3">
+                                        <label for="studentCode" class="form-label">كود الطالب</label>
+                                        <input type="number" class="form-control form-control-sm" id="studentCode" name="studentCode" required>
+                                    </div>
+
+                                    <!-- Icon for transferring -->
+                                    <div class="col-md-2 text-center " style="color: #ffff;">
+                                        <i class="bi bi-arrow-left-right fs-2"></i>
+                                    </div>
+
+                                    <!-- Card Assigned To -->
+                                    <div class="col-md-5 mb-3">
+                                        <label for="assignedCard" class="form-label">رقم الكارت</label>
+                                        <input type="number" class="form-control form-control-sm" id="assignedCard" name="assignedCard" required>
+                                    </div>
+                                </div>
+
+                                <div class="spinner d-none mx-auto" id="spinner"></div>
+
+                                <div class="studentData col-12 d-none" style="color: rgb(0, 181, 0);" id="StudentData">
+                                    
+                                    <h1 id="fgsagatgagt"></h1>
+                                    <h2>اسم الطالب : <span id="studentName"></span></h2>
+                                </div>
+
+                              
+                                <!-- Submit Button -->
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary btn-md px-4">Add</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+ 
+                    <div class="row">
+                        <div class="col-md-12  col-sm-12">
+                            <form action="/teacher/addCard/markAttendance" method="post" id="attendUserForm">
+                                <div class="col-md-10">   
+                                   <select name="searchBy" id="CardType" class="Grade" style="margin-top: -1rem;"  required>
+
+                                       <option value="Card" selected >رقم الكارت </option>
+                                       <option value="Code" >كود الطالب </option>
+                                       
+                                   </select>
+
+                                   <select name="Grade" class="Grade" id="Grade" required>
+                                    <option value="" selected>اختر الصف </option>
+                                     <option value="ECT">ECT</option>
+                                    <option value="ACT1">ACT1</option>
+                                    <option value="ACT2">ACT2</option>
+
+                                   </select>
+                                   <select name="centerName" class="Grade" id="centerName" required>
+                                       <option value="" selected>اختر اسم السنتر </option>
+                                        <option value="GTA1">GTA1</option>
+                                        <option value="GTA2">GTA2</option>
+
+                                   </select>
+                                 <select name="groupTime" class="Grade" id="groupTime" required>
+                                <option value="" selected>مجموعه</option>
+                               </select>
+
+                                 
+                                   <button type="button" id="saveAndStart" class="btn btn-secondary btn-md me-3 mt-4">  حفظ والبدأ </button>
+                                   
+                               </div>
+                                <div >
+                                    <div id="reader"></div>     
+                                </div>
+                                                         
+                            <div class="student-table">
+                                    <div class="row" style="margin-bottom: 0 !important;">
+                                                  
+                                       
+                                        <div class="col-md-4"> 
+                                                
+                                            <input type="number"  class="serachOnaddCard "  name="attendeeID" id="attendeeID" placeholder="رقم الكارت.." required>
+
+                                            <button type="button" class="btn  btn-outline-warning btn-md me-3 mt-5" id="openQrCamera"> <i class="fa-solid fa-camera"></i> استدخدام الكاميرا  </button>
+                                           
+                                            <button type="submit" class="btn btn-outline-warning btn-md me-3 mt-5" >   اضف بشكل يدوي </button>
+
+                                            
+                                        </div>
+                                        <h2 class=" " style="text-align: center;" id="Message" >الرجاء إدخال رقم الكارت بشكل صحيح</h2>
+                                        <h2><span id="NumberOfParentsSendingMessages"  style="text-align: center;" class=" d-none warning "></span></h2>
+                                        
+                                    </div>
+                                    
+                                    <div class="spinner d-none mx-auto" id="spinnerInTabel"></div>
+                                   
+
+                               
+                             
+                                <table id="myTable">
+                                    <thead>
+                                        <th style="padding: 10px;"># </th>
+                                        <th style="padding-left: 20px;"> Student Name</th>
+                                        <th style="padding-left: 20px;"> Student Code</th>
+                                        <th style="padding-left: 20px;"> Student Phone</th>
+                                        <th style="padding-left: 20px;"> Parent Phone </th>
+                                        <th style="padding-left: 20px;"> Absences </th>
+                                        <th style="padding-left: 20px;"> Amount </th>
+                                        <th style="padding-left: 20px;"> Amount Remaining </th>
+                                        <th style="padding-left: 20px;"></th>
+                                        <th style="padding-left: 20px;"></th>
+                             
+                                    </thead>
+
+                                    <tbody >
+                           
+                                    </tbody>
+                                </table>
+
+                            </div>
+                      </form>
+
+                      
+                        </div>
+                    </div>
+
+                    <div class="pagination justify-content-between mb-5">
+                           
+                        <div class="mx-auto">
+                            <button class="paginationBtns" id="ConvertAttadnaceToExcel">Save And Convert To Excel</button> 
+                        </div>
+                      
+                    </div>
+
+                
+                </main>
+            </div>
+
+            <!-------------------- END OF MAIN --------------------->
+         
+        </div>
+    </div>
+
+    <script src="/assest/bootstrap.bundle.min.js"></script>
+    <script src="/assest/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+
+<script>
+// Group times for each center
+const groupTimes = {
+  GTA1: [
+    { value: 'group1', text: 'السبت - 10  - 12 ' },
+    { value: 'group2', text: 'الخميس - 12  - 2 ' }
+  ],
+  GTA2: [
+    { value: 'group1', text: 'الحد - 3  - 5 ' },
+    { value: 'group2', text: 'الاتنين - 5  - 7 ' }
+  ]
+};
+
+// Handle center name change
+document.getElementById('centerName').addEventListener('change', function() {
+    const selectedCenter = this.value;
+    const groupTime = document.getElementById('groupTime');
+
+    // Clear existing options
+    groupTime.innerHTML = '<option value="" selected>مجموعه</option>';
+
+    // Add new options based on the selected center
+    if (groupTimes[selectedCenter]) {
+        groupTimes[selectedCenter].forEach(group => {
+            const option = document.createElement('option');
+            option.value = group.value;
+            option.textContent = group.text;
+            groupTime.appendChild(option);
+        });
+    }
+});
+</script>
+
+    <!-- Add Card To Student  -->
+    <script>
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const spinner = document.getElementById('spinner');
+       
+            const studentCode = document.getElementById('studentCode').value;
+            const assignedCard = document.getElementById('assignedCard').value;
+            const studentNameElement = document.getElementById('studentName');
+            const messageElement = document.getElementById('fgsagatgagt');
+            const studentDataElement = document.getElementById('StudentData');
+
+            console.log('studentCode:', studentCode);
+            console.log('assignedCard:', assignedCard);
+
+            spinner.classList.remove('d-none');
+            studentDataElement.classList.add('d-none');
+            if (!studentCode || !assignedCard) {
+                console.error('Both studentCode and assignedCard are required.');
+                return;
+            }
+
+            const data = {
+                studentCode: studentCode,
+                assignedCard: assignedCard
+            };
+
+            try {
+                const response = await fetch('/teacher/addCard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+                console.log('Response:', responseData.message);
+
+
+                if (response.ok) {
+                    spinner.classList.add('d-none');
+                    // Set student name and success message
+                    studentNameElement.textContent = responseData.Username || "Unknown";
+                    messageElement.textContent = responseData.message || "Success!";
+                    studentDataElement.classList.remove('d-none');
+                    studentDataElement.style.color = '#00bc00'; // Set color to green for success
+                    form.reset();
+                } else {
+                    spinner.classList.add('d-none');
+                    // Set error message and clear the student's name if not found
+                    messageElement.textContent = responseData.message || 'An error occurred. Please try again.';
+                    studentNameElement.textContent = responseData.Username || "Unknown";
+                    studentDataElement.classList.remove('d-none');
+                    studentDataElement.style.color = 'red'; // Set color to red for errors
+                    form.reset();
+                }
+            } catch (error) {
+                spinner.classList.add('d-none');
+                console.error('An error occurred:', error);
+                const messageElement = document.getElementById('message');
+                const studentDataElement = document.getElementById('StudentData');
+
+                messageElement.textContent = 'A network error occurred.';
+                studentDataElement.classList.remove('d-none');
+                studentDataElement.style.color = 'red';
+            }
+        });
+
+    </script>
+
+    <script>
+
+        const ShowStudentCardAdded = document.getElementById('ShowStudentCardAdded');
+        const boxOfCardAdded = document.getElementById('boxOfCardAdded');
+         
+        ShowStudentCardAdded.addEventListener('click', () => {
+            boxOfCardAdded.classList.toggle('d-none');
+            ShowStudentCardAdded .textContent = boxOfCardAdded.classList.contains('d-none') ? 'اظهار اضافه كارت طالب' : 'اخفاء اضافه كارت طالب';
+        });
+
+    </script>
+
+    <!-- END Add Card To Student  -->
+
+    <!-- get Attendance all in First Time -->
+
+
+
+
+    <!-- Attendance -->
+    <script>
+        module = {}
+    </script>
+
+    <script>
+        const saveAndStart = document.getElementById('saveAndStart');
+        const Grade = document.getElementById('Grade');
+        const centerName = document.getElementById('centerName');
+        const GroupTime = document.getElementById('groupTime');
+        const CardType = document.getElementById('CardType');
+        const attendeeID = document.getElementById('attendeeID');
+        const spinnerInTabel = document.getElementById('spinnerInTabel')
+        const Message = document.getElementById('Message');
+   
+        const attendUserForm = document.getElementById('attendUserForm');
+            
+        const ConvertAttadnaceToExcel = document.getElementById('ConvertAttadnaceToExcel') 
+        
+        // Get All attendance in First Time 
+        saveAndStart.addEventListener('click', async () => {
+            Message.style.display = 'none';
+            Message.innerHTML = "";
+
+            // Disable the inputs
+            spinnerInTabel.classList.remove('d-none');
+            Grade.setAttribute('disabled', 'disabled');
+            centerName.setAttribute('disabled', 'disabled');
+            GroupTime.setAttribute('disabled', 'disabled');
+            attendeeID.focus();
+
+            // Create the data object to be sent to the backend
+            const data = {
+                Grade: Grade.value,
+                centerName: centerName.value,
+                GroupTime: GroupTime.value,
+                CardType: CardType.value
+            };
+
+            try {
+                // Send a POST request to fetch all attended users for this session
+                const response = await fetch('/teacher/addCard/getAttendedUsers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    // Clear the table
+                    const table = document.querySelector('tbody');
+                    table.innerHTML = '';
+
+                    // Populate the table with the fetched data
+                    const populateTable = (students, statusColor, statusText) => {
+                        students.forEach((student, index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="padding-left: 20px;">${index + 1}</td>
+                                <td style="padding-left: 20px;">${student.Username}</td>
+                                <td style="padding-left: 20px;">${student.Code}</td>
+                                <td style="padding-left: 20px;">${student.phone}</td>
+                                <td style="padding-left: 20px;">${student.parentPhone}</td>
+                                <td style="padding-left: 20px;">${student.absences}</td>
+                                <td style="padding-left: 20px;">${student.balance}</td>
+                                <td style="padding-left: 20px;">
+                                    <input type="number" dir='ltr' value="${student.amountRemaining}" id="s${student._id}" class="amount-input" />
+                                </td>
+                                <td style="padding-left: 20px; color: ${statusColor}; font-weight: bold; font-size: 1.4rem;">
+                                    ${statusText}
+                                </td>
+                                <td style="padding-left: 20px;">
+                                    <button type='button' class="btn btn-danger delete-btn" data-id="${student._id}"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                                <td style="padding-left: 20px;">
+                                    <button type='button' class="btn btn-warning edit-btn" id="${student._id}" onClick='module.editAmountBTN(this.id)'  ><i class="fa-solid fa-pen-to-square"></i></button>
+                                </td>
+                            `;
+                            table.appendChild(row);
+                        });
+                    };
+
+                    // Populate the table with present students
+                    populateTable(responseData['attendance'].studentsPresent, '#42ff04', 'Present');
+                    // Populate the table with late students
+                    populateTable(responseData['attendance'].studentsLate, '#ffd904', 'Late');
+
+                    // Add event listeners for delete buttons
+                    const deleteButtons = document.querySelectorAll('.delete-btn');
+                    deleteButtons.forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            const button = e.target.closest('.delete-btn'); // Get the button element if the icon is clicked
+                            const studentId = button.getAttribute('data-id'); // Get the data-id from the button
+                            console.log('Deleting student:', studentId);
+                            const rowToDelete = button.closest('tr');
+                            await deleteAttendance(studentId, rowToDelete);
+                        });
+                    });
+
+                    
+                    spinnerInTabel.classList.add('d-none');
+                } else {
+                    console.error('Failed to fetch attended users:', responseData.message);
+                    Message.style.display = 'inline';
+                    Message.innerHTML = responseData.message;
+
+                    spinnerInTabel.classList.add('d-none');
+                }
+
+                attendeeID.value = "";
+                attendeeID.focus();
+                setTimeout(() => {
+                    Message.style.display = 'none';
+                    Message.innerHTML = "";
+                }, 6000);
+            } catch (error) {
+                console.error('An error occurred:', error);
+                spinnerInTabel.classList.add('d-none');
+            }
+        });
+
+    
+        // Attend User 
+        attendUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+                Message.style.display='none'
+               Message.innerHTML = ""
+            spinnerInTabel.classList.remove('d-none');
+            const data = {
+                Grade: Grade.value,
+                centerName: centerName.value,
+                GroupTime: GroupTime.value,
+                CardType: CardType.value,
+                attendId : attendeeID.value 
+            };
+
+        
+            try {
+                // Send a GET request to fetch all attended users for this session
+                const response = await fetch('/teacher/addCard/markAttendance', {
+                    method: 'POST', // You might want to use POST to pass data in the body
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+                console.log('Response:', responseData.studentsPresent);
+                console.log('Response:', responseData.studentsLate);
+
+                if (response.ok) {
+                    // Clear the table
+                    const table = document.querySelector('tbody');
+                    table.innerHTML = '';
+
+                    // Populate the table with the fetched data
+                    const populateTable = (students, statusColor, statusText) => {
+                        students.forEach((student, index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="padding-left: 20px;">${index + 1}</td>
+                                <td style="padding-left: 20px;">${student.Username}</td>
+                                <td style="padding-left: 20px;">${student.Code}</td>
+                                <td style="padding-left: 20px;">${student.phone}</td>
+                                <td style="padding-left: 20px;">${student.parentPhone}</td>
+                                <td style="padding-left: 20px;">${student.absences}</td>
+                                <td style="padding-left: 20px;">${student.balance}</td>
+                                <td style="padding-left: 20px;">
+                                    <input type="number" dir='ltr' value="${student.amountRemaining}" id="s${student._id}" class="amount-input" />
+                                </td>
+                                <td style="padding-left: 20px; color: ${statusColor}; font-weight: bold; font-size: 1.4rem;">
+                                    ${statusText}
+                                </td>
+                                <td style="padding-left: 20px;">
+                                    <button type='button' class="btn btn-danger delete-btn" data-id="${student._id}"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                                <td style="padding-left: 20px;">
+                                    <button type='button' class="btn btn-warning edit-btn" id="${student._id}" onClick='module.editAmountBTN(this.id)'  ><i class="fa-solid fa-pen-to-square"></i></button>
+                                </td>
+                            `;
+                            table.appendChild(row);
+                        });
+                    };
+
+                    // Populate the table with present students
+                    populateTable(responseData.studentsPresent, '#42ff04', 'Present');
+                    // Populate the table with late students
+                    populateTable(responseData.studentsLate, '#ffd904', 'Late');
+
+
+                    // Add event listeners for delete buttons
+                    const deleteButtons = document.querySelectorAll('.delete-btn');
+                    deleteButtons.forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            const studentId = e.target.getAttribute('data-id');
+                            console.log('Deleting student:', studentId);
+                            const rowToDelete = e.target.closest('tr'); // Get the row element to remove later
+                            await deleteAttendance(studentId, rowToDelete); // Pass the row for removal
+                        });
+                    });
+                  
+                    Message.style.display='inline'
+                    Message.innerHTML = responseData.message
+                } else {
+                    console.error('Failed to fetch attended users:', responseData.message);
+                    Message.style.display='inline'
+                    Message.innerHTML = responseData.message
+         
+                }
+
+                  attendeeID.value = ""
+                    attendeeID.focus();
+                    spinnerInTabel.classList.add('d-none');
+                  setTimeout(() => {
+                    Message.style.display='none'
+                    Message.innerHTML = ""
+                }, 6000);
+            } catch (error) {
+                console.error('An error occurred:', error);
+               spinnerInTabel.classList.add('d-none');
+            }
+        
+          })
+
+
+        ConvertAttadnaceToExcel.addEventListener('click', async () => {
+            spinnerInTabel.classList.remove('d-none');
+            Message.style.display='inline'
+            Message.innerHTML = 'Please Don\'t Close The Page Until The Process Is Done'
+
+            
+            const data = {
+                Grade: Grade.value,
+                centerName: centerName.value,
+                GroupTime: GroupTime.value
+            };
+
+            try {
+                const response = await fetch('/teacher/addCard/finalizeAttendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    // Convert the response to a blob
+                    console.log('Response:', responseData);
+                    Message.style.display='inline'
+                    Message.innerHTML = responseData.message
+            
+                } else {
+                    console.error('Failed to convert attendance to Excel:', responseData.message);
+                    Message.style.display='inline'
+                    Message.innerHTML = responseData.message
+                }
+                   attendeeID.value = ""
+                    attendeeID.focus();
+                     spinnerInTabel.classList.add('d-none');
+
+                setTimeout(() => {
+                    Message.style.display='none'
+                    Message.innerHTML = ""
+                }, 6000);
+
+            } catch (error) {
+                console.error('An error occurred while converting attendance to Excel:', error);
+            }
+        });
+
+
+        // Add event listeners for edit buttons to update amount on click
+        async function editAmountBTN(student_id) {
+                          
+            const inputField = document.getElementById(`s${student_id}`);
+                const newAmount = inputField.value;
+                            // Send the updated amount to the server
+                await updateAmountRemaining(student_id, newAmount);
+                  
+        }
+        module.editAmountBTN = editAmountBTN;
+        // Function to update the amount remaining on the server
+        async function updateAmountRemaining(studentId, newAmount) {
+            console.log('Updating amount:', studentId, newAmount);
+            spinnerInTabel.classList.remove('d-none');
+            try {
+                const response = await fetch(`/teacher/addCard/updateAmount/${studentId}`, {
+                    method: 'Post', // Correct method for update requests
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ amountRemaining: newAmount })
+                });
+
+                if (response.ok) {
+                    const responseData = await response.json();
+                    Message.style.display = 'inline';
+                    Message.innerHTML = responseData.message;
+                }else{
+
+                    Message.innerHTML = 'Failed to update amount';
+                }
+
+                attendeeID.value = "";
+                attendeeID.focus();
+                spinnerInTabel.classList.add('d-none');
+
+                setTimeout(() => {
+                    Message.style.display = 'none';
+                    Message.innerHTML = "";
+                }, 6000);
+
+            } catch (error) {
+                console.error('Error updating amount:', error);
+                spinnerInTabel.classList.add('d-none');
+            }
+        }
+
+        async function deleteAttendance(studentId, rowToDelete) {
+                 Message.style.display='none'
+                 Message.innerHTML = ""
+                 spinnerInTabel.classList.remove('d-none');
+            try {
+                const data = {
+                    Grade: Grade.value,
+                    centerName: centerName.value,
+                    GroupTime: GroupTime.value
+                };
+
+                const response = await fetch(`/teacher/addCard/removeAttendance/${studentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    rowToDelete.remove(); 
+                    Message.style.display='inline'
+                    Message.innerHTML = responseData.message
+                    spinnerInTabel.classList.add('d-none');
+                } else {
+                    console.error('Failed to remove attendance:', responseData.message);
+                    Message.style.display='inline'
+                    Message.innerHTML = responseData.message
+                    spinnerInTabel.classList.add('d-none');
+                }
+
+                   attendeeID.value = ""
+                    attendeeID.focus();
+                setTimeout(() => {
+                    Message.style.display='none'
+                    Message.innerHTML = ""
+                }, 6000);
+            } catch (error) {
+                console.error('An error occurred while deleting attendance:', error);
+            }
+        }
+
+
+
+    </script>
+
+
+
+<!-- 
+    <script>
+        const saveAndStart = document.getElementById('saveAndStart');
+        const CardGrade = document.getElementById('CardGrade');
+        const centerName = document.getElementById('centerName');
+        const GroupTime = document.getElementById('groupTime');
+        const CardType = document.getElementById('CardType');
+        const attendeeID = document.getElementById('attendeeID');
+        const spinnerInTabel = document.getElementById('spinnerInTabel')
+        const Message = document.getElementById('Message');
+   
+        const attendUserForm = document.getElementById('attendUserForm');
+            
+        const ConvertAttadnaceToExcel = document.getElementById('ConvertAttadnaceToExcel') 
+
+        saveAndStart.addEventListener('click', async () => {
+            // Disable the inputs
+            spinnerInTabel.classList.remove('d-none');
+            CardGrade.setAttribute('disabled', 'disabled');
+            centerName.setAttribute('disabled', 'disabled');
+            GroupTime.setAttribute('disabled', 'disabled');
+            attendeeID.focus();
+            // Create the data object to be sent to the backend
+            const data = {
+                CardGrade: CardGrade.value,
+                centerName: centerName.value,
+                GroupTime: GroupTime.value,
+                CardType: CardType.value
+            };
+
+            try {
+                // Send a GET request to fetch all attended users for this session
+                const response = await fetch('/teacher/addCard/getAttendedUsers', {
+                    method: 'POST', // You might want to use POST to pass data in the body
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    // Clear the table
+                    const table = document.querySelector('tbody');
+                    table.innerHTML = '';
+
+                    // Populate the table with the fetched data
+                    responseData.students.forEach((student, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td  style="padding-left: 20px;"> ${index + 1}</td>
+                            <td  style="padding-left: 20px;">${student.Username}</td>
+                            <td  style="padding-left: 20px;">${student.Code}</td>
+                            <td  style="padding-left: 20px;">${student.phone}</td>
+                            <td  style="padding-left: 20px;">${student.parentPhone}</td>
+                            <td  style="padding-left: 20px;" <button class="btn btn-danger delete-btn" data-id="${student._id}">Delete</button></td>
+                        `;
+                        table.appendChild(row);
+                    
+                    });
+
+                    // Add event listeners for delete buttons
+                    const deleteButtons = document.querySelectorAll('.delete-btn');
+                    deleteButtons.forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            const studentId = e.target.getAttribute('data-id');
+                            const rowToDelete = e.target.closest('tr'); // Get the row element to remove later
+                            await deleteAttendance(studentId, rowToDelete); // Pass the row for removal
+                        });
+                    });
+                    spinnerInTabel.classList.add('d-none');
+                } else {
+                    console.error('Failed to fetch attended users:', responseData.message);
+                    spinnerInTabel.classList.add('d-none');
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+               spinnerInTabel.classList.add('d-none');
+            }
+        });
+        
+
+        attendUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+             spinnerInTabel.classList.remove('d-none');
+            const data = {
+                CardGrade: CardGrade.value,
+                centerName: centerName.value,
+                GroupTime: GroupTime.value,
+                CardType: CardType.value,
+                attendeeID : attendeeID.value
+            };
+
+            try {
+                const response = await fetch('/teacher/addCard/attendUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+                attendeeID.value = '';
+
+                if (response.ok) {
+                    // Populate the table with student data
+                    const table = document.querySelector('tbody');
+                    table.innerHTML = '';
+                    responseData['attendanceRecord']['Students'].forEach((student, index) => {
+                        const row = document.createElement('tr');
+                        row.setAttribute('data-student-id', student._id); // Set the student ID on the row
+                        row.innerHTML = `
+                            <td style="padding-left: 20px;">${index + 1}</td>
+                            <td style="padding-left: 20px;">${student.Username}</td>
+                            <td style="padding-left: 20px;">${student.Code}</td>
+                            <td style="padding-left: 20px;">${student.phone}</td>
+                            <td style="padding-left: 20px;">${student.parentPhone}</td>
+                            <td style="padding-left: 20px;"> 
+                                <button class="btn btn-danger delete-btn" data-id="${student._id}">Delete</button>
+                            </td>
+                        `;
+                        table.appendChild(row);
+                    });
+
+                    // Add event listeners for delete buttons
+                    const deleteButtons = document.querySelectorAll('.delete-btn');
+                    deleteButtons.forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            const studentId = e.target.getAttribute('data-id');
+                            const rowToDelete = e.target.closest('tr'); // Get the row element to remove later
+                            await deleteAttendance(studentId, rowToDelete); // Pass the row for removal
+                        });
+                    });
+                     spinnerInTabel.classList.add('d-none');
+                } else {
+                    Message.style.display = 'block';
+                    Message.textContent = responseData.message || 'An error occurred. Please try again.';
+                    attendeeID.value = '';
+
+                    setTimeout(() => {
+                        Message.style.display = 'none';
+                    }, 3000);
+                   spinnerInTabel.classList.add('d-none');
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+                spinnerInTabel.classList.add('d-none');
+            }
+        });
+
+        async function deleteAttendance(studentId, rowToDelete) {
+                 spinnerInTabel.classList.remove('d-none');
+            try {
+                const data = {
+                    CardGrade: CardGrade.value,
+                    centerName: centerName.value,
+                    GroupTime: GroupTime.value
+                };
+
+                const response = await fetch(`/teacher/addCard/removeAttendance/${studentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    rowToDelete.remove(); 
+                    spinnerInTabel.classList.add('d-none');
+                } else {
+                    console.error('Failed to remove attendance:', responseData.message);
+                }
+            } catch (error) {
+                console.error('An error occurred while deleting attendance:', error);
+            }
+        }
+
+ConvertAttadnaceToExcel.addEventListener('click', async () => {
+    Message.style.display='inline'
+    Message.innerHTML = "يتم الان الارسال الي اولياء الامور برجاء الانتظار" 
+    const data = {
+        CardGrade: CardGrade.value,
+        centerName: centerName.value,
+        GroupTime: GroupTime.value
+    };
+
+    try {
+        const response = await fetch('/teacher/addCard/convertAttendanceToExcel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            // Convert the response to a blob
+            const blob = await response.blob();
+
+            // Create a URL for the blob and initiate a download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'attendance_data.xlsx';
+            document.body.appendChild(a);
+            a.click();
+
+            // Clean up by revoking the object URL and removing the link
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+            console.log('Excel file downloaded successfully.');
+        } else {
+            const responseData = await response.json();
+            console.error('Failed to convert attendance to Excel:', responseData.message);
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+    }
+});
+
+
+
+
+    </script> -->
+
+
+
+
+<!-- QR CODE SCAANER -->
+    <script>
+        // QR Code Scanner
+        const openQrCamera = document.getElementById("openQrCamera");
+        const reader = document.getElementById("reader");
+        const result = document.getElementById("result");
+        openQrCamera.addEventListener("click", function() {
+            reader.style.display = "block";
+            const html5QrCode = new Html5Qrcode("reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // use back camera
+                {
+                    fps: 24, // Optional, frame per second for qr code scanning
+                    qrbox: { width: 400, height: 400 } // Optional, scanning box
+                },
+                (decodedText, decodedResult) => {
+                    console.log(`QR Code detected: ${decodedText}`);
+                    attendeeID.value = decodedText;
+                    html5QrCode.stop().then(() => {
+                        reader.style.display = "none";
+                    }).catch(err => {
+                        console.error("Error stopping QR Code scan.", err);
+                    });
+                },
+                (Message) => {
+                    // parse error, ignore it
+                }
+            ).catch(err => {
+                console.error("Unable to start scanning.", err);
+            });
+
+        });
+    </script>
+
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        const NumberOfParentsSendingMessages = document.getElementById('NumberOfParentsSendingMessages')
+
+           const socket = io();
+
+               socket.on('sendingToParents', (data) => {
+                 NumberOfParentsSendingMessages.classList.remove('d-none') 
+                  NumberOfParentsSendingMessages.innerHTML= data.nPhone
+             });
+    </script>
+
+</body>
+
+
+</html>

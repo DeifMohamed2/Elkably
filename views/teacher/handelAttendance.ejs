@@ -8,6 +8,43 @@
 
 
 <body>
+    <style>
+        .table-container {
+            position: relative;
+        }
+
+        .spinner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.356); /* Slight white overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: conic-gradient(#0000 10%, #474bff);
+            -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 9px), #000 0);
+            animation: spinner-zp9dbg 1s infinite linear;
+        }
+
+        @keyframes spinner-zp9dbg {
+            to {
+                transform: rotate(1turn);
+            }
+        }
+
+        .table-blur {
+            filter: blur(1.3px);
+        }
+    </style>
 
     <style>
 
@@ -57,9 +94,9 @@
    animation: spinner-zp9dbg 1s infinite linear;
 }
 
-#errorMessage {
+#Message {
     display: none;
-    color: red;
+    color: #ffd904;
     text-align: center;
     margin-top: 1rem;
 }
@@ -77,6 +114,7 @@
 }
         
     </style>
+    
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-2" >
@@ -110,24 +148,18 @@
                                 <div class="col-md-10">   
                                
 
-                                   <select name="Grade" class="Grade" id="CardGrade" required>
-                                       <option value="" >اختر الصف الدراسي</option>
-                                       <option  value="Grade1">الصف الاول الثانوي</option>
-                                       <option value="Grade2">الصف الثاني الثانوي </option>
-                                       <option value="Grade3">الصف الثالث الثانوي</option>
+                                  
+                                   <select name="Grade" class="Grade" id="Grade" required>
+                                    <option value="" selected>اختر الصف </option>
+                                     <option value="ECT">ECT</option>
+                                    <option value="ACT1">ACT1</option>
+                                    <option value="ACT2">ACT2</option>
 
                                    </select>
-                                    <select name="centerName" class="Grade" id="centerName" required>
+                                   <select name="centerName" class="Grade" id="centerName" required>
                                        <option value="" selected>اختر اسم السنتر </option>
-                                       <option value="centerBasmala">  البسمله</option>
-                                       <option value="centerDHL">DHL </option>
-                                       <option value="centerDarElsa3da">   دار السعاده</option>
-                                       <option value="centerFutureSoft">  Future Soft</option>
-                                       <option value="centerInfinity"> Infinity</option>
-                                       <option value="centerElra3y"> الراعي</option>
-                                       <option value="centerNewFuture"> New Future</option>
-                                       <option value="centerHarverd"> هارفرد </option>
-                                       <option value="centerA1"> A1 </option>
+                                        <option value="GTA1">GTA1</option>
+                                        <option value="GTA2">GTA2</option>
 
                                    </select>
                                  <select name="groupTime" class="Grade" id="GroupTime" required>
@@ -146,30 +178,37 @@
                                     <div id="reader"></div>     
                                 </div>
                                                          
-                            <div class="student-table">
-            
-                                <h2 class=" " style="text-align: center;" id="errorMessage" >الرجاء إدخال رقم الكارت بشكل صحيح</h2>
+                          <div class="student-table">
+                            <h2 class="" style="text-align: center;" id="Message">الرجاء إدخال رقم الكارت بشكل صحيح</h2>
 
-                                  
-                               
-                             
+                            <input type="text" id="searchInput" class="serachOnaddCard" placeholder="Search By Code" style="padding: 10px; width: 200px;" />
+
+                            <div class="table-container">
+                                <div class="spinner-overlay d-none" id="spinnerOverlay">
+                                    <div class="spinner"></div>
+                                </div>
+
                                 <table id="myTable">
                                     <thead>
-                                        <th style="padding: 10px;"># </th>
-                                        <th style="padding-left: 20px;">اسم الطالب</th>
-                                        <th style="padding-left: 20px;">كود الطالب</th>
-                                        <th style="padding-left: 20px;">رقم هاتف الطالب</th>
-                                        <th style="padding-left: 20px;">رقم هاتف ولي امر الطالب</th>
-                                        <th style="padding-left: 20px;"></th>
-                             
+                                        <tr>
+                                            <th style="padding: 10px;">#</th>
+                                            <th style="padding-left: 20px;">Student Name</th>
+                                            <th style="padding-left: 20px;">Student Code</th>
+                                            <th style="padding-left: 20px;">Student Phone</th>
+                                            <th style="padding-left: 20px;">Parent Phone</th>
+                                            <th style="padding-left: 20px;">Absences</th>
+                                            <th style="padding-left: 20px;">Amount</th>
+                                            <th style="padding-left: 20px;">Amount Remaining</th>
+                                            <th style="padding-left: 20px;"></th>
+                                            <th style="padding-left: 20px;"></th>
+                                        </tr>
                                     </thead>
-
-                                    <tbody >
-                           
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
-
                             </div>
+                        </div>
+
+
                    
 
                       
@@ -179,7 +218,7 @@
                     <div class="pagination justify-content-between mb-5">
                            
                         <div class="mx-auto">
-                            <button class="paginationBtns" id="ConvertAttadnaceToExcel">Save And Convert To Excel</button> 
+                            <button class="paginationBtns" id="ConvertAttadnaceToExcel">Convert To Excel</button> 
                         </div>
                       
                     </div>
@@ -196,89 +235,146 @@
     <script src="/assest/bootstrap.bundle.min.js"></script>
     <script src="/assest/bootstrap.min.js"></script>
 
-<script>
-// Group times for each center
-const groupTimes = {
-    centerBasmala: [
+   <script>
+        module = {}
+    </script>
+
+
+    <script>
+    // Group times for each center
+    const groupTimes = {
+    GTA1: [
         { value: 'group1', text: 'السبت - 10  - 12 ' },
-        { value: 'group2', text: 'السبت - 12  - 2 ' }
+        { value: 'group2', text: 'الخميس - 12  - 2 ' }
     ],
-    centerDHL: [
-        { value: 'group1', text: 'السبت - 3  - 5 ' },
-        { value: 'group2', text: 'السبت - 5  - 7 ' }
-    ],
-    centerDarElsa3da: [
-        { value: 'group1', text: 'الاحد - 3:30  - 5:30 ' },
-        { value: 'group2', text: 'الاثنين - 5  - 7 ' }
-    ],
-    centerFutureSoft: [
-        { value: 'group1', text: 'الاحد - 6  - 8 ' },
-        { value: 'group2', text: 'الخميس - 7  - 9 ' }
-    ],
-    centerInfinity: [
-        { value: 'group1', text: 'الاثنين - 7  - 9 ' }
-    ],
-    centerElra3y: [
-        { value: 'group1', text: 'الثلاثاء - 3  - 5 ' },
-        { value: 'group2', text: 'الاربعاء - 5:30  - 7:30 ' },
-        { value: 'group3', text: 'الاربعاء - 7:30  - 9:30 ' }
-    ],
-    centerNewFuture: [
-        { value: 'group1', text: 'الثلاثاء - 5  - 7 ' },
-        { value: 'group2', text: 'الثلاثاء - 7  - 9 ' }
-    ],
-    centerHarverd: [
-        { value: 'group1', text: 'الخميس - 3  - 5 ' },
-        { value: 'group2', text: 'الخميس - 5  - 7 ' }
-    ],
-    centerA1: [
-        { value: 'group1', text: 'الجمعه - 3  - 5 ' },
-        { value: 'group2', text: '7 - 5  - 5 ' }
+    GTA2: [
+        { value: 'group1', text: 'الحد - 3  - 5 ' },
+        { value: 'group2', text: 'الاتنين - 5  - 7 ' }
     ]
-};
+    };
 
-// Handle center name change
-document.getElementById('centerName').addEventListener('change', function() {
-    const selectedCenter = this.value;
-    const groupTime = document.getElementById('GroupTime');
+    // Handle center name change
+    document.getElementById('centerName').addEventListener('change', function() {
+        const selectedCenter = this.value;
+        const groupTime = document.getElementById('GroupTime');
 
-    // Clear existing options
-    groupTime.innerHTML = '<option value="" selected>مجموعه</option>';
+        // Clear existing options
+        groupTime.innerHTML = '<option value="" selected>مجموعه</option>';
 
-    // Add new options based on the selected center
-    if (groupTimes[selectedCenter]) {
-        groupTimes[selectedCenter].forEach(group => {
-            const option = document.createElement('option');
-            option.value = group.value;
-            option.textContent = group.text;
-            groupTime.appendChild(option);
-        });
-    }
-});
-</script>
+        // Add new options based on the selected center
+        if (groupTimes[selectedCenter]) {
+            groupTimes[selectedCenter].forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.value;
+                option.textContent = group.text;
+                groupTime.appendChild(option);
+            });
+        }
+    });
+    </script>
+
+    <script>
+        const tableContainer = document.querySelector('.table-container');
+const spinnerOverlay = document.getElementById('spinnerOverlay');
+
+function showSpinner() {
+    tableContainer.classList.add('table-blur'); // Apply blur
+    spinnerOverlay.classList.remove('d-none');  // Show spinner
+}
+
+function hideSpinner() {
+    tableContainer.classList.remove('table-blur'); // Remove blur
+    spinnerOverlay.classList.add('d-none');        // Hide spinner
+}
+
+
+    </script>
+
 
     <script>
         const getAttendeesDataBtn = document.getElementById('getAttendeesDataBtn');
-        const CardGrade = document.getElementById('CardGrade');
+        const Grade = document.getElementById('Grade');
         const centerName = document.getElementById('centerName');
+        const spinnerInTabel = document.getElementById('spinnerInTabel');
         const GroupTime = document.getElementById('GroupTime');
-        const errorMessage = document.getElementById('errorMessage');
+        const Message = document.getElementById('Message');
         const Dates = document.getElementById('Dates');
         const getAttendeesForm = document.getElementById('getAttendees');
-            
+        const table = document.querySelector('tbody');
+
         const ConvertAttadnaceToExcel = document.getElementById('ConvertAttadnaceToExcel') 
+
+
+
+         const showMessage = (message, isError = false) => {
+            Message.style.display = 'none';
+            Message.innerHTML = '';
+            Message.style.display = 'inline';
+            Message.innerHTML = message;
+            Message.style.color = '#ffd904';
+        
+        };
+
+       
+  const populateTable = (students, statusColor, statusText) => {
+    console.log('Students:', students);
+
+    // Add a separator row before adding new section
+    if (students.length > 0) {
+        const separatorRow = document.createElement('tr');
+        separatorRow.innerHTML = `
+            <td colspan="10" style="padding: 10px; border-bottom: 3px solid black; text-align: center; font-weight: bold; font-size: 1.2rem;">
+                ${statusText} Students
+            </td>
+        `;
+        table.appendChild(separatorRow);
+    }
+
+    students.forEach((student, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="padding-left: 20px;">${index + 1}</td>
+            <td style="padding-left: 20px;">${student.Username}</td>
+            <td style="padding-left: 20px;">${student.Code}</td>
+            <td style="padding-left: 20px;">${student.phone}</td>
+            <td style="padding-left: 20px;">${student.parentPhone}</td>
+            <td style="padding-left: 20px;">${student.absences}</td>
+            <td style="padding-left: 20px;">${student.balance}</td>
+            <td style="padding-left: 20px;">
+                <input type="number" dir='ltr' value="${student.amountRemaining}"  id="s${student._id}" class="amount-input my-2" />
+            </td>
+            <td style="padding-left: 20px; color: ${statusColor}; font-weight: bold; font-size: 1.4rem;">
+                ${statusText}
+            </td>
+            <td style="padding-left: 20px;">
+                <button type='button' class="btn btn-warning edit-btn" id="${student._id}" onClick='module.editAmountBTN(this.id)'>
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+            </td>
+        `;
+        table.appendChild(row);
+    });
+
+    // Add an empty row for spacing after the section
+    const spacingRow = document.createElement('tr');
+    spacingRow.innerHTML = `<td colspan="10" style="height: 20px;"></td>`;
+    table.appendChild(spacingRow);
+};
+
+
+
 
         GroupTime.addEventListener('change', async () => {
             // Disable the inputs
-
-            if (CardGrade.value === '' || centerName.value === '' || GroupTime.value === '') {
+            showSpinner()
+            if (Grade.value === '' || centerName.value === '' || GroupTime.value === '') {
                 return;
                 
             }
 
             // Create the data object to be sent to the backend
             const data = {
-                CardGrade: CardGrade.value,
+                Grade: Grade.value,
                 centerName: centerName.value,
                 GroupTime: GroupTime.value,
             };
@@ -311,91 +407,69 @@ document.getElementById('centerName').addEventListener('change', function() {
                         Dates.appendChild(option);
                     });
                     getAttendeesDataBtn.disabled = false;
+
+                    showMessage('Dates fetched successfully.');
+                    setTimeout(() => {
+                        showMessage('');
+                    }, 10000);
                 } else {
-                    console.error('Failed to fetch attended users:', responseData.message);
+                    showMessage(responseData.message, true);
                 }
+
+               hideSpinner()
             } catch (error) {
                 console.error('An error occurred:', error);
             }
         });
         
 
-        getAttendeesDataBtn.addEventListener('click', async (e) => {
-            CardGrade.setAttribute('disabled', 'disabled');
-            centerName.setAttribute('disabled', 'disabled');
-            GroupTime.setAttribute('disabled', 'disabled');
-            Dates.setAttribute('disabled', 'disabled');
 
-            if (CardGrade.value === '' || centerName.value === '' || GroupTime.value === '' || Dates.value === '') {
-                return;
-            }
-            console.log(Dates.value , CardGrade.value , centerName.value , GroupTime.value);
-            const data = {
-                CardGrade: CardGrade.value,
-                centerName: centerName.value,
-                GroupTime: GroupTime.value,
-                date : Dates.value,            
-            };
+        getAttendeesDataBtn.addEventListener('click', async () => {
+                 showSpinner()
+                showMessage("", false); // Clear message
 
-            try {
+
+                const data = {
+                    Grade: Grade.value,
+                    centerName: centerName.value,
+                    GroupTime: GroupTime.value,
+                    date : Dates.value,
+                };
+
+                try {
                     const response = await fetch('/teacher/handelAttendance/getAttendees', {
-                    method: 'POST', 
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-
-                const responseData = await response.json();
-                console.log(responseData);
-                if (response.ok) {
-                    // Populate the table with student data
-                    const table = document.querySelector('tbody');
-                    table.innerHTML = '';
-                    responseData['students'].forEach((student, index) => {
-                        const row = document.createElement('tr');
-                        row.setAttribute('data-student-id', student._id); // Set the student ID on the row
-                        row.innerHTML = `
-                            <td>${index + 1}</td>
-                            <td style="padding-left: 20px;">${student.Username}</td>
-                            <td style="padding-left: 20px;" >${student.Code}</td>
-                            <td style="padding-left: 20px;" >${student.phone}</td>
-                            <td style="padding-left: 20px;" >${student.parentPhone}</td>
-                        
-                        `;
-                        table.appendChild(row);
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
                     });
 
-                    // Add event listeners for delete buttons
-                    const deleteButtons = document.querySelectorAll('.delete-btn');
-                    deleteButtons.forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const studentId = e.target.getAttribute('data-id');
-                            const rowToDelete = e.target.closest('tr'); // Get the row element to remove later
-                            await deleteAttendance(studentId, rowToDelete); // Pass the row for removal
-                        });
-                    });
-                
-                } else {
-                    errorMessage.style.display = 'block';
-                    errorMessage.textContent = responseData.message || 'An error occurred. Please try again.';
-             
-                    setTimeout(() => {
-                        errorMessage.style.display = 'none';
-                    }, 3000);
+                    const responseData = await response.json();
+                    if (response.ok) {
+                        console.log('Response:', responseData);
+                        table.innerHTML = '';
+                        populateTable(responseData['attendance'].studentsPresent, '#42ff04', 'Present');
+                        populateTable(responseData['attendance'].studentsLate, '#ffd904', 'Late');
+                        populateTable(responseData['attendance'].studentsAbsent, '#ff0404', 'Absent');
+                        showMessage(responseData.message);
+                    } else {
+                        showMessage(responseData.message, true);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    hideSpinner()
+                    
                 }
-            } catch (error) {
-                console.error('An error occurred:', error);
-            }
-        });
+            });
+
 
 
 
     
         ConvertAttadnaceToExcel.addEventListener('click', async () => {
+               showSpinner()
                 const data = {
-                    CardGrade: CardGrade.value,
+                    Grade: Grade.value,
                     centerName: centerName.value,
                     GroupTime: GroupTime.value,
                     date : Dates.value,
@@ -426,21 +500,80 @@ document.getElementById('centerName').addEventListener('change', function() {
                         window.URL.revokeObjectURL(url);
                         a.remove();
 
-                        console.log('Excel file downloaded successfully.');
+                        showMessage('Attendance data converted to Excel successfully.');
                     } else {
                         const responseData = await response.json();
-                        console.error('Failed to convert attendance to Excel:', responseData.message);
+                        showMessage(responseData.message, true);
                     }
                 } catch (error) {
-                    console.error('An error occurred:', error);
+                     showMessage(responseData.message, true);
+
+                }finally {
+                    hideSpinner()
                 }
             });
 
 
 
+                // Function to update remaining amount
+    async function editAmountBTN(student_id) {
+        const inputField = document.getElementById(`s${student_id}`);
+        const newAmount = inputField.value;
+        await updateAmountRemaining(student_id, newAmount);
+    }
 
+    async function updateAmountRemaining(studentId, newAmount) {
+           showSpinner()
+        try {
+            const response = await fetch(`/teacher/addCard/updateAmount/${studentId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amountRemaining: newAmount })
+            });
+
+            const responseData = await response.json();
+            if (response.ok) {
+                showMessage(responseData.message);
+            } else {
+                showMessage('Failed to update amount', true);
+            }
+        } catch (error) {
+            console.error('Error updating amount:', error);
+        } finally {
+            hideSpinner()
+        }
+    }
+
+
+
+    module.editAmountBTN = editAmountBTN;
     </script>
 
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+
+    searchInput.addEventListener('input', function() {
+        const filter = searchInput.value.toLowerCase();
+        const rows = table.getElementsByTagName('tr');
+        
+        // Loop through all table rows (excluding the first row with the table headers)
+        for (let i = 1; i < rows.length; i++) {
+            const studentNameCell = rows[i].getElementsByTagName('td')[1]; // Assuming the student name is in the second column
+            const studentCodeCell = rows[i].getElementsByTagName('td')[2]; // Assuming the student code is in the third column
+            const studentName = studentNameCell ? studentNameCell.textContent.toLowerCase() : '';
+            const studentCode = studentCodeCell ? studentCodeCell.textContent.toLowerCase() : '';
+
+            // If the student name or code matches the search query, display the row; otherwise, hide it
+            if (studentName.includes(filter) || studentCode.includes(filter)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+
+    </script>
 
 </body>
 

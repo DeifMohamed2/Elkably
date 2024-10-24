@@ -10,6 +10,7 @@ const attendanceSchema = new Schema(
     studentsPresent: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     studentsAbsent: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     studentsLate: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    studentsExcused: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isFinalized: { type: Boolean, default: false },
   },
   { timestamps: true }

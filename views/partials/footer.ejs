@@ -39,11 +39,6 @@
   
 window.addEventListener('scroll', () => {
   document.querySelector('nav').classList.toggle('window-scroll', window.scrollY > 0)
-  document.querySelector('#title1').classList.toggle('navColor', window.scrollY > 0)
-  document.querySelector('#title2').classList.toggle('navColor', window.scrollY > 0)
-  document.querySelector('#title3').classList.toggle('navColor', window.scrollY > 0)
-  document.querySelector(".navItem1").classList.toggle('navColor', window.scrollY > 0)
-  document.querySelector(".navItem2").classList.toggle('navColor', window.scrollY > 0)
   document.querySelector("#open-menu-btn").classList.toggle('navColor', window.scrollY > 0)
   document.querySelector("#close-menu-btn").classList.toggle('navColor', window.scrollY > 0)
 })
@@ -148,13 +143,6 @@ function checkboxleft ( ){
   })
 }
 
-document.getElementById("Contactus").addEventListener('click',()=>{
-  document.getElementById("footer").scrollIntoView({ behavior: 'smooth' })
 
-})
-document.getElementById("Features").addEventListener('click',()=>{
-  document.getElementById("featuers").scrollIntoView({ behavior: 'smooth' })
-
-})
 
 </script>

@@ -2,7 +2,26 @@
 <html lang="ar" dir="rtl">
 
 <%- include("./partials/head.ejs") %>
+<style>
+    .separator-row {
+        padding: 10px;
+        border-bottom: 3px solid black;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
 
+    table {
+        width: 100%; /* Ensures the table uses the full width */
+        border-collapse: collapse; /* Prevents double borders */
+    }
+
+    th, td {
+        padding: 10px; /* Consistent padding */
+        text-align: left; /* Align text to the left for readability */
+    }
+
+</style>
 
     <body>
         <div class="container-fluid">
@@ -34,256 +53,59 @@
 
                         </table>
                         <div class="row">
-                            <div class="col-md-12  col-sm-12">
-                                <h1>Videos Data</h1>
-                                <div class="student-table ">
-                                    <form action="/teacher/searchToGetOneUserAllData" method="get">
-
-                                    <div class="row" style="margin-bottom: 0 !important;">
-
-                                        <div class="col-md-4">
-                                                    <select name="searchBy" id="searchBy" class="Grade"
-                                                        style="margin-top: -1rem;">
-
-                                                        <option value="Username">الاسم</option>
-                                                        <option value="Code" selected>كود الطالب </option>
-                                                        <option value="phone">رقم الهاتف</option>
-                                                        <option value="WhatsApp"> whatsapp </option>
-                                                        <option value="parentPhone"> رقم ولي الامر </option>
-
-                                                    </select>
-                                        </div>
-
-                                        <div class="col-md-4">
-                                                    <input type="text" class="mx-auto" name="searchInput" placeholder="بحث..">
-                                        </div>
-
-                                        <div class="col-md-4">
-                                                    <div class="row">
-                                                        <div class="col-md-4">
-                                                            <button class="primary"><i
-                                                                    class="fa-solid fa-magnifying-glass"></i></button>
-
-                                                        </div>
-
-                                                        <div class="col-md-1 d-flex justify-content-center align-items-center ">
-                                                            <button><a href="/teacher/myStudent" class="primary"
-                                                                    style="margin-bottom: 0; margin-top: 0 !important; cursor: pointer;"><i
-                                                                        class="fa-solid fa-x"></i></a></button>
-                                                        </div>
-
-
-                                                    </div>
-
-                                        </div>
-                                   
-                                    </div>
-                                </form>
-        
-                             
-                                    <table id="myTable">
-                                        <thead>
-                                            <th style="padding: 10px;"># </th>
-                                            <th style="padding-left: 20px;">اسم الفيديو</th>
-                                            <th style="padding-left: 20px;"> عدد مرات المشاهده </th>
-                                            <th style="padding-left: 20px;"> عدد المشاهدات المتبقيه  </th>
-                                            <th style="padding-left: 20px;">تاريخ اول مشاهده </th>
-                                            <th style="padding-left: 20px;">تاريخ اخر مشاهده </th>
-                                            <th style="padding-left: 20px;"> رفع الواجب </th>
-                                            <th style="padding-left: 20px;"> حل الامتحان </th>
-                                            <th style="padding-left: 20px;"> حاله الشراء  </th>
-                             
-                                            <th style="padding-left: 20px;"></th>
-                                            <th style="padding-left: 20px;"></th>
-                                        </thead>
-
-                                        <tbody>
-
-                                            <% if (userData ) { %>
-                                                <% let counter = 1; %>
-                                                    <% userData['videosInfo'].forEach(data => { %>
-                                                   
-                                                        <tr>
-                                                            <td> <%= counter %></td>
-                                                            <td  style="line-height: 20px;"><span ><i class="fa-solid "></i></span><%= data.videoName %></td>
-                                                            <td  ><%= data.numberOfWatches %></td>
-                                                            <td  ><%= data.videoAllowedAttemps %></td>
-                                                            <td><%= data.fristWatch ? new Date(data.fristWatch).toLocaleDateString() : "لم يشاهد بعد" %></td>
-                                                            <td><%= data.lastWatch ? new Date(data.lastWatch).toLocaleDateString() : "لم يشاهد بعد" %></td>
-                                                            
-                                                            <% if (data.prerequisites=="WithOutExamAndHW") { %>
-                                                                <td >لا يوجد </td>
-                                                                <td  >لا يوجد</td>
-                                                            <% } else if (data.prerequisites=="WithExamaAndHw")  { %>
-                                                                <td ><%= data.isHWIsUploaded ?"تم الرفع":"لم يُرفع" %></td>
-                                                                <td ><%= data.isUserEnterQuiz ?"تم الدخول":"لم يدخل" %></td>
-                                                   
-                                                            <% } else if(data.prerequisites=="WithHw"){ %>
-                                                            <td  ><%= data.isHWIsUploaded ?"تم الرفع":"لم يُرفع" %></td>
-                                                            <td  >لا يوجد</td>
-                                                            <% }else{ %> 
-                                                                <td  >لا يوجد</td>
-                                                                <td ><%= data.isUserEnterQuiz ?"تم الدخول":"لم يدخل" %></td>
-                                                            <% } %>    
-
-                                                            <% if (data.isVideoPrepaid) { %>
-                                                                <td><%= data.videoPurchaseStatus ? "تم الشراء" : "لم يتم الشراء" %></td>
-                                                            <% } else { %>
-                                                                <td>الفيديو مجاني </td>
-                                                            <% } %>     
-                                                        </tr>
-        
-                                                    <% counter++; %>
-        
-                                                    <% }) %>
-                                                        
-                                                <% } else { %>
-                                                    <tr style="text-align: center;">
-                                                        <td colspan="8">
-                                                            <h1></h1>
-                                                        </td>
-                                                    </tr>
-                                                <% } %>
-
-                                        </tbody>
-                                    </table>
-                             
-
-                                </div>
-                            </div>
-
-                            <div class="col-md-12  col-sm-12">
-                                <h1>Quizzes Data</h1>
-                                <div class="student-table ">
-
-                                
-
-                                    <table id="myTable">
-                                        <thead>
-                                            <th style="padding: 10px;"># </th>
-                                            <th style="padding-left: 20px;">اسم الامتحان</th>
-                        
-                                            <th style="padding-left: 20px;"> تاريخ الحل </th>
-                                            <th style="padding-left: 20px;"> مده الحل </th>
-                                            <th style="padding-left: 20px;">  درجه الامتحان </th>
-                                            
-                                            <th style="padding-left: 20px;"> حاله الشراء  </th>
-                                            
-                                            <th style="padding-left: 20px;"></th>
-                                            <th style="padding-left: 20px;"></th>
-                                        </thead>
-
-                                        <tbody>
-
-                                            <% if (userData ) { %>
-                                                <% let counter = 1; %>
-                                                    <% userData['quizesInfo'].forEach(data => { %>
-                                                   
-                                                        <tr>
-                                                            <td> <%= counter %></td>
-                                                            <td  style="line-height: 20px;"><span ><i class="fa-solid "></i></span><%= data.quizName %></td>
-                                                            <td  ><%= new Date(data.solvedAt).toLocaleDateString()||"لم يحل" %></td>
-                                                            <td  ><%= data.solveTime || "لم يحل"%></td>
-                                                            <td ><%= data.questionsCount%> / <%= data.Score%></td>
-                                                       
-                                                            <% if (data.isQuizPrepaid) { %>
-                                                                <td><%= data.quizPurchaseStatus ? "تم الشراء" : "لم يتم الشراء" %></td>
-                                                            <% } else { %>
-                                                                <td>الامتحان مجاني </td>
-                                                            <% } %>     
-                                                        </tr>
-        
-                                                    <% counter++; %>
-        
-                                                    <% }) %>
-                                                        
-                                                <% } else { %>
-                                                    <tr style="text-align: center;">
-                                                        <td colspan="8">
-                                                            <h1></h1>
-                                                        </td>
-                                                    </tr>
-                                                <% } %>
-
-                                        </tbody>
-
-                                    </table>
-                                 
-
-                                </div>
-                            </div>
-                            <div class="col-md-12  col-sm-12">
+                      
+                           <div class="col-md-12  col-sm-12">
                                 <h1>Attendance Data</h1>
+                                <div class="row" dir="ltr">
+                                    <div class="col-md-3">
+                                        
+                                        <label for="startDate">Start Date:</label>
+                                        <input type="date" id="startDate" class="form-control">
+                                        
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="endDate" >End Date:</label>
+                                        <input type="date" id="endDate" class="form-control">
+
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-check mt-3">
+                                            <input type="checkbox" class="form-check-input" id="fetchAllDates">
+                                            <label class="form-check-label" for="fetchAllDates">Fetch All Dates</label>
+                                        </div>
+
+                                    </div>
+                                </div>
+                               
+                             
+                             
+                                <button type="button" id="GetStudentData" class="btn btn-outline-warning btn-md me-3 mt-5">Get Data</button>
+
                                 <div class="student-table ">
-
-                                
-
+                                    <input type="number" class="serachOnaddCard" name="attendeeID" id="attendeeID" placeholder="Student Code" required>
+                                    
                                     <table id="myTable">
                                         <thead>
-                                            <th style="padding: 10px;"># </th>
-                        
-                                            <th style="padding-left: 20px;">  اسم السنتر </th>
-                                            <th style="padding-left: 20px;"> اسم  الجروب </th>
-                                            <th style="padding-left: 20px;">  نوع الحضور  </th>
-                                            
-                                            <th style="padding-left: 20px;"> تاريخ الحضور   </th>        
+                                            <th style="padding: 10px;">#</th>
+                                            <th style="padding-left: 20px;">Center Name</th>
+                                            <th style="padding-left: 20px;">Group Time</th>
+                                            <th style="padding-left: 20px;">Date</th>
+                                            <th style="padding-left: 20px;">Attendance Status</th>
                                         </thead>
-
-                                        <tbody>
-
-                                            <% if (attendance ) { %>
-                                                <% let counter = 1; %>
-                                                    <% attendance.forEach(data => { %>
-                                                   
-                                                        <tr>
-                                                            <td> <%= counter %></td>
-                                                            <td  style="line-height: 20px;"><span ><i class="fa-solid "></i></span><%= data.centerName %></td>
-                                                            <td  ><%= data.GroupTime%></td>
-                                                            <td >Online</td>
-                                                            <td>
-                                                            <%= data.dateOfAttend 
-                                                                ? new Date(data.dateOfAttend).toLocaleDateString() + " " + 
-                                                                    new Date(data.dateOfAttend).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
-                                                                : "لم يحضر" 
-                                                            %>
-                                                            </td>
-                                                                                                                
-                                                        
-                                                        </tr>
-        
-                                                    <% counter++; %>
-        
-                                                    <% }) %>
-                                                        
-                                                <% } else { %>
-                                                    <tr style="text-align: center;">
-                                                        <td colspan="8">
-                                                            <h1></h1>
-                                                        </td>
-                                                    </tr>
-                                                <% } %>
-
-                                        </tbody>
-
+                                        <tbody></tbody>
                                     </table>
-                                 
-
                                 </div>
                             </div>
+
 
                             <div class="pagination justify-content-between mb-5">
-                             <% if (userData ) { %>
+            
                                 <div class="mx-auto">
-                                    <form action="/teacher/myStudent/convertToExcelAllUserData/<%= userData.Code %>" method="post">
-                                        <button class="paginationBtns">Convert To Excel</button> 
-                                    </form>
-                                    <!-- <form action="/teacher/myStudent/convertToPDFAllUserData/<%= userData.Code %>" method="post">
-                                        <button class="paginationBtns">Convert To PDF</button> 
-                                    </form> -->
-                          
-                          
+                                
+                                        <button id="ConvertToExcel" class="paginationBtns">Convert To Excel And Send Copy To Parent</button> 
+                              
                                 </div>
-                              <%  }%>
+
                             </div>
                         </div>   
                     </main>
@@ -298,6 +120,126 @@
 
         <script src="/assest/bootstrap.bundle.min.js"></script>
         <script src="/assest/bootstrap.min.js"></script>
+
+ <script>
+const GetStudentData = document.getElementById('GetStudentData');
+const attendeeID = document.getElementById('attendeeID');
+const startDate = document.getElementById('startDate');
+const endDate = document.getElementById('endDate');
+const fetchAllDates = document.getElementById('fetchAllDates');
+
+GetStudentData.addEventListener('click', async () => {
+    try {
+        let url = `/teacher/myStudent/getStudentData/${attendeeID.value}`;
+        
+        // If "Fetch All Dates" is not checked, add date range to the URL
+        if (!fetchAllDates.checked) {
+            const start = startDate.value;
+            const end = endDate.value;
+            
+            if (start && end) {
+                url += `?start=${start}&end=${end}`;
+            }
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log(data);
+
+        const table = document.querySelector('table tbody');
+        table.innerHTML = '';  // Clear table before populating
+
+        let lastCenterName = '';  // Track last center name to avoid duplication
+        let lastGroupTime = '';   // Track last group time to avoid duplication
+
+        data.attendanceHistory.forEach((item, index) => {
+            // Add a separator row when the center or group changes
+            if (item.centerName !== lastCenterName || item.groupTime !== lastGroupTime) {
+                const separatorRow = document.createElement('tr');
+                separatorRow.innerHTML = `
+                    <td colspan="5" class="separator-row">
+                        ${data.centerName} - Group Time: ${data.groupTime}
+                    </td>
+                `;
+                table.appendChild(separatorRow);
+            }
+
+            let statusColor = '';
+            if (item.status === "Present") {
+                statusColor = '#42ff04';
+            } else if (item.status === "Absent") {
+                statusColor = '#ff0404';
+            } else {
+                statusColor = '#ffd904';
+            }
+            // Create a row for each student's attendance record
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>----</td>
+                <td>----</td>
+                <td dir='ltr'>${item.date} - ${item.time}</td>
+                <td style="font-weight: bold; font-size:20px; color:${statusColor};">
+                    ${item.status}
+                </td>
+            `;
+            table.appendChild(row);
+
+            // Update lastCenterName and lastGroupTime
+            lastCenterName = item.centerName;
+            lastGroupTime = item.groupTime;
+        });
+
+        // Add an empty row for spacing at the end
+        const spacingRow = document.createElement('tr');
+        spacingRow.innerHTML = `<td colspan="5" style="height: 20px;"></td>`;
+        table.appendChild(spacingRow);
+
+    } catch (error) {
+        console.error('Error fetching student data:', error);
+        alert('Failed to fetch student data. Please try again later.');
+    }
+});
+
+
+    const ConvertToExcel = document.getElementById('ConvertToExcel');
+
+  ConvertToExcel.addEventListener('click', async () => {
+    try {
+        const response = await fetch(`/teacher/myStudent/convertToExcel/${attendeeID.value}`);
+        
+        // Ensure the response is OK and is of type blob
+        if (!response.ok || response.headers.get('Content-Type') !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+            throw new Error('Network response was not ok');
+        }
+
+        // Convert the response to a blob
+        const blob = await response.blob();
+
+        // Create a URL for the blob and initiate a download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_data.xlsx';
+        document.body.appendChild(a);
+        a.click();
+
+        // Clean up by removing the link and revoking the object URL
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error('Error converting to Excel:', error);
+        alert('Failed to convert to Excel. Please try again later.');
+    }
+});
+
+
+</script>
+
 
 
     </body>

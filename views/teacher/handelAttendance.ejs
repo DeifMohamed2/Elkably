@@ -147,22 +147,25 @@
                         <div class="col-md-12  col-sm-12">
                                 <div class="col-md-10">   
                                
-
+                        <select name="centerName" class="Grade" id="centerName" value="" required>
+                                <option value=""> اختر السنتر </option>
+                                <option value="GTA">GTA</option>
+                                <option value="tagmo3">Tagmo3</option>
+                                </select>
                                   
-                                   <select name="Grade" class="Grade" id="Grade" required>
+                                 <select name="Grade" class="Grade" id="Grade" required>
                                     <option value="" selected>اختر الصف </option>
-                                     <option value="ECT">ECT</option>
-                                    <option value="ACT1">ACT1</option>
-                                    <option value="ACT2">ACT2</option>
+                                       <option value="EST">EST</option>
+                                        <option value="EST1">EST1</option>
+                                        <option value="EST2">EST2</option>
+                                        <option value="ACT">ACT</option>
 
                                    </select>
-                                   <select name="centerName" class="Grade" id="centerName" required>
-                                       <option value="" selected>اختر اسم السنتر </option>
-                                        <option value="GTA1">GTA1</option>
-                                        <option value="GTA2">GTA2</option>
-
-                                   </select>
-                                 <select name="groupTime" class="Grade" id="GroupTime" required>
+                                   <select name="gradeType" class="Grade" id="gradeType" value="" required>
+                                  <option value=""> Type</option>
+                                  </select>
+                               
+                                  <select name="groupTime" class="Grade" id="groupTime" required>
                                 <option value="" selected>مجموعه</option>
                                </select>
 
@@ -240,38 +243,181 @@
     </script>
 
 
-    <script>
-    // Group times for each center
-    const groupTimes = {
-    GTA1: [
-        { value: 'group1', text: 'السبت - 10  - 12 ' },
-        { value: 'group2', text: 'الخميس - 12  - 2 ' }
+   <script>
+
+  const centerNames = {
+    GTA : [
+    { value: 'EST1', text: 'EST1' },
+    { value: 'EST2', text: 'EST2' },
+    { value: 'ACT', text: 'ACT' }
     ],
-    GTA2: [
-        { value: 'group1', text: 'الحد - 3  - 5 ' },
-        { value: 'group2', text: 'الاتنين - 5  - 7 ' }
+    tagmo3 :[
+    { value: 'EST', text: 'EST' },
+
+    { value: 'ACT', text: 'ACT' }
     ]
-    };
+  }
 
-    // Handle center name change
-    document.getElementById('centerName').addEventListener('change', function() {
-        const selectedCenter = this.value;
-        const groupTime = document.getElementById('GroupTime');
+  // Define centers for each grade
+const gradeTypeOptions = {
+  EST :[
+    { value: 'adv', text: 'Advanced' },
+    { value: 'basic', text: 'Basic' }
+  ],
+  EST1: [
+    { value: 'adv', text: 'Advanced' },
+    { value: 'basic', text: 'Basic' }
+  ],
+  EST2: [
+    { value: 'normal', text: 'Normal' }
+  ],
+  ACT: [
+    { value: 'normal', text: 'Normal' }
+  ]
+};
 
-        // Clear existing options
-        groupTime.innerHTML = '<option value="" selected>مجموعه</option>';
+// Group times for each center
+const groupTimes = {
+  GTA: {
+    EST1: {
+      adv: [
+        { value: 'group1', text: 'Group(1) - Saturday @ 6PM' }, 
+        { value: 'group2', text: 'Group(1)(2) - Tuesday @ 6PM' },
+        { value: 'group3', text: 'Group(2) - Sunday @ 1PM' },
+        { value: 'group4', text: 'Group(2)(2) - Tuesday @ 1PM' },
+        { value: 'group5', text: 'Group(3) - Saturday @ 3:30PM' },
+        { value: 'group6', text: 'Group(3)(2) - Wednesday @ 4PM' },
 
-        // Add new options based on the selected center
-        if (groupTimes[selectedCenter]) {
-            groupTimes[selectedCenter].forEach(group => {
-                const option = document.createElement('option');
-                option.value = group.value;
-                option.textContent = group.text;
-                groupTime.appendChild(option);
-            });
-        }
+      ],
+      basic: [
+        { value: 'group1', text: "Group(1) - Saturday @ 8PM" },
+        { value: 'group2', text: "Group(1)(2) - Tuesday @ 8PM" }
+      ]
+    },
+    EST2: {
+      normal: [
+        { value: 'group1', text: "Group(1) - Saturday @ 3:30PM" },
+        { value: 'group2', text: "Group(1)(2) - Wednesday @ 8PM" }
+      ]
+    },
+    ACT: {
+      normal: [
+        { value: 'group1', text: "Group(1) - Sunday @ 7PM" },
+        { value: 'group2', text: "Group(1)(2) - Wednesday @ 6PM" },
+       
+      ]
+    }
+  },
+  tagmo3: {
+    EST: {
+      adv: [
+        { value: 'group1', text: "Group(1) - Monday @ 6PM" },
+        { value: 'group2', text: "Group(1)(2) - Friday @ 5PM" },
+        { value: 'group3', text: "Group(2) - Sunday @ 4PM" },
+        { value: 'group4', text: "Group(2)(1) - Thursday @ 5PM" },
+  
+      ],
+      basic :[
+       { value: 'group1', text: "Group(1) - Monday @ 8PM" },
+       { value: 'group2', text: "Group(1)(2) - Friday @ 7PM" },
+      ],
+  
+    },
+    ACT: {
+      normal: [
+      { value: 'group1', text: "Group(1) - Monday @ 4PM" },
+      { value: 'group2', text: "Group(1)(2) - Friday @ 2:30PM" },
+      ],
+    }
+  }
+};
+
+
+document.getElementById('centerName').addEventListener('change', ()=>{
+   const centerName = document.getElementById('centerName').value;
+  const Grade = document.getElementById('Grade');
+ 
+  // Clear existing grade type options
+  Grade.innerHTML = '<option value="" selected>Select Grade</option>';
+   console.log(centerName ,centerNames[centerName] )
+  // Add new grade type options based on the selected grade
+  if (centerNames[centerName]) {
+    centerNames[centerName].forEach(center => {
+      const option = document.createElement('option');
+      option.value = center.value;
+      option.textContent = center.text;
+      Grade.appendChild(option);
     });
-    </script>
+  }
+
+  // Clear the group time options whenever the grade changes
+  document.getElementById('gradeType').innerHTML = '<option value="" selected>Type</option>';
+});
+// Handle grade change
+document.getElementById('Grade').addEventListener('change', function() {
+  const selectedGrade = this.value;
+  const gradeType = document.getElementById('gradeType');
+  
+  // Clear existing grade type options
+  gradeType.innerHTML = '<option value="" selected>Type</option>';
+
+  // Add new grade type options based on the selected grade
+  if (gradeTypeOptions[selectedGrade]) {
+    gradeTypeOptions[selectedGrade].forEach(center => {
+      const option = document.createElement('option');
+      option.value = center.value;
+      option.textContent = center.text;
+      gradeType.appendChild(option);
+    });
+  }
+
+  // Clear the group time options whenever the grade changes
+  document.getElementById('groupTime').innerHTML = '<option value="" selected>Group Time</option>';
+});
+
+// Handle center name change and update group times
+function updateGroupTimes() {
+  const selectedCenter = document.getElementById('centerName').value;
+  const selectedGrade = document.getElementById('Grade').value;
+  const selectedGradeType = document.getElementById('gradeType').value;
+  const groupTime = document.getElementById('groupTime');
+
+  // Clear existing group time options
+  groupTime.innerHTML = '<option value="" selected>Group Time</option>';
+
+  // Check if the selected center exists
+  if (!groupTimes[selectedCenter]) {
+    console.error(`Center "${selectedCenter}" is not found in groupTimes`);
+    return;
+  }
+
+  // Check if the selected grade exists for the center
+  if (!groupTimes[selectedCenter][selectedGrade]) {
+    console.error(`Grade "${selectedGrade}" is not found for center "${selectedCenter}"`);
+    return;
+  }
+
+  // Check if the selected grade type exists for the grade in the center
+  if (!groupTimes[selectedCenter][selectedGrade][selectedGradeType]) {
+    console.error(`Grade type "${selectedGradeType}" is not found for grade "${selectedGrade}" in center "${selectedCenter}"`);
+    return;
+  }
+
+  // Add new group times based on selected center, grade, and gradeType
+  groupTimes[selectedCenter][selectedGrade][selectedGradeType].forEach(group => {
+    const option = document.createElement('option');
+    option.value = group.value;
+    option.textContent = group.text;
+    groupTime.appendChild(option);
+  });
+}
+
+// Add event listeners to update group times when the center, grade, or grade type changes
+document.getElementById('Grade').addEventListener('change', updateGroupTimes);
+document.getElementById('gradeType').addEventListener('change', updateGroupTimes);
+
+</script>
+
 
     <script>
         const tableContainer = document.querySelector('.table-container');
@@ -295,8 +441,9 @@ function hideSpinner() {
         const getAttendeesDataBtn = document.getElementById('getAttendeesDataBtn');
         const Grade = document.getElementById('Grade');
         const centerName = document.getElementById('centerName');
+        const gradeType  = document.getElementById('gradeType');
         const spinnerInTabel = document.getElementById('spinnerInTabel');
-        const GroupTime = document.getElementById('GroupTime');
+        const GroupTime = document.getElementById('groupTime');
         const Message = document.getElementById('Message');
         const Dates = document.getElementById('Dates');
         const getAttendeesForm = document.getElementById('getAttendees');
@@ -367,7 +514,7 @@ function hideSpinner() {
         GroupTime.addEventListener('change', async () => {
             // Disable the inputs
             showSpinner()
-            if (Grade.value === '' || centerName.value === '' || GroupTime.value === '') {
+            if (Grade.value === '' || centerName.value === '' || GroupTime.value === '' || gradeType.value === '') {
                 return;
                 
             }
@@ -377,6 +524,7 @@ function hideSpinner() {
                 Grade: Grade.value,
                 centerName: centerName.value,
                 GroupTime: GroupTime.value,
+                gradeType: gradeType.value
             };
 
             try {
@@ -433,6 +581,7 @@ function hideSpinner() {
                     Grade: Grade.value,
                     centerName: centerName.value,
                     GroupTime: GroupTime.value,
+                    gradeType: gradeType.value,
                     date : Dates.value,
                 };
 
@@ -450,6 +599,8 @@ function hideSpinner() {
                         populateTable(responseData['attendance'].studentsPresent, '#42ff04', 'Present');
                         populateTable(responseData['attendance'].studentsLate, '#ffd904', 'Late');
                         populateTable(responseData['attendance'].studentsAbsent, '#ff0404', 'Absent');
+                        populateTable(responseData['attendance'].studentsExcused, '#42ff04', 'Present From Other Group');
+
                         showMessage(responseData.message);
                     } else {
                         showMessage(responseData.message, true);
@@ -472,6 +623,7 @@ function hideSpinner() {
                     Grade: Grade.value,
                     centerName: centerName.value,
                     GroupTime: GroupTime.value,
+                    gradeType: gradeType.value,
                     date : Dates.value,
                 };
 

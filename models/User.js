@@ -14,12 +14,16 @@ const userSchema = new Schema(
       default: '3131',
       required: false,
     },
-
+    
+    centerName: {
+      type: String,
+      required: true,
+    },
     Grade: {
       type: String,
       required: true,
     },
-    centerName: {
+    gradeType:{
       type: String,
       required: true,
     },

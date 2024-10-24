@@ -91,6 +91,7 @@ const public_Register_post = async (req, res) => {
     place,
     Password,
     centerName,
+    gradeType,
     groupTime,
     balance,
 
@@ -152,12 +153,13 @@ const public_Register_post = async (req, res) => {
       Username: Username,
       Password: hashedPassword,
       passwordWithoutHash: Password,
-      Grade: Grade,
       Code: Code,
       phone: phone,
       parentPhone: parentPhone,
       place: place,
       centerName: centerName,
+      Grade: Grade,
+      gradeType :gradeType , 
       groupTime: groupTime,
       subscribe: false,
       balance: balance,
@@ -168,7 +170,12 @@ const public_Register_post = async (req, res) => {
       .save()
       .then(async (result) => {
         await Group.findOneAndUpdate(
-          { Grade: Grade, CenterName: centerName, GroupTime: groupTime },
+          {
+            CenterName: centerName,
+            Grade: Grade,
+            gradeType: gradeType,
+            GroupTime: groupTime,
+          },
           { $push: { students: result._id } },
           { new: true, upsert: true }
         )

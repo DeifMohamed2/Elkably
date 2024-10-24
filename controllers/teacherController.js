@@ -9,7 +9,6 @@ const mongoose = require('mongoose');
 
 const waapi = require('@api/waapi');
 const waapiAPI = process.env.WAAPIAPI;
-console.log(waapiAPI);
 waapi.auth(`${waapiAPI}`);
 
 const Excel = require('exceljs');
@@ -2434,7 +2433,15 @@ const addCardToStudent = async (req, res) => {
 
 
 const markAttendance = async (req, res) => {
-  const { Grade, centerName, GroupTime, attendId } = req.body;
+  const {
+    Grade,
+    centerName,
+    GroupTime,
+    attendId,
+    gradeType,
+    attendAbsencet,
+    attendOtherGroup,
+  } = req.body;
 
   try {
     const student = await User.findOne({
@@ -2445,36 +2452,56 @@ const markAttendance = async (req, res) => {
       return res.status(404).json({ message: 'Student Not found' });
     }
 
+      console.log(student._id);
     // Check if student is in the group
-    const group = await Group.findOne({
-      CenterName: centerName,
-      Grade: Grade,
-      GroupTime: GroupTime,
-      students: student._id,
-    });
+    let group =null;
+        if (!attendOtherGroup) {
+          group = await Group.findOne({
+            CenterName: centerName,
+            Grade: Grade,
+            GroupTime: GroupTime,
+            gradeType: gradeType,
+            students: student._id,
+          });
+        }else{
+          group = await Group.findOne({
+            CenterName: centerName,
+            Grade: Grade,
+            GroupTime: GroupTime,
+            gradeType: gradeType,
+          });
+        }
 
-    if (!group) {
-      return res
-        .status(404)
-        .json({ message: 'Student Not Found in This Group' });
-    }
+     if (!group) {
+            return res
+              .status(404)
+              .json({ message: 'Student Not Found in This Group' });
+     }
+    
 
-    let message = '';
-    if (student.absences == 2) {
-      message = 'The student has 2 absences and 1 remaining';
-    }
-    // Check if student is already marked absent 3 times
+
+   let message = '';
     if (student.absences >= 3) {
-      return res
-        .status(400)
-        .json({ message: 'Student has already been marked absent 3 times' });
+
+      if (attendAbsencet){
+        student.absences -= 1;
+       
+      }else{
+        return res.status(400).json({
+          message: 'Student has already been marked absent 3 times',
+        });
+      }
+      
     }
 
     // Mark student as present in today's attendance
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Cairo', // Egypt's time zone
+    }).format(new Date());
+
     let attendance = await Attendance.findOne({
-      date: today,
-      groupId: group._id,
+        date: today,
+        groupId: group._id,
     });
 
     if (!attendance) {
@@ -2488,20 +2515,27 @@ const markAttendance = async (req, res) => {
       });
     }
 
+  
     // Check if student is already marked as present
     if (attendance.studentsPresent.includes(student._id)) {
       return res
         .status(400)
         .json({ message: 'Student is already marked present' });
     }
-    // Check if student is already marked as present
+    // Check if student is already marked as Late
     if (attendance.studentsLate.includes(student._id)) {
       return res
         .status(400)
         .json({ message: 'Student is already marked Late' });
     }
+    if (attendance.studentsExcused.includes(student._id)) {
+      return res
+        .status(400)
+        .json({
+          message: 'Student is already marked present From Other Group',
+        });
+    }
 
-  
 
 
     // Handle if attendance is finalized (late marking logic)
@@ -2510,17 +2544,43 @@ const markAttendance = async (req, res) => {
         (id) => !id.equals(student._id)
       );
       attendance.studentsLate.push(student._id);
-      if(student.absences >0){
-       student.absences -= 1;
+
+      if (student.absences > 0) {
+        student.absences -= 1;
       }
+
       await attendance.save();
+
+      // Find if an attendance history already exists for today
+      const existingHistory = student.AttendanceHistory.find(
+        (record) => record.date === today
+      );
+
+      if (existingHistory) {
+        // Update the status to 'Late' if an entry already exists
+        existingHistory.status = 'Late';
+        existingHistory.atTime = new Date().toLocaleTimeString();
+
+        // Mark AttendanceHistory as modified to ensure Mongoose updates it
+        student.markModified('AttendanceHistory');
+      } else {
+        // Push a new history entry if it doesn't exist for today
+        student.AttendanceHistory.push({
+          attendance: attendance._id,
+          date: today,
+          atTime: new Date().toLocaleTimeString(),
+          status: 'Late',
+        });
+      }
+
+      await student.save(); // Save the updated student data
 
       // Populate the students data for response
       await attendance.populate('studentsLate');
       await attendance.populate('studentsPresent');
+      await attendance.populate('studentsExcused');
 
-      
-const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+      const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
 نود إعلامكم بأنه تم التحديث ابنكم قد *تأخر في الحضور اليوم*.\n
 وقد تم تسجيل حضوره *متأخرًا*.\n
 المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
@@ -2528,43 +2588,84 @@ const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Us
 *يرجى الانتباه لمواعيد الحضور مستقبلًا*.\n\n
 *شكرًا لتعاونكم.*`;
 
-
-// Send the message via the waapi (already present)
-await waapi
-  .postInstancesIdClientActionSendMessage(
-    {
-      chatId: `2${student.parentPhone}@c.us`,
-      message: messageWappi,
-    },
-    { id: '23653' }
-  )
-
-  .then(({ data }) => {})
-  .catch((err) => {
-    console.log(err);
-  });
-
-
-
-
+      // Send the message via the waapi (already present)
+      await waapi
+        .postInstancesIdClientActionSendMessage(
+          {
+            chatId: `2${student.parentPhone}@c.us`,
+            message: messageWappi,
+          },
+          { id: '23653' }
+        )
+        .then(({ data }) => {})
+        .catch((err) => {
+          console.log(err);
+        });
 
       return res.status(200).json({
         message: 'The Student Marked As Late \n' + message,
         studentsPresent: attendance.studentsPresent,
         studentsLate: attendance.studentsLate,
+        studentsExcused: attendance.studentsExcused,
       });
     } else {
-      attendance.studentsPresent.push(student._id);
+
+          let message = '';
+          if (student.absences == 2) {
+            message = 'The student has 2 absences and 1 remaining';
+          }
+          // // Check if student is already marked absent 3 times
+          // if (student.absences >= 3) {
+          //   return res
+          //     .status(400)
+          //     .json({
+          //       message: 'Student has already been marked absent 3 times',
+          //     });
+          // }
+          let statusMessage =''
+          if(attendOtherGroup){
+            attendance.studentsExcused.push(student._id);
+            statusMessage = 'Present From Other Group'
+          }else{
+
+           attendance.studentsPresent.push(student._id);
+            statusMessage = 'Present'
+          }
+          
+
+
       await attendance.save();
 
       // Populate the students data for response
       await attendance.populate('studentsLate');
       await attendance.populate('studentsPresent');
+      await attendance.populate('studentsExcused');
+      console.log(attendance.studentsExcused);
 
+      if (attendOtherGroup){
+        student.AttendanceHistory.push({
+          attendance: attendance._id,
+          date: today,
+          atTime: new Date().toLocaleTimeString(),
+          status: 'Present From Other Group',
+        });
+      } else {
+        student.AttendanceHistory.push({
+          attendance: attendance._id,
+          date: today,
+          atTime: new Date().toLocaleTimeString(),
+          status: 'Present',
+        });
+      }
+
+
+      await student.save();
       return res.status(200).json({
-        message: 'Attendance marked successfully as present \n' + message,
+        message:
+          `Attendance marked successfully as ${statusMessage}  \n` + message,
         studentsPresent: attendance.studentsPresent,
         studentsLate: attendance.studentsLate,
+        studentsExcused: attendance.studentsExcused,
       });
     }
   } catch (error) {
@@ -2575,35 +2676,45 @@ await waapi
 
 
 const getAttendedUsers = async (req, res) => {
-   const { Grade, centerName, GroupTime, attendId } = req.body;
-    const group = await Group.findOne({
-      CenterName: centerName,
-      Grade: Grade,
-      GroupTime: GroupTime,
-    });
+  const { Grade, centerName, GroupTime, attendId, gradeType } = req.body;
+  const group = await Group.findOne({
+    CenterName: centerName,
+    Grade: Grade,
+    gradeType : gradeType,
+    GroupTime: GroupTime,
+  });
 
-    if (!group) {
-      return res.status(404).json({ message: 'There are currently no students registered in this group' });
-    }
+  if (!group) {
+    return res
+      .status(404)
+      .json({
+        message: 'There are currently no students registered in this group',
+      });
+  }
 
-    const today = new Date().toISOString().split('T')[0]; // Getting the current date in 'YYYY-MM-DD' format
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo', // Egypt's time zone
+  }).format(new Date());
 
-    const attendance= await Attendance.findOne({
-      groupId: group._id,
-      date: today,
-    }).populate('studentsPresent studentsLate');
+  console.log(today); // Should give you the correct date in 'YYYY-MM-DD' format
 
-    if (!attendance) {
-      return res.status(404).json({ message: 'Attendance records have not been submitted yet' });
-    }
+  const attendance = await Attendance.findOne({
+    groupId: group._id,
+    date: today,
+  }).populate('studentsPresent studentsLate studentsExcused');
+  console.log(attendance);
+  if (!attendance) {
+    return res
+      .status(404)
+      .json({ message: 'Attendance records have not been submitted yet' });
+  }
 
-    return res.status(200).json({ attendance });
-
+  return res.status(200).json({ attendance });
 };
 
 
 const removeAttendance = async (req, res) => {
-  const { centerName, Grade, GroupTime } = req.body;
+  const { centerName, Grade, GroupTime, gradeType } = req.body;
   const studentId = req.params.studentId;
 
   try {
@@ -2619,6 +2730,7 @@ const removeAttendance = async (req, res) => {
       CenterName: centerName,
       Grade: Grade,
       GroupTime: GroupTime,
+      gradeType : gradeType,
       students: student._id, // Ensure the student is part of this group
     });
 
@@ -2629,7 +2741,9 @@ const removeAttendance = async (req, res) => {
     }
 
     // Find today's attendance for the group
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', // Egypt's time zone
+    }).format(new Date());
     const attendance = await Attendance.findOne({
       date: today,
       groupId: group._id,
@@ -2667,14 +2781,20 @@ const removeAttendance = async (req, res) => {
       );
     }
 
-    // Optionally, add the student to studentsAbsent if not already there
-    if (!attendance.studentsAbsent.includes(student._id)) {
-      attendance.studentsAbsent.push(student._id);
-    }
+    // // Optionally, add the student to studentsAbsent if not already there
+    // if (!attendance.studentsAbsent.includes(student._id)) {
+    //   attendance.studentsAbsent.push(student._id);
+    // }
 
     // Save the updated attendance record
     await attendance.save();
 
+    // Remove the attendance record from the student's history
+    student.AttendanceHistory = student.AttendanceHistory.filter(
+      (att) => !att.attendance.equals(attendance._id) // Use .equals() for ObjectId comparison
+    );
+
+    await student.save();
     return res.status(200).json({
       message: 'Attendance removed successfully',
       studentsPresent: attendance.studentsPresent,
@@ -2711,13 +2831,14 @@ const updateAmount = async (req, res) => {
 };
 
 const finalizeAttendance = async (req, res) => {
-  const { centerName, Grade, GroupTime } = req.body;
+  const { centerName, Grade, GroupTime, gradeType } = req.body;
 
   try {
     // Find the group
     const group = await Group.findOne({
       CenterName: centerName,
       Grade: Grade,
+      gradeType : gradeType,
       GroupTime: GroupTime,
     });
 
@@ -2726,7 +2847,9 @@ const finalizeAttendance = async (req, res) => {
     }
 
     // Find today's attendance record for the group
-    const today = new Date().toISOString().split('T')[0];
+      const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo', // Egypt's time zone
+  }).format(new Date());
 
     let attendance = await Attendance.findOne({
       groupId: group._id,
@@ -2763,6 +2886,12 @@ const finalizeAttendance = async (req, res) => {
           if (student) {
           
             student.absences = (student.absences || 0) + 1;
+            student.AttendanceHistory.push({  
+              attendance: attendance._id,
+              date: today,
+              atTime : new Date().toLocaleTimeString(),
+              status: 'Absent',
+            });
             await student.save();
           }
         }
@@ -2773,7 +2902,7 @@ const finalizeAttendance = async (req, res) => {
     await attendance.save();
     await attendance.populate('studentsAbsent');
     await attendance.populate('studentsPresent');
-
+    await attendance.populate('studentsExcused');
  
   
 
@@ -2915,6 +3044,125 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
       fgColor: { argb: 'FFFF00' },
     };
 
+    // Add present Other Group students section
+    row = worksheet.addRow(['Present From Other Group Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'ff1aad00' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add present students data
+    const headerRow3 = worksheet.addRow([
+      '#',
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+      'Group Info' ,
+    ]);
+    headerRow3.font = { bold: true };
+    headerRow3.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
+
+    let c3 = 0;
+    let totalAmount3 = 0;
+    let totalAmountRemaining3 = 0;
+
+    attendance.studentsExcused.forEach(async(student) => {
+      c3++;
+      const row = worksheet.addRow([
+        c3,
+        student.Username,
+        student.Code,
+        student.phone,
+        student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
+        `${student.centerName} - ${student.Grade} - ${student.gradeType} - ${student.groupTime}`,
+      ]);
+      row.font = { size: 13 };
+
+      // Add values to totals
+      totalAmount3 += student.balance;
+      totalAmountRemaining3 += student.amountRemaining;
+
+      if (c3 % 2 === 0) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'DDDDDD' },
+        };
+      }
+
+const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
+وقد تم تسجيل حضوره *بنجاح*.\n
+المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
+عدد مرات الغياب: *${student.absences}*.\n\n
+*شكرًا لتعاونكم.*`;
+
+
+
+   // Send the message via the waapi (already present)
+   await waapi
+     .postInstancesIdClientActionSendMessage(
+       {
+         chatId: `2${student.parentPhone}@c.us`,
+         message: messageWappi,
+       },
+       { id: '23653' }
+     )
+
+     .then(({ data }) => {
+      
+     })
+     .catch((err) => {
+       console.log(err);
+     });
+
+
+
+
+    });
+
+    // Add total row for Present Other Group  Students
+    const totalRowPresent3 = worksheet.addRow([
+      '',
+      '',
+      '',
+      '',
+      '',
+      'Total',
+      totalAmount3,
+      totalAmountRemaining3,
+    ]);
+    totalRowPresent3.font = { bold: true };
+    totalRowPresent3.getCell(6).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent3.getCell(7).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent3.getCell(8).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
     // Add absent students section
     row = worksheet.addRow(['Absent Students']);
     row.font = { bold: true, size: 16, color: { argb: 'FF0000' } };
@@ -3047,10 +3295,10 @@ const handelAttendanceGet = async (req, res) => {
 
 
 const getDates = async (req, res) => {
-  const { Grade, centerName, GroupTime } = req.body;
+  const { Grade, centerName, GroupTime , gradeType } = req.body;
   console.log(Grade, centerName, GroupTime);
   try {
-    const group = await Group.findOne({ Grade, CenterName: centerName, GroupTime });
+    const group = await Group.findOne({ Grade, CenterName: centerName, GroupTime , gradeType });
 
     if (!group) {
       return res.status(404).json({ message: 'Group not found' });
@@ -3072,16 +3320,21 @@ const getDates = async (req, res) => {
 }
 
 const getAttendees = async (req, res) => {
-    const {Grade , centerName, GroupTime, date} = req.body;
+    const { Grade, centerName, GroupTime, gradeType, date } = req.body;
 
     try {
-      const group = await Group.findOne({ Grade, CenterName: centerName, GroupTime });
+      const group = await Group.findOne({
+        Grade,
+        CenterName: centerName,
+        GroupTime,
+        gradeType,
+      });
 
       if (!group) {
         return res.status(404).json({ message: 'Group not found' });
       }
 
-      const attendance = await Attendance.findOne({ groupId: group._id, date }).populate('studentsPresent studentsAbsent studentsLate');
+      const attendance = await Attendance.findOne({ groupId: group._id, date }).populate('studentsPresent studentsAbsent studentsLate studentsExcused');
 
       if (!attendance) {
         return res.status(404).json({ message: 'No attendance record found for this session.' });
@@ -3097,7 +3350,7 @@ const getAttendees = async (req, res) => {
 }
 
 const convertAttendeesToExcel = async (req, res) => {
-  const { centerName, Grade, GroupTime } = req.body;
+  const { centerName, Grade, GroupTime , gradeType } = req.body;
 
   try {
     // Find the group
@@ -3105,6 +3358,7 @@ const convertAttendeesToExcel = async (req, res) => {
       CenterName: centerName,
       Grade: Grade,
       GroupTime: GroupTime,
+      gradeType: gradeType,
     });
 
     if (!group) {
@@ -3112,20 +3366,20 @@ const convertAttendeesToExcel = async (req, res) => {
     }
 
     // Find today's attendance record for the group
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', // Egypt's time zone
+    }).format(new Date());
 
     let attendance = await Attendance.findOne({
       groupId: group._id,
       date: today,
-    }).populate('studentsPresent studentsAbsent studentsLate');
+    }).populate('studentsPresent studentsAbsent studentsLate studentsExcused');
 
     if (!attendance) {
       return res
         .status(404)
         .json({ message: 'No attendance record found for today' });
     }
-
-  
 
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet('Attendance Data');
@@ -3218,7 +3472,7 @@ const convertAttendeesToExcel = async (req, res) => {
       totalAmount,
       totalAmountRemaining,
     ]);
-    totalRowPresent.font = { bold: true ,size: 15};
+    totalRowPresent.font = { bold: true, size: 15 };
     totalRowPresent.getCell(6).fill = {
       type: 'pattern',
       pattern: 'solid',
@@ -3260,7 +3514,6 @@ const convertAttendeesToExcel = async (req, res) => {
     };
 
     let c2 = 0;
- 
 
     attendance.studentsAbsent.forEach((student) => {
       c2++;
@@ -3276,8 +3529,6 @@ const convertAttendeesToExcel = async (req, res) => {
       ]);
       row.font = { size: 13 };
 
-  
-
       if (c2 % 2 === 0) {
         row.fill = {
           type: 'pattern',
@@ -3286,8 +3537,6 @@ const convertAttendeesToExcel = async (req, res) => {
         };
       }
     });
-
-
 
     // Add late students section
     row = worksheet.addRow(['Late Students']);
@@ -3355,7 +3604,7 @@ const convertAttendeesToExcel = async (req, res) => {
       totalAmountLate,
       totalAmountRemainingLate,
     ]);
-    totalRowLate.font = { bold: true  ,size: 15};
+    totalRowLate.font = { bold: true, size: 15 };
     totalRowLate.getCell(6).fill = {
       type: 'pattern',
       pattern: 'solid',
@@ -3372,10 +3621,116 @@ const convertAttendeesToExcel = async (req, res) => {
       fgColor: { argb: 'FFFF00' },
     };
 
+    // Add present Other Group students section
+    row = worksheet.addRow(['Present From Other Group Students']);
+    row.font = { bold: true, size: 16, color: { argb: 'ff1aad00' } };
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
 
+    // Add present students data
+    const headerRow4 = worksheet.addRow([
+      '#',
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+      'Group Info',
+    ]);
+    headerRow4.font = { bold: true };
+    headerRow4.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
 
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
 
+    let c4 = 0;
+    let totalAmount4 = 0;
+    let totalAmountRemaining4 = 0;
 
+    attendance.studentsExcused.forEach(async (student) => {
+      c4++;
+      const row = worksheet.addRow([
+        c4,
+        student.Username,
+        student.Code,
+        student.phone,
+        student.parentPhone,
+        student.absences,
+        student.balance,
+        student.amountRemaining,
+        `${student.centerName} - ${student.Grade} - ${student.gradeType} - ${student.groupTime}`,
+      ]);
+      row.font = { size: 13 };
+
+      // Add values to totals
+      totalAmount4 += student.balance;
+      totalAmountRemaining4 += student.amountRemaining;
+
+      if (c4 % 2 === 0) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'DDDDDD' },
+        };
+      }
+
+      const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
+وقد تم تسجيل حضوره *بنجاح*.\n
+المبلغ المتبقي من سعر الحصة هو: *${student.totalAmount4} جنيه*.\n
+عدد مرات الغياب: *${student.absences}*.\n\n
+*شكرًا لتعاونكم.*`;
+
+      // Send the message via the waapi (already present)
+      await waapi
+        .postInstancesIdClientActionSendMessage(
+          {
+            chatId: `2${student.parentPhone}@c.us`,
+            message: messageWappi,
+          },
+          { id: '23653' }
+        )
+
+        .then(({ data }) => {})
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+
+    // Add total row for Present Other Group  Students
+    const totalRowPresent4 = worksheet.addRow([
+      '',
+      '',
+      '',
+      '',
+      '',
+      'Total',
+      totalAmount4,
+      totalAmountRemaining4,
+    ]);
+    totalRowPresent4.font = { bold: true };
+    totalRowPresent4.getCell(6).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent4.getCell(7).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+    totalRowPresent4.getCell(8).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
 
     // Add borders to all cells
     worksheet.eachRow((row, rowNumber) => {
@@ -3412,7 +3767,216 @@ const convertAttendeesToExcel = async (req, res) => {
 
 
 
+// =================================================== My Student Data =================================================== //
+
+const getStudentData = async (req, res) => {
+  const studentCode = req.params.studentCode;
+  const { start, end } = req.query; // Extract start and end dates from query parameters
+
+  try {
+    // Find student based on the provided code
+    const student = await User.findOne({ Code: studentCode });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    let attendanceHistory = student.AttendanceHistory;
+
+    // Filter attendance based on date range if provided
+    if (start && end) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      attendanceHistory = attendanceHistory.filter((record) => {
+        const recordDate = new Date(record.date);
+        return recordDate >= startDate && recordDate <= endDate;
+      });
+    }
+
+    // Build a response object with relevant fields and filtered attendance history
+    const studentData = {
+      Code: student.Code,
+      Username: student.Username,
+      centerName: student.centerName,
+      groupTime: student.groupTime,
+      phone: student.phone,
+      parentPhone: student.parentPhone,
+      absences: student.absences,
+      balance: student.balance,
+      amountRemaining: student.amountRemaining,
+      attendanceHistory: attendanceHistory.map((record) => ({
+        date: record.date,
+        status: record.status,
+        time: record.atTime,
+      })), // Map attendance history for easy response format
+    };
+
+    // Return the student data in the response
+    res.status(200).json(studentData);
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+const fs = require('fs');
+const path = require('path');
+const e = require('express');
+
+// Define a directory where reports will be stored
+const reportsDirectory = path.join(__dirname, 'attendance_reports');
+
+// Ensure the directory exists
+if (!fs.existsSync(reportsDirectory)) {
+  fs.mkdirSync(reportsDirectory);
+}
+
+const convertAttendaceToExcel = async (req, res) => {
+  const studentCode = req.params.studentCode;
+  console.log(studentCode);
+  try {
+    // Find student based on the provided code
+    const student = await User.findOne({ Code: studentCode });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const workbook = new Excel.Workbook();
+
+    const worksheet = workbook.addWorksheet('Attendance Data');
+
+    // Add title row
+    const titleRow = worksheet.addRow(['Attendance Report']);
+
+    titleRow.font = { size: 27, bold: true };
+
+    worksheet.mergeCells('A1:H1');
+
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add student info
+    const studentInfoRow = worksheet.addRow([
+      'Student Name',
+      'Student Code',
+      'Phone',
+      'Parent Phone',
+      'Absences',
+      'Amount',
+      'Amount Remaining',
+    ]);
+
+    studentInfoRow.font = { bold: true };
+
+    worksheet.addRow([
+      student.Username,
+      student.Code,
+      student.phone,
+      student.parentPhone,
+      student.absences,
+      student.balance,
+      student.amountRemaining,
+    ]);
+
+    // Add attendance history section
+    let row = worksheet.addRow([]);
+
+    row = worksheet.addRow(['Attendance History']);
+
+    row.font = { bold: true, size: 16, color: { argb: 'ff1aad00' } };
+
+    worksheet.mergeCells(`A${row.number}:H${row.number}`);
+
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add attendance history data
+
+    const headerRow = worksheet.addRow(['Date', 'Status', 'Time']);
+
+    headerRow.font = { bold: true };
+
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF00' },
+    };
+
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
+
+    student.AttendanceHistory.forEach((record) => {
+      const row = worksheet.addRow([record.date, record.status, record.atTime]);
+      row.font = { size: 13 };
+    });
+
+    // Add borders to all cells
+
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+  const buffer = await workbook.xlsx.writeBuffer(); // Generates buffer from workbook
+  const base64Excel = buffer.toString('base64'); 
+    // Define the file path to save the report locally
+    const fileName = `${studentCode}_attendance.xlsx`;
+    const filePath = path.join(reportsDirectory, fileName);
+
+    // Save the Excel file to the local filesystem
+    await workbook.xlsx.writeFile(filePath);
+
+    // Create a public URL to the file (you may need to expose the directory statically)
+    const fileUrl = `${req.protocol}://${req.get(
+      'host'
+    )}/attendance_reports/${fileName}`;
+
+    // Use WhatsApp API to send the URL
+  waapi
+    .postInstancesIdClientActionSendMedia(
+      {
+        mediaUrl: fileUrl,
+        chatId: '2' + student.parentPhone + '@c.us',
+        mediaBase64: base64Excel,
+        mediaName: 'attendance_report.xlsx',
+        mediaCaption: `Attendance Report for ${student.Username}`,
+      },
+      { id: '23653' }
+    )
+    .then(({ data }) => console.log(data))
+    .catch((err) => console.error(err));
+
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=attendance_data.xlsx'
+    );
+
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error converting attendance to Excel:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// =================================================== END My Student Data =================================================== //
+
+
 // =================================================== Whats App =================================================== //
+
+
 
 const whatsApp_get = (req,res)=>{
   res.render('teacher/whatsApp', { title: 'whatsApp', path: req.path });
@@ -3420,7 +3984,14 @@ const whatsApp_get = (req,res)=>{
 
 
 const sendGradeMessages = async (req, res) => {
-  const { phoneCloumnName, gradeCloumnName,nameCloumnName ,dataToSend, quizName } = req.body;
+  const {
+    phoneCloumnName,
+    gradeCloumnName,
+    nameCloumnName,
+    dataToSend,
+    quizName,
+    maxGrade,
+  } = req.body;
 
   let n = 0;
   req.io.emit('sendingMessages', {
@@ -3437,17 +4008,14 @@ const sendGradeMessages = async (req, res) => {
           student[gradeCloumnName],
           student[phoneCloumnName]
         );
-            let message = `
-                عزيزي ولي امر الطالب : ${student[nameCloumnName]}.
-                
-    نود إبلاغكم بأنه تم تسجيل درجة ابنكم بنجاح في امتحان : ${quizName}.
-    
-    الدرجة التي حصل عليها: ${student[gradeCloumnName]}.
-    
-    نتمنى لابنكم المزيد من التفوق والنجاح.
-    
-    مع تحيات فريق التعليم.
-        `;
+
+ let message = `
+السلام عليكم 
+مع حضرتك assistant mr kably EST/ACT math teacher 
+برجاء العلم ان تم الحصول الطالب ${student[nameCloumnName]} على درجة (${student[gradeCloumnName]}) من (${maxGrade}) في (${quizName}) 
+
+`;
+        
 
         await waapi
           .postInstancesIdClientActionSendMessage(
@@ -3455,7 +4023,7 @@ const sendGradeMessages = async (req, res) => {
               chatId: `20${student[phoneCloumnName]}@c.us`,
               message: message,
             },
-            { id: '22432' }
+            { id: '23653' }
           )
           .then((result) => {
             console.log(result);
@@ -3480,8 +4048,11 @@ const sendGradeMessages = async (req, res) => {
   }
 
 };
+
+
 const sendMessages = async (req, res) => {
-  const { phoneCloumnName, nameCloumnName, dataToSend, message } = req.body;
+  const { phoneCloumnName, nameCloumnName, dataToSend, HWCloumnName } =
+    req.body;
 
   let n = 0;
   req.io.emit('sendingMessages', {
@@ -3492,26 +4063,28 @@ const sendMessages = async (req, res) => {
 
   
       dataToSend.forEach(async (student) => {
-    
-        console.log( 
-          student,
-          student[phoneCloumnName],
-          message
-        );
-          
+        let msg = '';
+        console.log( student[HWCloumnName]);
+        if(!student[HWCloumnName]){
+          msg = `لم يقم الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`
+        }else{
+          msg = `لقد قام الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`
+        }
+
         let theMessage = `
-        عزيزي الطالب : ${student[nameCloumnName]}.
-  ${message}
+السلام عليكم 
+مع حضرتك assistant mr kably EST/ACT math teacher 
+${msg}
         `;
 
 
         await waapi
           .postInstancesIdClientActionSendMessage(
             {
-              chatId: `2${student[phoneCloumnName]}@c.us`,
+              chatId: `20${student[phoneCloumnName]}@c.us`,
               message: theMessage,
             },
-            { id: '22432' }
+            { id: '23653' }
           )
           .then((result) => {
             console.log(result);
@@ -3628,6 +4201,12 @@ module.exports = {
   getDates,
   getAttendees,
   convertAttendeesToExcel,
+
+
+  // My Student Data
+  getStudentData,
+  convertAttendaceToExcel,
+  
 
   // WhatsApp
 

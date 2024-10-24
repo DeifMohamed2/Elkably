@@ -6,11 +6,15 @@ const Schema = mongoose.Schema
 
 const groupSchema = new Schema(
   {
+    CenterName: {
+      type: String,
+      required: true,
+    },
     Grade: {
       type: String,
       required: true,
     },
-    CenterName: {
+    gradeType :{
       type: String,
       required: true,
     },

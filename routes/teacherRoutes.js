@@ -6,7 +6,7 @@ const User = require("../models/User");
 const teacherController = require('../controllers/teacherController')
 const router = express.Router();
 const jwt = require('jsonwebtoken')
-const  jwtSecret = process.env.JWTSECRET
+const jwtSecret = process.env.JWTSECRET
 
 
 // ================== authMiddleware====================== //
@@ -109,7 +109,10 @@ router.post("/updateUserData/:studentID", authMiddleware,teacherController.updat
 // ==================   myStudent  ================= //
 
 
-router.get("/searchToGetOneUserAllData", authMiddleware,teacherController.searchToGetOneUserAllData);
+router.get("/myStudent/getStudentData/:studentCode", authMiddleware,teacherController.getStudentData);
+
+router.get("/myStudent/convertToExcel/:studentCode", authMiddleware,teacherController.convertAttendaceToExcel);
+
 
 router.post("/myStudent/convertToExcelAllUserData/:studetCode", authMiddleware,teacherController.convertToExcelAllUserData);
 

@@ -105,9 +105,8 @@
                         <div class="col-md-2 mb-4">
                             <select name="chapterGrade" id="optionSelect" class="Grade w-100 text-center" required>
                                 <option value="">اختر نوع الارسال </option>
-                                <option value="msgWithoutPhoto">ارسال رسائل بدون صوره</option>
-                                <option value="msgWithPhoto">ارسال رسائل بصوره</option>
-                                <option value="gradeMsg">ارسال درجات</option>
+                                <option value="msgWithoutPhoto">ارسال حاله الواجب</option>
+                                <option value="gradeMsg">ارسال درجات الامتحان</option>
                             </select>
                         </div>
                         <hr>
@@ -118,10 +117,10 @@
                                 
                             </div>
                             <div class="col-md-4 mb-4">
-                              <textarea name="theMessage" id="theMessage" class="form-control" placeholder="يرجي كتابه الرساله هنا "  rows="10" ></textarea>
-                              <input type="text" id="phoneCloumnNameMSG" class="form-control mt-3" placeholder="اكتب اسم ال cloumn بتاع الارقام">
+                              <input type="text" id="phoneCloumnNameMSG" class="form-control mt-3" placeholder="اكتب اسم ال cloumn بتاع ارقام اولياء الامور">
                               <input type="text" id="nameCloumnNameMSG" class="form-control mt-3" placeholder="اكتب اسم ال cloumn بتاع الاسماء">
-
+                            <input type="text" id="HWCloumnName" class="form-control" placeholder="اكتب اسم ال cloumn بتاع حاله الواجب">
+                   
                             </div>
 
                         <div class="upload-container">
@@ -156,13 +155,16 @@
                             </div>
 
                             <div class="col-md-4 mb-4">
-                                <input type="text" id="phoneCloumnName" class="form-control" placeholder="اكتب اسم ال cloumn بتاع الارقام">
+                                <input type="text" id="phoneCloumnName" class="form-control" placeholder="اكتب اسم ال cloumn بتاع ارقام اولياء الامور">
                             </div>
                             <div class="col-md-4 mb-4">
                                 <input type="text" id="gradeCloumnName" class="form-control" placeholder="اكتب اسم ال cloumn بتاع الدرجات">
                             </div>
                             <div class="col-md-4 mb-4">
                                 <input type="text" id="nameCloumnName" class="form-control" placeholder="اكتب اسم ال cloumn بتاع اسماء الطلاب">
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <input type="text" id="maxGrade" class="form-control" placeholder="الدرجه من كام ">
                             </div>
 
                             <div class="upload-container">
@@ -266,8 +268,9 @@
             const gradeCloumnName = document.getElementById('gradeCloumnName');
             const nameCloumnName = document.getElementById('nameCloumnName');
             const quizName = document.getElementById('quizName');
+            const maxGrade = document.getElementById('maxGrade');
 
-            if (!phoneCloumnName.value || !gradeCloumnName.value , !nameCloumnName.value) {
+            if (!phoneCloumnName.value || !gradeCloumnName.value , !nameCloumnName.value || !quizName.value || !maxGrade.value) {
                 alert('ادخل اسامي ال cloumn');
                 return;
             }
@@ -277,6 +280,7 @@
                 gradeCloumnName: gradeCloumnName.value,
                 nameCloumnName: nameCloumnName.value,
                 quizName: quizName.value,
+                maxGrade: maxGrade.value,
                 dataToSend: data
             };
 
@@ -360,10 +364,9 @@
             output.innerHTML = 'data is being sent...';
             const phoneCloumnName = document.getElementById('phoneCloumnNameMSG');
             const nameCloumnNameMSG = document.getElementById('nameCloumnNameMSG');
-            const theMessage = document.getElementById('theMessage');
+            const HWCloumnName = document.getElementById('HWCloumnName');
 
-
-            if (!phoneCloumnName.value  , !nameCloumnNameMSG.value) {
+            if (!phoneCloumnName.value  , !nameCloumnNameMSG.value , !HWCloumnName.value) {
                 alert('ادخل اسامي ال cloumn');
                 return;
             }
@@ -371,7 +374,7 @@
             const dataSend = {
                 phoneCloumnName: phoneCloumnName.value,
                 nameCloumnName: nameCloumnNameMSG.value,
-                message : theMessage.value ,
+                HWCloumnName : HWCloumnName.value ,
                 dataToSend: data
             };
 

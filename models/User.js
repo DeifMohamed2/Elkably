@@ -14,6 +14,19 @@ const userSchema = new Schema(
       default: '3131',
       required: false,
     },
+    gradeInNumber: {
+      type: Number,
+      required: false,
+    },
+
+    school:{
+      type: String,
+      required: false,
+    },
+    email : {
+      type: String,
+      required: false,
+    },
     
     centerName: {
       type: String,
@@ -35,7 +48,7 @@ const userSchema = new Schema(
     phone: {
       type: String,
       required: true,
-      unique: true,
+   
     },
 
     parentPhone: {

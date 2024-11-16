@@ -4093,7 +4093,7 @@ const sendGradeMessages = async (req, res) => {
       }
 
       // Introduce a random delay between 1 and 10 seconds
-      const randomDelay = Math.floor(Math.random() * (10 - 1 + 1) + 1) * 1000;
+      const randomDelay = Math.floor(Math.random() * (5 - 1 + 1) + 1) * 1000;
       console.log(
         `Delaying for ${
           randomDelay / 1000
@@ -4164,7 +4164,7 @@ ${msg}
       }
 
       // Introduce a random delay between 1 and 10 seconds
-      const randomDelay = Math.floor(Math.random() * (10 - 1 + 1) + 1) * 1000;
+      const randomDelay = Math.floor(Math.random() * (5 - 1 + 1) + 1) * 1000;
       console.log(
         `Delaying for ${
           randomDelay / 1000

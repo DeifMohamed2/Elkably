@@ -4050,24 +4050,24 @@ const sendGradeMessages = async (req, res) => {
   });
 
   try {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  
-      dataToSend.forEach(async (student) => {
-        console.log(
-          quizName,
-          student,
-          student[gradeCloumnName],
-          student[phoneCloumnName]
-        );
+    for (const student of dataToSend) {
+      console.log(
+        quizName,
+        student,
+        student[gradeCloumnName],
+        student[phoneCloumnName]
+      );
 
- let message = `
+      let message = `
 السلام عليكم 
 مع حضرتك assistant mr kably EST/ACT math teacher 
 برجاء العلم ان تم الحصول الطالب ${student[nameCloumnName]} على درجة (${student[gradeCloumnName]}) من (${maxGrade}) في (${quizName}) 
 
-`;
-        
+      `;
 
+      try {
         await waapi
           .postInstancesIdClientActionSendMessage(
             {
@@ -4085,20 +4085,30 @@ const sendGradeMessages = async (req, res) => {
           .catch((err) => {
             console.error(err);
           });
-      });
-      
+      } catch (err) {
+        console.error(
+          `Error sending message to ${student[nameCloumnName]}:`,
+          err
+        );
+      }
 
-
-
+      // Introduce a random delay between 1 and 10 seconds
+      const randomDelay = Math.floor(Math.random() * (10 - 1 + 1) + 1) * 1000;
+      console.log(
+        `Delaying for ${
+          randomDelay / 1000
+        } seconds before sending the next message.`
+      );
+      await delay(randomDelay);
+    }
 
     res.status(200).json({ message: 'Messages sent successfully' });
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error sending messages:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
-
 };
+
 
 
 const sendMessages = async (req, res) => {
@@ -4111,24 +4121,24 @@ const sendMessages = async (req, res) => {
   });
 
   try {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  
-      dataToSend.forEach(async (student) => {
-        let msg = '';
-        console.log( student[HWCloumnName]);
-        if(!student[HWCloumnName]){
-          msg = `لم يقم الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`
-        }else{
-          msg = `لقد قام الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`
-        }
+    for (const student of dataToSend) {
+      let msg = '';
+      console.log(student[HWCloumnName]);
+      if (!student[HWCloumnName]) {
+        msg = `لم يقم الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`;
+      } else {
+        msg = `لقد قام الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`;
+      }
 
-        let theMessage = `
+      let theMessage = `
 السلام عليكم 
 مع حضرتك assistant mr kably EST/ACT math teacher 
 ${msg}
-        `;
+      `;
 
-
+      try {
         await waapi
           .postInstancesIdClientActionSendMessage(
             {
@@ -4146,20 +4156,30 @@ ${msg}
           .catch((err) => {
             console.error(err);
           });
-      });
-      
+      } catch (err) {
+        console.error(
+          `Error sending message to ${student[nameCloumnName]}:`,
+          err
+        );
+      }
 
-
-
+      // Introduce a random delay between 1 and 10 seconds
+      const randomDelay = Math.floor(Math.random() * (10 - 1 + 1) + 1) * 1000;
+      console.log(
+        `Delaying for ${
+          randomDelay / 1000
+        } seconds before sending the next message.`
+      );
+      await delay(randomDelay);
+    }
 
     res.status(200).json({ message: 'Messages sent successfully' });
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error sending messages:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
-
 };
+
 
 
 // =================================================== END Whats App =================================================== //

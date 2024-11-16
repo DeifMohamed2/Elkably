@@ -82,6 +82,89 @@ const public_Register_get = (req, res) => {
   });
 };
 
+// const public_Register_post = async (req, res) => {
+//   const {
+//     phoneCloumnName,
+//     studentPhoneCloumnName,
+//     nameCloumnName,
+//     centerName,
+//     Grade,
+//     gradeType,
+//     groupTime,
+//     emailCloumn,
+//     schoolCloumn,
+//     gradeInNumberCloumn,
+//     CodeCloumn,
+//     dataToSend,
+//     // verificationCode,
+//   } = req.body;
+
+//   let n = 0;
+//   req.io.emit('sendingMessages', {
+//     nMessages: n,
+//   });
+
+//       dataToSend.forEach(async (student) => {
+//         console.log(
+//           'student',
+//           student[phoneCloumnName],
+//           student[studentPhoneCloumnName],
+//           student[nameCloumnName],
+//           student[emailCloumn],
+//           student[schoolCloumn],
+//           student[gradeInNumberCloumn],
+//           student[CodeCloumn],
+//           centerName,
+//           Grade,
+//           gradeType,
+//           groupTime
+//         );
+
+//   const hashedPassword = await bcrypt.hash('1qaz2wsx', 10);
+
+//     const user = new User({
+//       Username: student[nameCloumnName],
+//       Password: hashedPassword,
+//       passwordWithoutHash: '1qaz2wsx',
+//       Code: student[CodeCloumn],
+//       phone: student[studentPhoneCloumnName],
+//       parentPhone: student[phoneCloumnName],
+//       gradeInNumber : student[gradeInNumberCloumn],
+//       school : student[schoolCloumn],
+//       email : student[emailCloumn],
+//       centerName: centerName,
+//       Grade: Grade,
+//       gradeType: gradeType,
+//       groupTime: groupTime,
+//       subscribe: false,
+//       balance: '100',
+
+//       isTeacher: false,
+//     });
+//     console.log('done1');
+//     user
+//       .save()
+//       .then(async (result) => {
+//         await Group.findOneAndUpdate(
+//           {
+//             CenterName: centerName,
+//             Grade: Grade,
+//             gradeType: gradeType,
+//             GroupTime: groupTime,
+//           },
+//           { $push: { students: result._id } },
+//           { new: true, upsert: true }
+//         )
+//           .then(() => {
+//             console.log('done2');
+//           })
+//       })
+
+
+        
+// })
+
+// };
 const public_Register_post = async (req, res) => {
   const {
     Username,

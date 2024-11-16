@@ -23,6 +23,7 @@ const groupSchema = new Schema(
       required: true,
     },
 
+    related : { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
 

@@ -674,28 +674,25 @@ const convertToExcel = async (req, res) => {
 let query;
 const studentsRequests_get = async (req, res) => {
   try {
-    const { Grade, studentPlace } = req.query;
-    let grade = Grade || 'Grade1';
-    let StudentPlace = studentPlace || 'All';
-    // Define the base query object
-    query = { Grade: grade };
+    const { centerName, Grade, gradeType, groupTime } = req.query;
+    query = { centerName, Grade, gradeType, groupTime };
+ 
 
-    // If studentPlace is not "All", include it in the query
 
-    if (StudentPlace !== 'All') {
-      query.place = StudentPlace;
-    }
-
-    let perPage = 50;
+    let perPage = 500;
     let page = req.query.page || 1;
 
-    await User.find(query, {
-      Username: 1,
-      Code: 1,
-      createdAt: 1,
-      updatedAt: 1,
-      subscribe: 1,
-    })
+    await User.find(
+      { centerName , Grade, gradeType, groupTime },
+      {
+        Username: 1,
+        Code: 1,
+        balance: 1,
+        amountRemaining: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      }
+    )
       .sort({ subscribe: 1, createdAt: 1 })
       .skip(perPage * page - perPage)
       .limit(perPage)
@@ -713,7 +710,7 @@ const studentsRequests_get = async (req, res) => {
           modalData: null,
           modalDelete: null,
           studentsRequests: result,
-          studentPlace: StudentPlace,
+          // studentPlace: StudentPlace,
           Grade: grade,
           isSearching: false,
           nextPage: hasNextPage ? nextPage : null,
@@ -730,7 +727,15 @@ const searchForUser = async (req, res) => {
   try {
     await User.find(
       { [`${searchBy}`]: searchInput },
-      { Username: 1, Code: 1, createdAt: 1, updatedAt: 1, subscribe: 1 }
+      {
+        Username: 1,
+        Code: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        subscribe: 1,
+        balance :1,
+        amountRemaining :1,
+      }
     ).then((result) => {
       res.render('teacher/studentsRequests', {
         title: 'StudentsRequests',
@@ -845,86 +850,128 @@ const converStudentRequestsToExcel = async (req, res) => {
 const getSingleUserAllData = async (req, res) => {
   try {
     const studentID = req.params.studentID;
+    console.log(studentID);
     await User.findOne(
       { _id: studentID },
-      {
-        Username: 1,
-        Email: 1,
-        gov: 1,
-        Markez: 1,
-        gender: 1,
-        phone: 1,
-        WhatsApp: 1,
-        parentPhone: 1,
-        place: 1,
-        Code: 1,
-        createdAt: 1,
-        updatedAt: 1,
-        subscribe: 1,
-        PasswordWithOutHash: 1,
-      }
+     
     ).then((result) => {
+
       res.render('teacher/studentsRequests', {
         title: 'StudentsRequests',
         path: req.path,
         modalData: result,
         modalDelete: null,
         studentsRequests: null,
-        studentPlace: query.place || 'All',
-        Grade: query.Grade,
+     
+      
         isSearching: false,
         nextPage: null,
         previousPage: null, // Calculate previous page
       });
+    }).catch((error) => {
+      console.log(error);
     });
   } catch (error) {}
 };
 
 const updateUserData = async (req, res) => {
-  try {
+
+try {
     const {
-      Username,
-      Email,
-      phone,
-      parentPhone,
-      WhatsApp,
-      gov,
-      Markez,
-      subscribe,
+        Username,
+        phone,
+        parentPhone,
+        balance,
+        centerName,
+        Grade,
+        gradeType,
+        groupTime,
     } = req.body;
     const studentID = req.params.studentID;
-    let Subscribe;
-    if (subscribe == 'true') {
-      Subscribe = true;
-    } else {
-      Subscribe = false;
+
+    // Create an update object, starting with the fields that should always be updated
+    
+    const updateFields = {
+      Username: Username,
+      phone: phone,
+      parentPhone: parentPhone,
+      balance: balance,
+    };
+
+  
+    if (centerName) {
+      updateFields.centerName = centerName;
+    } 
+    if (Grade) { 
+      updateFields.Grade = Grade;
     }
-    // Assuming you have a User model and you're using Mongoose
+    if (gradeType) {
+      updateFields.gradeType = gradeType;
+    }
+
+    if (groupTime) {
+      updateFields.groupTime = groupTime;
+    }
+
+    // Update the user with the dynamically built updateFields object
     const updatedUser = await User.findOneAndUpdate(
       { _id: studentID },
-      {
-        Username: Username,
-        Email: Email,
-        phone: phone,
-        parentPhone: parentPhone,
-        WhatsApp: WhatsApp,
-        gov: gov,
-        Markez: Markez,
-        subscribe: Subscribe,
-      },
+      updateFields,
       { new: true } // To return the updated document
     );
+
+
 
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Redirect to the desired page after successful update
-    res
-      .status(201)
-      .redirect(
-        `/teacher/studentsRequests?Grade=${query.Grade}&studentPlace=All`
+
+    console.log(updatedUser._id);
+    if (centerName) {
+
+      await Group.updateMany(
+        { students: updatedUser._id },
+        { $pull: { students: updatedUser._id } }
       );
+
+      const groupOut = await Group.findOne({
+        CenterName: centerName,
+        Grade: Grade,
+        gradeType: gradeType,
+        GroupTime: groupTime,
+      });
+
+
+      const groupOut2 = await Group.findById(groupOut.related);
+
+      if (groupOut && groupOut2) {
+        groupOut.students.push (updatedUser._id );
+        groupOut2.students.push(updatedUser._id);
+      } 
+
+      groupOut.save()
+      groupOut2.save()
+ 
+      // if (groupIn && groupOut) {
+      //   await User.updateMany(
+      //     { centerName: updatedUser.centerName, Grade: updatedUser.Grade, gradeType: updatedUser.gradeType, groupTime: updatedUser.groupTime },
+      //     {
+      //       $set: {
+      //         centerName: centerName,
+      //         Grade: Grade,
+      //         gradeType: gradeType,
+      //         groupTime: groupTime,
+      //       },
+      //     }
+      //   ).then((result) => {
+      //     console.log(result);
+      //   });
+      // }
+    }
+
+    // Redirect to the desired page after successful update
+    res.status(201).redirect(`/teacher/studentsRequests?centerName=${query.centerName}&Grade=${query.Grade}&gradeType=${query.gradeType}&groupTime=${query.groupTime}`);
   } catch (error) {
     // Handle errors appropriately
     console.error(error);
@@ -2381,6 +2428,16 @@ const PDFPost_post = async (req, res) => {
 // =================================================== Add Card  &&  Attendance =================================================== //
 
 const addCardGet = async (req, res) => {
+  console.log('Fafaf');
+ const group = await Group.findById('672137d7e7a46e43d89e7f02');
+  console.log(group.students);
+  const groupTotransferStudent = await Group.findById(
+    '6721408ae7a46e43d8c7f087'
+  );
+   groupTotransferStudent.students = group.students;
+
+  await groupTotransferStudent.save();
+  console.log(groupTotransferStudent.students);
 
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
  
@@ -2595,7 +2652,7 @@ const markAttendance = async (req, res) => {
             chatId: `2${student.parentPhone}@c.us`,
             message: messageWappi,
           },
-          { id: '23653' }
+          { id: '24954' }
         )
         .then(({ data }) => {})
         .catch((err) => {
@@ -3001,12 +3058,10 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
          chatId: `2${student.parentPhone}@c.us`,
          message: messageWappi,
        },
-       { id: '23653' }
+       { id: '24954' }
      )
 
-     .then(({ data }) => {
-      
-     })
+     .then(({ data }) => {})
      .catch((err) => {
        console.log(err);
      });
@@ -3120,12 +3175,10 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
          chatId: `2${student.parentPhone}@c.us`,
          message: messageWappi,
        },
-       { id: '23653' }
+       { id: '24954' }
      )
 
-     .then(({ data }) => {
-      
-     })
+     .then(({ data }) => {})
      .catch((err) => {
        console.log(err);
      });
@@ -3233,14 +3286,12 @@ const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Usern
          chatId: `2${student.parentPhone}@c.us`,
          message: messageWappi,
        },
-       { id: '23653' }
+       { id: '24954' }
      )
 
-     .then(({ data }) => {
-       
-     })
+     .then(({ data }) => {})
      .catch((err) => {
-        console.log(err);
+       console.log(err);
      });
 
  
@@ -3695,7 +3746,7 @@ const convertAttendeesToExcel = async (req, res) => {
             chatId: `2${student.parentPhone}@c.us`,
             message: messageWappi,
           },
-          { id: '23653' }
+          { id: '24954' }
         )
 
         .then(({ data }) => {})
@@ -3810,7 +3861,7 @@ const getStudentData = async (req, res) => {
         time: record.atTime,
       })), // Map attendance history for easy response format
     };
-
+    console.log(studentData);
     // Return the student data in the response
     res.status(200).json(studentData);
   } catch (error) {
@@ -3947,7 +3998,7 @@ const convertAttendaceToExcel = async (req, res) => {
         mediaName: 'attendance_report.xlsx',
         mediaCaption: `Attendance Report for ${student.Username}`,
       },
-      { id: '23653' }
+      { id: '24954' }
     )
     .then(({ data }) => console.log(data))
     .catch((err) => console.error(err));
@@ -4023,7 +4074,7 @@ const sendGradeMessages = async (req, res) => {
               chatId: `20${student[phoneCloumnName]}@c.us`,
               message: message,
             },
-            { id: '23653' }
+            { id: '24954' }
           )
           .then((result) => {
             console.log(result);
@@ -4084,7 +4135,7 @@ ${msg}
               chatId: `20${student[phoneCloumnName]}@c.us`,
               message: theMessage,
             },
-            { id: '23653' }
+            { id: '24954' }
           )
           .then((result) => {
             console.log(result);

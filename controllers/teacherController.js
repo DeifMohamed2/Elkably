@@ -4053,25 +4053,23 @@ const sendGradeMessages = async (req, res) => {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     for (const student of dataToSend) {
-      console.log(
-        quizName,
-        student,
-        student[gradeCloumnName],
-        student[phoneCloumnName]
-      );
+      const grade = student[gradeCloumnName] ?? 0; // Default grade to 0 if undefined or null
+      const phone = student[phoneCloumnName];
+      const name = student[nameCloumnName];
+
+      console.log(quizName, student, grade, phone);
 
       let message = `
 السلام عليكم 
 مع حضرتك assistant mr kably EST/ACT math teacher 
-برجاء العلم ان تم الحصول الطالب ${student[nameCloumnName]} على درجة (${student[gradeCloumnName]}) من (${maxGrade}) في (${quizName}) 
-
+برجاء العلم ان تم الحصول الطالب ${name} على درجة (${grade}) من (${maxGrade}) في (${quizName}) 
       `;
 
       try {
         await waapi
           .postInstancesIdClientActionSendMessage(
             {
-              chatId: `20${student[phoneCloumnName]}@c.us`,
+              chatId: `20${phone}@c.us`,
               message: message,
             },
             { id: '24954' }
@@ -4086,13 +4084,10 @@ const sendGradeMessages = async (req, res) => {
             console.error(err);
           });
       } catch (err) {
-        console.error(
-          `Error sending message to ${student[nameCloumnName]}:`,
-          err
-        );
+        console.error(`Error sending message to ${name}:`, err);
       }
 
-      // Introduce a random delay between 1 and 10 seconds
+      // Introduce a random delay between 1 and 5 seconds
       const randomDelay = Math.floor(Math.random() * (5 - 1 + 1) + 1) * 1000;
       console.log(
         `Delaying for ${
@@ -4108,6 +4103,7 @@ const sendGradeMessages = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 

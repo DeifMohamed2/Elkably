@@ -9,7 +9,14 @@ const mongoose = require('mongoose');
 
 const waapi = require('@api/waapi');
 const waapiAPI = process.env.WAAPIAPI;
-waapi.auth(`${waapiAPI}`);
+const waapiAPI2 = process.env.WAAPIAPI2;
+// Create two independent clients
+const client1 = new waapi.Client();
+const client2 = new waapi.Client();
+
+// Authenticate each client with its respective API key
+client1.auth(waapiAPI);
+client2.auth(waapiAPI2);
 
 const Excel = require('exceljs');
 
@@ -3874,6 +3881,7 @@ const getStudentData = async (req, res) => {
 const fs = require('fs');
 const path = require('path');
 const e = require('express');
+const { Client } = require('whatsapp-web.js');
 
 // Define a directory where reports will be stored
 const reportsDirectory = path.join(__dirname, 'attendance_reports');
@@ -4041,6 +4049,7 @@ const sendGradeMessages = async (req, res) => {
     nameCloumnName,
     dataToSend,
     quizName,
+    instanceID,
     maxGrade,
   } = req.body;
 
@@ -4048,6 +4057,8 @@ const sendGradeMessages = async (req, res) => {
   req.io.emit('sendingMessages', {
     nMessages: n,
   });
+
+  let client = client1;
 
   try {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -4066,13 +4077,20 @@ const sendGradeMessages = async (req, res) => {
       `;
 
       try {
-        await waapi
+
+        if (instanceID === '24954') {
+          client = client2;
+        } else {
+          client = client1;
+        }
+
+        await client
           .postInstancesIdClientActionSendMessage(
             {
               chatId: `20${phone}@c.us`,
               message: message,
             },
-            { id: '24954' }
+            { id: instanceID }
           )
           .then((result) => {
             console.log(result);
@@ -4108,14 +4126,14 @@ const sendGradeMessages = async (req, res) => {
 
 
 const sendMessages = async (req, res) => {
-  const { phoneCloumnName, nameCloumnName, dataToSend, HWCloumnName } =
+  const { phoneCloumnName, nameCloumnName, dataToSend, HWCloumnName ,instanceID } =
     req.body;
 
   let n = 0;
   req.io.emit('sendingMessages', {
     nMessages: n,
   });
-
+  let client = client1
   try {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -4135,13 +4153,18 @@ ${msg}
       `;
 
       try {
-        await waapi
+        if (instanceID === '24954') {
+          client = client2;
+        } else {
+          client = client1;
+        }
+        await client
           .postInstancesIdClientActionSendMessage(
             {
               chatId: `20${student[phoneCloumnName]}@c.us`,
               message: theMessage,
             },
-            { id: '24954' }
+            { id: instanceID }
           )
           .then((result) => {
             console.log(result);
@@ -4152,7 +4175,9 @@ ${msg}
           .catch((err) => {
             console.error(err);
           });
-      } catch (err) {
+      
+      
+        } catch (err) {
         console.error(
           `Error sending message to ${student[nameCloumnName]}:`,
           err

@@ -10,13 +10,11 @@ const mongoose = require('mongoose');
 const waapi = require('@api/waapi');
 const waapiAPI = process.env.WAAPIAPI;
 const waapiAPI2 = process.env.WAAPIAPI2;
-// Create two independent clients
-const client1 = new waapi.Client();
-const client2 = new waapi.Client();
+
 
 // Authenticate each client with its respective API key
-client1.auth(waapiAPI);
-client2.auth(waapiAPI2);
+
+
 
 const Excel = require('exceljs');
 
@@ -4058,7 +4056,7 @@ const sendGradeMessages = async (req, res) => {
     nMessages: n,
   });
 
-  let client = client1;
+
 
   try {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -4079,12 +4077,12 @@ const sendGradeMessages = async (req, res) => {
       try {
 
         if (instanceID === '24954') {
-          client = client2;
+          waapi.auth(waapiAPI)
         } else {
-          client = client1;
+          waapi.auth(waapiAPI2);
         }
 
-        await client
+        await waapi
           .postInstancesIdClientActionSendMessage(
             {
               chatId: `20${phone}@c.us`,
@@ -4133,7 +4131,7 @@ const sendMessages = async (req, res) => {
   req.io.emit('sendingMessages', {
     nMessages: n,
   });
-  let client = client1
+
   try {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -4154,11 +4152,11 @@ ${msg}
 
       try {
         if (instanceID === '24954') {
-          client = client2;
+          waapi.auth(waapiAPI)
         } else {
-          client = client1;
+         waapi.auth(waapiAPI2);
         }
-        await client
+        await waapi
           .postInstancesIdClientActionSendMessage(
             {
               chatId: `20${student[phoneCloumnName]}@c.us`,

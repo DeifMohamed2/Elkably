@@ -1,6 +1,6 @@
-const mongoose = require('mongoose')
-const { required } = require('nodemon/lib/config')
-const Schema = mongoose.Schema
+const mongoose = require('mongoose');
+const { required } = require('nodemon/lib/config');
+const Schema = mongoose.Schema;
 
 const userSchema = new Schema(
   {
@@ -14,41 +14,16 @@ const userSchema = new Schema(
       default: '3131',
       required: false,
     },
-    gradeInNumber: {
-      type: Number,
-      required: false,
-    },
 
-    school:{
-      type: String,
-      required: false,
-    },
-    email : {
-      type: String,
-      required: false,
-    },
-    
-    centerName: {
-      type: String,
+    Code: {
+      type: Number,
       required: true,
-    },
-    Grade: {
-      type: String,
-      required: true,
-    },
-    gradeType:{
-      type: String,
-      required: true,
-    },
-    groupTime: {
-      type: String,
-      required: true,
+      unique: true,
     },
 
     phone: {
       type: String,
       required: true,
-   
     },
 
     parentPhone: {
@@ -57,26 +32,37 @@ const userSchema = new Schema(
       unique: false,
     },
 
-    cardId: {
-        type: String,
-        required: false,
-        default: null
+    centerName: {
+      type: String,
+      required: true,
     },
 
-    AttendanceHistory: {
-        type: Array,
-        required: false,
-        default: []
-    },
-    Code: {
-      type: Number,
+    Grade: {
+      type: String,
       required: true,
-      unique: true,
     },
-    absences: {
-      type: Number,
+    gradeType: {
+      type: String,
       required: true,
-      default: 0,
+    },
+    groupTime: {
+      type: String,
+      required: true,
+    },
+
+    GradeLevel: {
+      type: String,
+      required: true,
+    },
+
+    attendingType: {
+      type: String,
+      required: true,
+    },
+
+    schoolName: {
+      type: String,
+      required: true,
     },
 
     balance: {
@@ -90,25 +76,38 @@ const userSchema = new Schema(
       required: true,
       default: 0,
     },
-    
+
+    absences: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    cardId: {
+      type: String,
+      required: false,
+      default: null,
+    },
+
+    AttendanceHistory: {
+      type: Array,
+      required: false,
+      default: [],
+    },
 
     subscribe: {
       type: Boolean,
-      required: true,
+      required: false,
     },
 
     isTeacher: {
       type: Boolean,
-      required: true,
+      required: false,
     },
-
-
-
-
   },
   { timestamps: true }
 );
 
-const User = mongoose.model('User', userSchema)
+const User = mongoose.model('User', userSchema);
 
 module.exports = User;

@@ -38,58 +38,78 @@
             </div>
             <form action="/teacher/updateUserData/<%= modalData._id %>" method="post" id="formModalData">
 
-            <div class="modal-body">
+              <div class="modal-body">
 
-                <!-- Your modal HTML -->
-                    <label for="ModalUserName">اسم الطالب : </label> 
-                    <input type="text" id="ModalUserName" class="modal-input" name="Username" value="<%= modalData.Username %>"> <br>
-                    
-                 
-                    <label for="ModalUserphone">رقم هاتف الطالب : </label> 
-                    <input type="tel" id="ModalUserphone" class="modal-input"name="phone" value="<%= modalData.phone %>"> <br>
-                    
-     
+              
+                      <label for="ModalUserName">اسم الطالب : </label> 
+                      <input type="text" id="ModalUserName" class="modal-input" name="Username" value="<%= modalData.Username %>"> <br>
+                      
+                  
+                      <label for="ModalUserphone">رقم هاتف الطالب : </label> 
+                      <input type="tel" id="ModalUserphone" class="modal-input"name="phone" value="<%= modalData.phone %>"> <br>
+                      
+      
 
-                    <label for="ModalParentUserphone">رقم هاتف ولي امر الطالب : </label> 
-                    <input type="tel" id="ModalParentUserphone" class="modal-input" name="parentPhone" value="<%= modalData.parentPhone %>"> <br>
-                    
-                    <label for="ModalUserAmount">Amount : </label>
-                    <input type="tel" id="ModalUserAmount" class="modal-input" name="balance" value="<%= modalData.balance %>"> <br>
-            
+                      <label for="ModalParentUserphone">رقم هاتف ولي امر الطالب : </label> 
+                      <input type="tel" id="ModalParentUserphone" class="modal-input" name="parentPhone" value="<%= modalData.parentPhone %>"> <br>
+                      
+                      <label for="ModalUserAmount">Amount : </label>
+                      <input type="tel" id="ModalUserAmount" class="modal-input" name="balance" value="<%= modalData.balance %>"> <br>
+              
+                      <label for="amountRemaining">Amount Remaining : </label>
+                      <input type="tel" id="amountRemaining" class="modal-input" name="amountRemaining" value="<%= modalData.amountRemaining %>"> <br>
+
+                  <label for="GradeLevel">Grade Level:</label>
+                    <select name="GradeLevel" id="GradeLevel" class="modal-input Grade w-75" required>
+                      <option value="10" <%= modalData.GradeLevel == '10' ? 'selected' : '' %>>Grade 10</option>
+                      <option value="11" <%= modalData.GradeLevel == '11' ? 'selected' : '' %>>Grade 11</option>
+                      <option value="12" <%= modalData.GradeLevel == '12' ? 'selected' : '' %>>Grade 12</option>
+                    </select>
+
+                  <label for="attendingType">Attending Type:</label>
+                  <select name="attendingType" id="attendingType" class="modal-input Grade w-75" required>
+                    <option value="HomeSchooling" <%= modalData.attendingType == 'HomeSchooling' ? 'selected' : '' %>>Home Schooling</option>
+                    <option value="Attending" <%= modalData.attendingType == 'Attending' ? 'selected' : '' %>>Attending</option>
+                  </select>
+
+                    <label for="ModalSchoolName">School Name :</label> 
+                    <input type="text" id="schoolName" class="modal-input" name="schoolName" value="<%= modalData.schoolName %>"> <br>
+              
                     <button type="button" class="btn btn-outline-primary" id="transferStudent">نقل الطالب الي</button>
 
                     <div class="group d-none" id="selectionGroup">
-                        <label for="centerName">Center Name</label>
-                        <select name="centerName" id="centerName" class="Grade"  >
-                            <option value="">Center Name</option>
-                            <option value="GTA">GTA</option>
-                            <option value="tagmo3">Tagmo3</option>
-                        </select>
-                        <label for="Grade">Grade</label>
-                        <select name="Grade" id="Grade" class="Grade" >
-                            <option value="">Grade</option>
-                        </select>
-                        <label for="gradeType">Grade Type</label>
-                        <select name="gradeType" id="gradeType" class="Grade" >
-                            <option value="">Grade Type</option>
-                        </select>
+                      
+                          <label for="centerName">Center Name</label>
+                          <select name="centerName" id="centerName" class="Grade"  >
+                              <option value="">Center Name</option>
+                              <option value="GTA">GTA</option>
+                              <option value="tagmo3">Tagmo3</option>
+                          </select>
 
-                        <label for="groupTime">Group Time</label>
-                        <select name="groupTime" id="groupTime" class="Grade" >
-                            <option value="">Group Time</option>
-                        </select>
+                          <label for="Grade">Grade</label>
+                          <select name="Grade" id="Grade" class="Grade" >
+                              <option value="">Grade</option>
+                          </select>
+
+                          <label for="gradeType">Grade Type</label>
+                          <select name="gradeType" id="gradeType" class="Grade" >
+                              <option value="">Grade Type</option>
+                          </select>
+
+                          <label for="groupTime">Group Time</label>
+                          <select name="groupTime" id="groupTime" class="Grade" >
+                              <option value="">Group Time</option>
+                          </select>
 
                     </div>
 
-         
-                 
-      
-              
-            </div>
+              </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" window.location.herf="/teacher/studentsRequests">Close</button>
                 <button type="submit"  class="btn btn-primary" data-bs-dismiss="modal">Update </button>
             </div>
+
         </form>
         </div>
     </div>

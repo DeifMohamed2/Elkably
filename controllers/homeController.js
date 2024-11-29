@@ -171,25 +171,21 @@ const public_Register_post = async (req, res) => {
     Grade,
     phone,
     parentPhone,
-    place,
-    Password,
     centerName,
     gradeType,
     groupTime,
     balance,
+    Code,
+    GradeLevel,
+    attendingType,
+    schoolName,
 
-    // verificationCode,
+
   } = req.body;
 
   // Create an object to store validation errors
   const errors = {};
 
-  // // Validate verification code
-  // if (req.session.verificationCode !== parseInt(verificationCode)) {
-  //   errors.verificationCode = '- كود التفعيل غير صحيح';
-  // }
-
-  let Code = Math.floor(Math.random() * 400000 + 600000);
 
   // Check if the phone number has 11 digits
   if (phone.length !== 11) {
@@ -216,10 +212,41 @@ const public_Register_post = async (req, res) => {
   if (!Grade) {
     errors.Grade = '- يجب اختيار الصف الدراسي';
   }
-  // if (!ARorEN) {
-  //   errors.Grade = "- يجب اختيار انت عربي ولا لغات";
-  // }
-  // If there are validation errors, render the registration form again with error messages
+
+  if (!centerName) {
+    errors.centerName = '- يجب اختيار اسم center';
+  }
+
+  if (!gradeType) {
+    errors.gradeType = '- يجب اختيار نوع الصف';
+  }
+
+  if (!groupTime) {
+    errors.groupTime = '- يجب اختيار وقت المجموعه';
+  }
+
+  if (!balance) {
+    errors.balance = '- يجب ادخال الرصيد';
+  }
+
+  if (!Code) {
+    errors.Code = '- يجب ادخال كود الطالب';
+  }
+
+  if (!GradeLevel) {
+    errors.GradeLevel = '- يجب ادخال المرحله الدراسيه';
+  }
+
+  if (!attendingType) {
+    errors.attendingType = '- يجب ادخال نوع الحضور';
+  }
+
+  if (!schoolName) {
+    errors.schoolName = '- يجب ادخال اسم المدرسه';
+  }
+
+  // If there are any errors, render the form again with the errors object
+
   if (Object.keys(errors).length > 0) {
     return res.render('Register', {
       title: 'Register Page',
@@ -229,25 +256,26 @@ const public_Register_post = async (req, res) => {
     });
   }
 
+  
+
   const hashedPassword = await bcrypt.hash('1qaz2wsx', 10);
 
   try {
     const user = new User({
       Username: Username,
       Password: hashedPassword,
-      passwordWithoutHash: Password,
       Code: Code,
       phone: phone,
       parentPhone: parentPhone,
-      place: place,
       centerName: centerName,
       Grade: Grade,
       gradeType :gradeType , 
       groupTime: groupTime,
-      subscribe: false,
+      GradeLevel: GradeLevel,
+      attendingType: attendingType,
+      schoolName: schoolName,
       balance: balance,
-
-      isTeacher: false,
+      
     });
     user
       .save()
@@ -265,7 +293,7 @@ const public_Register_post = async (req, res) => {
           .then(() => {
             res
               .status(201)
-              .redirect('Register?StudentCode=' + encodeURIComponent(Code));
+              .redirect('Register');
           })
           .catch((err) => {
             console.log(err);

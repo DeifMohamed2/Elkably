@@ -178,6 +178,7 @@ const public_Register_post = async (req, res) => {
     Code,
     GradeLevel,
     attendingType,
+    bookTaken,
     schoolName,
 
 
@@ -269,13 +270,13 @@ const public_Register_post = async (req, res) => {
       parentPhone: parentPhone,
       centerName: centerName,
       Grade: Grade,
-      gradeType :gradeType , 
+      gradeType: gradeType,
       groupTime: groupTime,
       GradeLevel: GradeLevel,
       attendingType: attendingType,
+      bookTaken: bookTaken,
       schoolName: schoolName,
       balance: balance,
-      
     });
     user
       .save()

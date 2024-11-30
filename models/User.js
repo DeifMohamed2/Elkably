@@ -60,6 +60,11 @@ const userSchema = new Schema(
       required: true,
     },
 
+    bookTaken: {
+      type: Boolean,
+      required: true,
+    },
+
     schoolName: {
       type: String,
       required: true,

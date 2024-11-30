@@ -265,6 +265,14 @@
                   </select>
                   </div>
 
+                  <div class="col-12 text-center">
+                  <select name="bookTaken" id="bookTaken" class="regSel" value="<%= formData.bookTaken || '' %>" required>
+                    <option value="">Book Taken</option>
+                    <option value="true">YES</option>
+                    <option value="false">NO</option>
+                  </select>
+                  </div>
+
                      <div class="col-12 text-center">
                   <input type="text" name="schoolName" id="schoolName"
                     placeholder=" School Name" value="<%= formData.schoolName || '' %>" required>

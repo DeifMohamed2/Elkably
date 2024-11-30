@@ -72,6 +72,12 @@
                     <option value="Attending" <%= modalData.attendingType == 'Attending' ? 'selected' : '' %>>Attending</option>
                   </select>
 
+                  <label for="bookTaken"> Book Taken </label>
+                  <select name="bookTaken" id="bookTaken" class="modal-input Grade w-75" required>
+                    <option value="true" <%= modalData.bookTaken == true ? 'selected' : '' %>>Yes</option>
+                    <option value="false" <%= modalData.bookTaken == false  ? 'selected' : '' %>>No</option>
+                  </select>
+
                     <label for="ModalSchoolName">School Name :</label> 
                     <input type="text" id="schoolName" class="modal-input" name="schoolName" value="<%= modalData.schoolName %>"> <br>
               

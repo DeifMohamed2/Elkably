@@ -244,118 +244,95 @@ const getSingleUserAllData = async (req, res) => {
 };
 
 const updateUserData = async (req, res) => {
-
-try {
+  try {
     const {
-        Username,
-        phone,
-        parentPhone,
-        balance,
-        centerName,
+      Username,
+      phone,
+      parentPhone,
+      balance,
+      centerName,
+      Grade,
+      gradeType,
+      groupTime,
+      amountRemaining,
+      GradeLevel,
+      attendingType,
+      bookTaken,
+      schoolName,
+    } = req.body;
+    const { studentID } = req.params;
+
+    // Validate required fields
+    if (!studentID) {
+      return res.status(400).json({ error: 'Student ID is required.' });
+    }
+
+    // Build the update object dynamically
+    const updateFields = {};
+    if (Username) updateFields.Username = Username;
+    if (phone) updateFields.phone = phone;
+    if (parentPhone) updateFields.parentPhone = parentPhone;
+    if (balance !== undefined) updateFields.balance = balance;
+    if (amountRemaining !== undefined)
+      updateFields.amountRemaining = amountRemaining;
+    if (GradeLevel) updateFields.GradeLevel = GradeLevel;
+    if (attendingType) updateFields.attendingType = attendingType;
+    if (bookTaken) updateFields.bookTaken = bookTaken;
+    if (schoolName) updateFields.schoolName = schoolName;
+
+    // Optional fields with additional checks
+    if (centerName) updateFields.centerName = centerName;
+    if (Grade) updateFields.Grade = Grade;
+    if (gradeType) updateFields.gradeType = gradeType;
+    if (groupTime) updateFields.groupTime = groupTime;
+
+    // Update the student document
+    const updatedUser = await User.findByIdAndUpdate(studentID, updateFields, {
+      new: true,
+    });
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Handle group update only if centerName is provided
+    if (centerName) {
+      // Remove the student from any previous group
+      await Group.updateMany(
+        { students: updatedUser._id },
+        { $pull: { students: updatedUser._id } }
+      );
+
+      // Find the new group
+      const newGroup = await Group.findOne({
+        CenterName: centerName,
         Grade,
         gradeType,
-        groupTime,
-        amountRemaining,
-        GradeLevel,
-        attendingType,
-        schoolName,
-    } = req.body;
-    const studentID = req.params.studentID;
+        GroupTime: groupTime,
+      });
 
-    // Create an update object, starting with the fields that should always be updated
-    console.log(attendingType, GradeLevel, attendingType.value, GradeLevel.value);
-    const updateFields = {
-      Username: Username,
-      phone: phone,
-      parentPhone: parentPhone,
-      balance: balance,
-      amountRemaining: amountRemaining,
-      GradeLevel: GradeLevel,
-      attendingType: attendingType,
-      schoolName: schoolName,
-    };
+      if (!newGroup) {
+        return res.status(404).json({ error: 'Target group not found.' });
+      }
 
-  
-    if (centerName) {
-      updateFields.centerName = centerName;
-    } 
-    if (Grade) { 
-      updateFields.Grade = Grade;
-    }
-    if (gradeType) {
-      updateFields.gradeType = gradeType;
+      // Add the student to the new group
+      if (!newGroup.students.includes(updatedUser._id)) {
+        newGroup.students.push(updatedUser._id);
+        await newGroup.save();
+      }
     }
 
-    if (groupTime) {
-      updateFields.groupTime = groupTime;
-    }
-
-    // Update the user with the dynamically built updateFields object
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: studentID },
-      updateFields,
-      { new: true } // To return the updated document
-    );
-
-
-
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-
-    console.log(updatedUser._id);
-    // if (centerName) {
-
-    //   await Group.updateMany(
-    //     { students: updatedUser._id },
-    //     { $pull: { students: updatedUser._id } }
-    //   );
-
-    //   const groupOut = await Group.findOne({
-    //     CenterName: centerName,
-    //     Grade: Grade,
-    //     gradeType: gradeType,
-    //     GroupTime: groupTime,
-    //   });
-
-
-    //   const groupOut2 = await Group.findById(groupOut.related);
-
-    //   if (groupOut && groupOut2) {
-    //     groupOut.students.push (updatedUser._id );
-    //     groupOut2.students.push(updatedUser._id);
-    //   } 
-
-    //   groupOut.save()
-    //   groupOut2.save()
- 
-    //   // if (groupIn && groupOut) {
-    //   //   await User.updateMany(
-    //   //     { centerName: updatedUser.centerName, Grade: updatedUser.Grade, gradeType: updatedUser.gradeType, groupTime: updatedUser.groupTime },
-    //   //     {
-    //   //       $set: {
-    //   //         centerName: centerName,
-    //   //         Grade: Grade,
-    //   //         gradeType: gradeType,
-    //   //         groupTime: groupTime,
-    //   //       },
-    //   //     }
-    //   //   ).then((result) => {
-    //   //     console.log(result);
-    //   //   });
-    //   // }
-    // }
-
-    // Redirect to the desired page after successful update
-   
-    res.status(201).redirect(`/teacher/studentsRequests?centerName=${query.centerName}&Grade=${query.Grade}&gradeType=${query.gradeType}&groupTime=${query.groupTime}`);
+    // Redirect or send a success response
+    res
+      .status(200)
+      .redirect(
+        `/teacher/studentsRequests?centerName=${centerName}&Grade=${Grade}&gradeType=${gradeType}&groupTime=${groupTime}`
+      );
   } catch (error) {
-    // Handle errors appropriately
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error updating user data:', error);
+    res.status(500).json({ error: 'Internal server error.' });
   }
 };
+
 
 const confirmDeleteStudent = async (req, res) => {
   try {

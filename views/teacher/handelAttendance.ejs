@@ -281,57 +281,54 @@ const groupTimes = {
   GTA: {
     EST1: {
       adv: [
-        { value: 'group1', text: 'Group(1) - Saturday @ 6PM & Tuesday @ 6PM' }, 
-  
-        { value: 'group2', text: 'Group(2) - Sunday @ 1PM & Tuesday @ 1PM' },
-
-        { value: 'group3', text: 'Group(3) - Saturday @ 3:30PM & Wednesday @ 4PM' },
-     
+        { value: 'group1', text: 'Group(1) - Saturday & Tuesday @ 4PM' }, 
+    
+        { value: 'group2', text: 'Group(2) - Saturday & Tuesday @ 6PM' },
 
       ],
       basic: [
-        { value: 'group1', text: "Group(1) - Saturday @ 8PM & Tuesday @ 8PM" },
+        { value: 'group1', text: "Group(1) - Saturday & Tuesday @ 8PM" },
 
       ]
     },
     EST2: {
       normal: [
         { value: 'group1', text: "Group(1) - Saturday @ 3:30PM & Wednesday @ 8PM" },
-  
+
       ]
     },
-    ACT: {
-      normal: [
-        { value: 'group1', text: "Group(1) - Sunday @ 7PM & Wednesday @ 6PM" },
-        
+    // ACT: {
+    //   normal: [
+    //     { value: 'group1', text: "Group(1) - Sunday @ 7PM & Wednesday @ 6PM" },
        
-      ]
-    }
+       
+    //   ]
+    // }
   },
   tagmo3: {
     EST: {
       adv: [
-        { value: 'group1', text: "Group(1) - Monday @ 6PM & Friday @ 5PM" },
+        { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 4PM" },
 
-        { value: 'group2', text: "Group(2) - Sunday @ 4PM & Thursday @ 5PM" },
-    
+        { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
+       
+ 
   
       ],
       basic :[
-       { value: 'group1', text: "Group(1) - Monday @ 8PM & Friday @ 7PM" },
-   
+       { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 8PM" },
+
       ],
   
     },
     ACT: {
       normal: [
       { value: 'group1', text: "Group(1) - Monday @ 4PM & Friday @ 2:30PM" },
-
+ 
       ],
     }
   }
 };
-
 
 document.getElementById('centerName').addEventListener('change', ()=>{
    const centerName = document.getElementById('centerName').value;

@@ -225,7 +225,7 @@
                     <option value="EST">EST</option>
                     <option value="EST1">EST1</option>
                     <option value="EST2">EST2</option>
-                    <option value="ACT">ACT</option>
+                    <!-- <option value="ACT">ACT</option> -->
                   </select>
                   </div>
 
@@ -361,12 +361,12 @@
     GTA : [
     { value: 'EST1', text: 'EST1' },
     { value: 'EST2', text: 'EST2' },
-    { value: 'ACT', text: 'ACT' }
+    // { value: 'ACT', text: 'ACT' }
     ],
     tagmo3 :[
     { value: 'EST', text: 'EST' },
 
-    { value: 'ACT', text: 'ACT' }
+    // { value: 'ACT', text: 'ACT' }
     ]
   }
 
@@ -383,9 +383,9 @@ const gradeTypeOptions = {
   EST2: [
     { value: 'normal', text: 'Normal' }
   ],
-  ACT: [
-    { value: 'normal', text: 'Normal' }
-  ]
+  // ACT: [
+  //   { value: 'normal', text: 'Normal' }
+  // ]
 };
 
 // Group times for each center
@@ -393,16 +393,13 @@ const groupTimes = {
   GTA: {
     EST1: {
       adv: [
-        { value: 'group1', text: 'Group(1) - Saturday @ 6PM & Tuesday @ 6PM' }, 
+        { value: 'group1', text: 'Group(1) - Saturday & Tuesday @ 4PM' }, 
     
-        { value: 'group2', text: 'Group(2) - Sunday @ 1PM & Tuesday @ 1PM' },
-
-        { value: 'group3', text: 'Group(3) - Saturday @ 3:30PM & Wednesday @ 4PM' },
-   
+        { value: 'group2', text: 'Group(2) - Saturday & Tuesday @ 6PM' },
 
       ],
       basic: [
-        { value: 'group1', text: "Group(1) - Saturday @ 8PM & Tuesday @ 8PM" },
+        { value: 'group1', text: "Group(1) - Saturday & Tuesday @ 8PM" },
 
       ]
     },
@@ -412,25 +409,26 @@ const groupTimes = {
 
       ]
     },
-    ACT: {
-      normal: [
-        { value: 'group1', text: "Group(1) - Sunday @ 7PM & Wednesday @ 6PM" },
+    // ACT: {
+    //   normal: [
+    //     { value: 'group1', text: "Group(1) - Sunday @ 7PM & Wednesday @ 6PM" },
        
        
-      ]
-    }
+    //   ]
+    // }
   },
   tagmo3: {
     EST: {
       adv: [
-        { value: 'group1', text: "Group(1) - Monday @ 6PM & Friday @ 5PM" },
+        { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 4PM" },
+
+        { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
        
-        { value: 'group2', text: "Group(2) - Sunday @ 4PM & Thursday @ 5PM" },
  
   
       ],
       basic :[
-       { value: 'group1', text: "Group(1) - Monday @ 8PM & Friday @ 7PM" },
+       { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 8PM" },
 
       ],
   

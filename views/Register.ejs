@@ -365,6 +365,10 @@
     ],
     tagmo3 :[
     { value: 'EST', text: 'EST' },
+    { value: 'EST2', text: 'EST2' },
+    { value: 'ACT', text: 'ACT' },
+
+
 
     // { value: 'ACT', text: 'ACT' }
     ]
@@ -383,9 +387,9 @@ const gradeTypeOptions = {
   EST2: [
     { value: 'normal', text: 'Normal' }
   ],
-  // ACT: [
-  //   { value: 'normal', text: 'Normal' }
-  // ]
+  ACT: [
+    { value: 'adv', text: 'advanced' }
+  ]
 };
 
 // Group times for each center
@@ -420,24 +424,32 @@ const groupTimes = {
   tagmo3: {
     EST: {
       adv: [
-        { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 4PM" },
-
-        { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
+        { value: 'group1', text: "Group(1) - Sunday @ 6PM & Wednesday @ 6PM" },
+         { value: 'group4', text: "TEST" },
+        // { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
                
   
       ],
-      basic :[
-       { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 8PM" },
+      // basic :[
+      //  { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 8PM" },
 
-      ],
+      // ],
   
     },
-    // ACT: {
-    //   normal: [
-    //   { value: 'group1', text: "Group(1) - Monday @ 4PM & Friday @ 2:30PM" },
+    EST2 :{
+      normal: [
+        { value: 'group1', text: "Group(1) - Sunday @ 8PM & Wednesday @ 8PM " },
+
+      ]
+    },
+    
+    ACT: {
+
+      adv: [
+      { value: 'group1', text: "Group(1) - Sunday @ 4PM & Wednesday @ 4PM" },
  
-    //   ],
-    // }
+      ],
+    }
   }
 };
 

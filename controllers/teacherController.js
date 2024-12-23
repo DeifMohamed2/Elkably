@@ -642,7 +642,7 @@ const markAttendance = async (req, res) => {
 
   try {
     const student = await User.findOne({
-      $or: [{ cardId: attendId }, { Code: attendId }],
+      $or: [{ cardId: attendId }, { Code: +attendId }],
     });
 
     if (!student) {

@@ -792,7 +792,7 @@ const markAttendance = async (req, res) => {
             chatId: `2${student.parentPhone}@c.us`,
             message: messageWappi,
           },
-          { id: '24954' }
+          { id: '28889' }
         )
         .then(({ data }) => {})
         .catch((err) => {
@@ -1198,7 +1198,7 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
          chatId: `2${student.parentPhone}@c.us`,
          message: messageWappi,
        },
-       { id: '24954' }
+       { id: '28889' }
      )
 
      .then(({ data }) => {})
@@ -1315,7 +1315,7 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
          chatId: `2${student.parentPhone}@c.us`,
          message: messageWappi,
        },
-       { id: '24954' }
+       { id: '28889' }
      )
 
      .then(({ data }) => {})
@@ -1426,7 +1426,7 @@ const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Usern
          chatId: `2${student.parentPhone}@c.us`,
          message: messageWappi,
        },
-       { id: '24954' }
+       { id: '28889' }
      )
 
      .then(({ data }) => {})
@@ -1886,7 +1886,7 @@ const convertAttendeesToExcel = async (req, res) => {
             chatId: `2${student.parentPhone}@c.us`,
             message: messageWappi,
           },
-          { id: '24954' }
+          { id: '28889' }
         )
 
         .then(({ data }) => {})
@@ -2137,7 +2137,7 @@ const convertAttendaceToExcel = async (req, res) => {
         mediaName: 'attendance_report.xlsx',
         mediaCaption: `Attendance Report for ${student.Username}`,
       },
-      { id: '24954' }
+      { id: '28889' }
     )
     .then(({ data }) => console.log(data))
     .catch((err) => console.error(err));

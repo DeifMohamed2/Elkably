@@ -140,6 +140,13 @@ router.get('/whatsApp', authMiddleware, teacherController.whatsApp_get);
 router.post('/sendGradeMessages', authMiddleware, teacherController.sendGradeMessages);
 router.post('/sendMessages', authMiddleware, teacherController.sendMessages);
 
+// ================== END Whats App ====================== //
+
+// ==================  whatsApp 2  ================= //
+
+router.get('/whatsApp2', authMiddleware, teacherController.whatsApp2_get);
+
+router.get('/whatsApp2/getDataStudentInWhatsApp', authMiddleware, teacherController.getDataStudentInWhatsApp);
 
 
 

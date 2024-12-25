@@ -59,6 +59,9 @@
                       <label for="amountRemaining">Amount Remaining : </label>
                       <input type="tel" id="amountRemaining" class="modal-input" name="amountRemaining" value="<%= modalData.amountRemaining %>"> <br>
 
+                      <label for="absences">Absences : </label>
+                      <input type="number" id="absences" class="modal-input" name="absences" value="<%= modalData.absences %>"> <br>
+
                   <label for="GradeLevel">Grade Level:</label>
                     <select name="GradeLevel" id="GradeLevel" class="modal-input Grade w-75" required>
                       <option value="10" <%= modalData.GradeLevel == '10' ? 'selected' : '' %>>Grade 10</option>
@@ -157,7 +160,7 @@
                             <form action="/teacher/studentsRequests" method="get">
 
                                  <select name="centerName" class="Grade" id="centerName" value="" required>
-                                        <option    value=""> اختر السنتر </option>
+                                        <option value=""> اختر السنتر </option>
                                         <option value="GTA">GTA</option>
                                         <option value="tagmo3">Tagmo3</option>
                                     </select>

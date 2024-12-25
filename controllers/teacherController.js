@@ -254,6 +254,7 @@ const updateUserData = async (req, res) => {
       Grade,
       gradeType,
       groupTime,
+      absences,
       amountRemaining,
       GradeLevel,
       attendingType,
@@ -279,7 +280,7 @@ const updateUserData = async (req, res) => {
     if (attendingType) updateFields.attendingType = attendingType;
     if (bookTaken) updateFields.bookTaken = bookTaken;
     if (schoolName) updateFields.schoolName = schoolName;
-
+    if (absences) updateFields.absences = absences
     // Optional fields with additional checks
     if (centerName) updateFields.centerName = centerName;
     if (Grade) updateFields.Grade = Grade;
@@ -2336,6 +2337,30 @@ ${msg}
 
 
 
+// =================================================== Whats app 2 =================================================== //
+
+
+const whatsApp2_get = (req, res) => {
+  res.render('teacher/whatsApp2', { title: 'whatsApp2', path: req.path });
+}
+
+const getDataStudentInWhatsApp = async (req, res) => {
+  const {centerName,Grade,gradeType,groupTime} = req.query 
+  try {
+    const group = await Group.findOne({CenterName:centerName,Grade,gradeType,GroupTime:groupTime}).populate('students')
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+    const students = group.students;
+    res.status(200).json({ students });
+  }
+  catch (error) {
+    console.error('Error fetching attendees:', error);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+
+}
+
 
 // =================================================== Log Out =================================================== //
 
@@ -2390,6 +2415,10 @@ module.exports = {
   whatsApp_get,
   sendGradeMessages,
   sendMessages,
+
+  // WhatsApp 2
+  whatsApp2_get,
+  getDataStudentInWhatsApp,
 
   logOut,
 };

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+    <%- include("./partials/head.ejs") %>
+
+<body>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .upload-container {
+            background-color: transparent;
+            border: 2px solid #e3b228;
+            border-radius: 10px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-size: 2rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .file-label {
+            display: block;
+            background-color: transparent;
+            border: 2px dashed #e3b228;
+            border-radius: 5px;
+            padding: 15px;
+            color: #e3b228;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .file-label:hover {
+            background-color: #e3b228;
+            color: rgb(0, 0, 0);
+        }
+
+        #file , #fileMSG {
+            display: none;
+        }
+
+        .upload-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            border: 2px solid #e3b228;
+            background-color: transparent;
+            color: #e3b228;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background-color: #e3b228;
+            color: rgb(0, 0, 0);
+            transform: scale(1.05);
+        }
+
+        .output {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .hidden {
+            display: none;
+        }
+    input[type="radio"] {
+        width: 20px !important;
+        height: 20px !important;
+        cursor: pointer;
+        appearance: none; /* Remove default styling */
+        background-color: #ffffff; 
+        border: 2px solid #000000;
+        border-radius: 50%; /* Make it circular */
+        position: relative;
+    }
+
+    input[type="radio"]:checked::before {
+        content: "";
+        width: 10px; /* Size of the inner point */
+        height: 10px;
+        background-color: #e3b228; /* Yellow color */
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    </style>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-2">
+                <%- include("./partials/nav.ejs") %>
+            </div>
+
+            <div class="col-lg-10">
+                <main>
+                    <div class="row">
+                        <div class="col-md-6"></div>
+
+                        <div class="col-md-6">
+                            <div class="left" style="margin-top: 0.2rem;">
+                                <%- include("./partials/top.ejs") %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-1 mb-4">
+                            <select name="numberSelected" id="numberSelected" class="Grade w-100 text-center" required>
+                                <option value="">اختر الرقم  </option>
+                                <option value="28889">01055640148</option>
+                                <option value="24954">01070798992</option>
+                            </select>
+                        </div>
+
+                            <div class="col-md-2">
+                                <select name="centerName" class="Grade w-100" id="centerName" value="" required>
+                                  <option value=""> اختر السنتر </option>
+                                  <option value="GTA">GTA</option>
+                                  <option value="tagmo3">Tagmo3</option>
+                                </select>
+                            </div>
+
+                             <div class="col-md-2">
+                                 <select name="Grade" id="Grade" class="Grade w-100" value="" required>
+                                   <option value=""> اختر الصف </option>
+    
+                                 </select>
+                             </div>
+
+
+                            <div class="col-md-2">
+                             <select name="gradeType" class="Grade w-100" id="gradeType" value="" required>
+                               <option value=""> Type</option>
+                             </select>
+                            </div>
+                            
+                             <div class="col-md-2">
+                                   <select name="groupTime" class="Grade w-100" id="groupTime" value="" required>
+                                     <option value=""> Group Time </option>
+                                   </select>
+
+                             </div>
+                          
+                            <div class="col-md-2 mb-4">
+                                <select name="chapterGrade" id="optionSelect" class="Grade w-100 text-center" required>
+                                    <option value="">اختر نوع الارسال </option>
+                                    <option value="HWStatus">ارسال حاله الواجب</option>
+                                    <option value="gradeMsg">ارسال درجات الامتحان</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-4">
+                                <button class="upload-btn" id="getDataButton" style="padding: 10px !important;">Get Data</button>
+                            </div>
+                        <hr>
+
+            
+
+
+                        <!-- Section for "ارسال درجات" -->
+                        <div id="HWStatus" class="hidden">
+                            <div class="col-md-4 mb-4">
+                                <input type="text" id="quizName" class="form-control" placeholder="اسم الامتحان">
+                            </div>
+
+                            <div class="col-md-4 mb-4">
+                                <input type="text" id="maxGrade" class="form-control" placeholder="الدرجه من كام ">
+                            </div>
+
+                   
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                     <div class="student-table hidden" id="HWStatusTabel">
+                            <h2 style="color: white;">Homework Status</h2>
+                            <table  style="color: white;">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Student Name</th>
+                                        <th>Student Code</th>
+                                        <th>Yes</th>
+                                        <th>No</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="HWStatusTbody">
+                         
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                    </div>
+                    <div class="student-table hidden" id="quizGradesTable">
+              
+                            <h2 style="color: white;">Quiz Grades</h2>
+                            <table class="table" style="color: white;">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th >Student Name</th>
+                                        <th>Student Code</th>
+                                        <th>Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quizGradesTbody">
+                          
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                   
+                    </div>
+
+                    <div class="row"></div>
+                        <div class="col-md-2 mb-4">
+                            <button class="upload-btn" id="submitDataButton" style="padding: 10px !important;">Submit Data</button>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+                </main>
+            </div>
+
+
+       
+        </div>
+
+
+      
+
+    </div>
+    
+
+    <script src="../assest/bootstrap.bundle.min.js"></script>
+    <script src="../assest/bootstrap.min.js"></script>
+
+<script>
+
+  const centerNames = {
+    GTA : [
+    { value: 'EST1', text: 'EST1' },
+    { value: 'EST2', text: 'EST2' },
+    // { value: 'ACT', text: 'ACT' }
+    ],
+    tagmo3 :[
+    { value: 'EST', text: 'EST' },
+    { value: 'EST2', text: 'EST2' },
+    { value: 'ACT', text: 'ACT' },
+
+
+
+    // { value: 'ACT', text: 'ACT' }
+    ]
+  }
+
+  // Define centers for each grade
+const gradeTypeOptions = {
+  EST :[
+    { value: 'adv', text: 'Advanced' },
+    { value: 'basic', text: 'Basic' }
+  ],
+  EST1: [
+    { value: 'adv', text: 'Advanced' },
+    { value: 'basic', text: 'Basic' }
+  ],
+  EST2: [
+    { value: 'normal', text: 'Normal' }
+  ],
+  ACT: [
+    { value: 'adv', text: 'advanced' }
+  ]
+};
+
+// Group times for each center
+const groupTimes = {
+  GTA: {
+    EST1: {
+      adv: [
+        { value: 'group1', text: 'Group(1) - Saturday & Tuesday @ 4PM' }, 
+    
+        { value: 'group2', text: 'Group(2) - Saturday & Tuesday @ 6PM' },
+
+      ],
+      basic: [
+        { value: 'group1', text: "Group(1) - Saturday & Tuesday @ 8PM" },
+
+      ]
+    },
+    EST2: {
+      normal: [
+        { value: 'group1', text: "Group(1) - Saturday @ 1PM & Monday @ 7PM" },
+
+      ]
+    },
+    // ACT: {
+    //   normal: [
+    //     { value: 'group1', text: "Group(1) - Sunday @ 7PM & Wednesday @ 6PM" },
+       
+       
+    //   ]
+    // }
+  },
+  tagmo3: {
+    EST: {
+      adv: [
+        { value: 'group1', text: "Group(1) - Sunday @ 6PM & Wednesday @ 6PM" },
+        { value: 'group2', text: "Group(2) - Sunday @ 1PM & Wednesday @ 1PM" },
+        { value: 'group4', text: "TEST" },
+        // { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
+               
+  
+      ],
+      // basic :[
+      //  { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 8PM" },
+
+      // ],
+  
+    },
+    EST2 :{
+      normal: [
+        { value: 'group1', text: "Group(1) - Sunday @ 8PM & Wednesday @ 8PM " },
+
+      ]
+    },
+    
+    ACT: {
+
+      adv: [
+      { value: 'group1', text: "Group(1) - Sunday @ 4PM & Wednesday @ 4PM" },
+ 
+      ],
+    }
+  }
+};
+
+
+document.getElementById('centerName').addEventListener('change', ()=>{
+   const centerName = document.getElementById('centerName').value;
+  const Grade = document.getElementById('Grade');
+ 
+  // Clear existing grade type options
+  Grade.innerHTML = '<option value="" selected>Select Grade</option>';
+  
+  // Add new grade type options based on the selected grade
+  if (centerNames[centerName]) {
+    centerNames[centerName].forEach(center => {
+      const option = document.createElement('option');
+      option.value = center.value;
+      option.textContent = center.text;
+      Grade.appendChild(option);
+    });
+  }
+
+  // Clear the group time options whenever the grade changes
+  document.getElementById('gradeType').innerHTML = '<option value="" selected>Type</option>';
+});
+// Handle grade change
+document.getElementById('Grade').addEventListener('change', function() {
+  const selectedGrade = this.value;
+  const gradeType = document.getElementById('gradeType');
+  
+  // Clear existing grade type options
+  gradeType.innerHTML = '<option value="" selected>Type</option>';
+
+  // Add new grade type options based on the selected grade
+  if (gradeTypeOptions[selectedGrade]) {
+    gradeTypeOptions[selectedGrade].forEach(center => {
+      const option = document.createElement('option');
+      option.value = center.value;
+      option.textContent = center.text;
+      gradeType.appendChild(option);
+    });
+  }
+
+  // Clear the group time options whenever the grade changes
+  document.getElementById('groupTime').innerHTML = '<option value="" selected>Group Time</option>';
+});
+
+// Handle center name change and update group times
+function updateGroupTimes() {
+  const selectedCenter = document.getElementById('centerName').value;
+  const selectedGrade = document.getElementById('Grade').value;
+  const selectedGradeType = document.getElementById('gradeType').value;
+  const groupTime = document.getElementById('groupTime');
+
+  // Clear existing group time options
+  groupTime.innerHTML = '<option value="" selected>Group Time</option>';
+
+  // Check if the selected center exists
+  if (!groupTimes[selectedCenter]) {
+    console.error(`Center "${selectedCenter}" is not found in groupTimes`);
+    return;
+  }
+
+  // Check if the selected grade exists for the center
+  if (!groupTimes[selectedCenter][selectedGrade]) {
+    console.error(`Grade "${selectedGrade}" is not found for center "${selectedCenter}"`);
+    return;
+  }
+
+  // Check if the selected grade type exists for the grade in the center
+  if (!groupTimes[selectedCenter][selectedGrade][selectedGradeType]) {
+    console.error(`Grade type "${selectedGradeType}" is not found for grade "${selectedGrade}" in center "${selectedCenter}"`);
+    return;
+  }
+
+  // Add new group times based on selected center, grade, and gradeType
+  groupTimes[selectedCenter][selectedGrade][selectedGradeType].forEach(group => {
+    const option = document.createElement('option');
+    option.value = group.value;
+    option.textContent = group.text;
+    groupTime.appendChild(option);
+  });
+}
+
+// Add event listeners to update group times when the center, grade, or grade type changes
+document.getElementById('Grade').addEventListener('change', updateGroupTimes);
+document.getElementById('gradeType').addEventListener('change', updateGroupTimes);
+
+</script>
+
+    <script>
+        const numberSelected = document.getElementById('numberSelected');
+        const centerName = document.getElementById('centerName');
+        const Grade = document.getElementById('Grade');
+        const gradeType = document.getElementById('gradeType');
+        const groupTime = document.getElementById('groupTime');
+        const optionSelect = document.getElementById('optionSelect');
+        const getDataButton = document.getElementById('getDataButton');
+
+        const getData =async () => {
+       
+
+            // Disable all buttons
+            numberSelected.disabled = true;
+            centerName.disabled = true;
+            Grade.disabled = true;
+            gradeType.disabled = true;
+            groupTime.disabled = true;
+            optionSelect.disabled = true;
+            getDataButton.disabled = true;
+
+            // Get data
+          await fetch(`/teacher/whatsApp2/getDataStudentInWhatsApp?numberSelected=${numberSelected.value}&centerName=${centerName.value}&Grade=${Grade.value}&gradeType=${gradeType.value}&groupTime=${groupTime.value}&optionSelect=${optionSelect.value}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data);
+                    
+
+                    // Fill the table
+                    if (optionSelect.value === 'HWStatus') {
+                        document.getElementById('HWStatusTabel').classList.remove('hidden');
+                        const tbody = document.getElementById('HWStatusTbody');
+                        tbody.innerHTML = '';
+                        data.students.forEach((student, index) => {
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${student.Username}</td>
+                                    <td>${student.Code}</td>
+                                    <td><input type="radio" name="hwStatus${index + 1}" value="yes"></td>
+                                    <td><input type="radio" name="hwStatus${index + 1}" value="no"></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    else if (optionSelect.value === 'gradeMsg') {
+                        document.getElementById('quizGradesTable').classList.remove('hidden');
+                        const tbody = document.getElementById('quizGradesTbody');
+                        tbody.innerHTML = '';
+                        data.students.forEach((student, index) => {
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${student.Username}</td>
+                                    <td>${student.Code}</td>
+                                    <td><input type="text" name="quizGrade${index + 1}" class="form-control mx-auto" value="0" dir="ltr"></
+                                </tr>
+                            `;
+                        });
+
+                        
+                    }
+                });
+
+        }
+
+        getDataButton.addEventListener('click', getData);
+
+
+
+
+    </script>
+
+<script>
+  const submitDataButton = document.getElementById('submitDataButton');
+
+  const submitData = async () => {
+    // Collect data from the table
+const data = [];
+    if (optionSelect.value === 'HWStatus') {
+        const rows = document.querySelectorAll('#HWStatusTbody tr');
+        rows.forEach((row, index) => {
+            const studentCode = row.cells[2].innerText;
+            const hwStatusInput = row.querySelector(`input[name="hwStatus${index + 1}"]:checked`);
+            const hwStatus = hwStatusInput ? hwStatusInput.value : "no"; // Default to "no" if not checked
+            data.push({
+                studentCode,
+                hwStatus
+            });
+        });
+    } else if (optionSelect.value === 'gradeMsg') {
+        const rows = document.querySelectorAll('#quizGradesTbody tr');
+        rows.forEach((row, index) => {
+            const studentCode = row.cells[2].innerText;
+            const gradeInput = row.querySelector(`input[name="quizGrade${index + 1}"]`);
+            const grade = gradeInput ? gradeInput.value : "0"; // Default to "0" if empty
+            data.push({
+                studentCode,
+                grade
+            });
+        });
+    }
+
+    console.log(data);
+    console.log(optionSelect.value);
+
+    // Send data to the server
+    // await fetch('/teacher/whatsApp2/submitData', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify({
+    //       data,
+    //       option: optionSelect.value
+    //     })
+    //   }).then(res => res.json())
+    //   .then(response => {
+    //     console.log(response);
+    //     alert('Data submitted successfully!');
+    //   }).catch(error => {
+    //     console.error('Error:', error);
+    //     alert('Failed to submit data.');
+    //   });
+  };
+
+  submitDataButton.addEventListener('click', submitData);
+</script>
+ 
+
+
+
+
+</body>
+
+</html>

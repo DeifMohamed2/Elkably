@@ -783,9 +783,11 @@ const markAttendance = async (req, res) => {
       const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
 نود إعلامكم بأنه تم التحديث ابنكم قد *تأخر في الحضور اليوم*.\n
 وقد تم تسجيل حضوره *متأخرًا*.\n
-المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
+وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
 عدد مرات الغياب: *${student.absences}*.\n\n
 *يرجى الانتباه لمواعيد الحضور مستقبلًا*.\n\n
+التاريخ: ${today}
+الوقت: ${new Date().toLocaleTimeString()}
 *شكرًا لتعاونكم.*`;
 
       // Send the message via the waapi (already present)
@@ -858,7 +860,30 @@ const markAttendance = async (req, res) => {
         });
       }
 
+const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
+وقد تم تسجيل حضوره *بنجاح*.\n
+وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
+عدد مرات الغياب: *${student.absences}*.\n
+التاريخ: ${today}
+الوقت: ${new Date().toLocaleTimeString()}
+*شكرًا لتعاونكم.*`;
 
+      // Send the message via the waapi (already present)
+      await waapi
+        .postInstancesIdClientActionSendMessage(
+          {
+            chatId: `2${student.parentPhone}@c.us`,
+            message: messageWappi,
+          },
+          { id: '28889' }
+        ).then(({ data }) => {
+          console.log(data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+      
       await student.save();
       return res.status(200).json({
         message:
@@ -1184,33 +1209,6 @@ const finalizeAttendance = async (req, res) => {
           fgColor: { argb: 'DDDDDD' },
         };
       }
-
-const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
-وقد تم تسجيل حضوره *بنجاح*.\n
-المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
-عدد مرات الغياب: *${student.absences}*.\n\n
-*شكرًا لتعاونكم.*`;
-
-
-
-   // Send the message via the waapi (already present)
-   await waapi
-     .postInstancesIdClientActionSendMessage(
-       {
-         chatId: `2${student.parentPhone}@c.us`,
-         message: messageWappi,
-       },
-       { id: '28889' }
-     )
-
-     .then(({ data }) => {})
-     .catch((err) => {
-       console.log(err);
-     });
-
-
-
 
     });
 

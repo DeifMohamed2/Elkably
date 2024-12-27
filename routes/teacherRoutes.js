@@ -73,7 +73,7 @@ router.post("/converStudentRequestsToExcel", authMiddleware,teacherController.co
 
 router.post("/searchForUser", authMiddleware,teacherController.searchForUser);
 
-router.post("/updateUserData/:studentID", authMiddleware,teacherController.updateUserData);
+router.put("/updateUserData/:studentID", authMiddleware,teacherController.updateUserData);
 
 
 // ==================  END Student Requests  ================= //

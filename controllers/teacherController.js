@@ -43,53 +43,64 @@ const myStudent_get = (req, res) => {
 let query;
 const studentsRequests_get = async (req, res) => {
   try {
-    const { centerName, Grade, gradeType, groupTime } = req.query;
+    const {
+      centerName,
+      Grade,
+      gradeType,
+      groupTime,
+      attendingType,
+      GradeLevel,
+      page = 1,
+    } = req.query;
+
+    // Build the query dynamically
     query = { centerName, Grade, gradeType, groupTime };
- 
+    if (attendingType) query.attendingType = attendingType;
+    if (GradeLevel) query.GradeLevel = GradeLevel;
 
+    // Pagination variables
+    const perPage = 500;
 
-    let perPage = 500;
-    let page = req.query.page || 1;
-
-    await User.find(
-      { centerName , Grade, gradeType, groupTime },
-      {
+    // Execute the query with pagination
+    const [result, count] = await Promise.all([
+      User.find(query, {
         Username: 1,
         Code: 1,
         balance: 1,
         amountRemaining: 1,
         createdAt: 1,
         updatedAt: 1,
-      }
-    )
-      .sort({ subscribe: 1, createdAt: 1 })
-      .skip(perPage * page - perPage)
-      .limit(perPage)
-      .exec()
+      })
+        .sort({ subscribe: 1, createdAt: 1 })
+        .skip((page - 1) * perPage)
+        .limit(perPage)
+        .exec(),
+      User.countDocuments(query),
+    ]);
 
-      .then(async (result) => {
-        const count = await User.countDocuments({});
-        const nextPage = parseInt(page) + 1;
-        const hasNextPage = nextPage <= Math.ceil(count / perPage);
-        const hasPreviousPage = page > 1; // Check if current page is greater than 1
+    // Calculate pagination details
+    const nextPage = parseInt(page) + 1;
+    const hasNextPage = nextPage <= Math.ceil(count / perPage);
+    const hasPreviousPage = page > 1;
 
-        res.render('teacher/studentsRequests', {
-          title: 'StudentsRequests',
-          path: req.path,
-          modalData: null,
-          modalDelete: null,
-          studentsRequests: result,
-
-          Grade: Grade,
-          isSearching: false,
-          nextPage: hasNextPage ? nextPage : null,
-          previousPage: hasPreviousPage ? page - 1 : null, // Calculate previous page
-        });
-      });
+    // Render the response
+    res.render('teacher/studentsRequests', {
+      title: 'StudentsRequests',
+      path: req.path,
+      modalData: null,
+      modalDelete: null,
+      studentsRequests: result,
+      Grade,
+      isSearching: false,
+      nextPage: hasNextPage ? nextPage : null,
+      previousPage: hasPreviousPage ? page - 1 : null,
+    });
   } catch (error) {
-    console.log(error);
+    console.error('Error in studentsRequests_get:', error);
+    res.status(500).send('Internal Server Error');
   }
 };
+
 
 const searchForUser = async (req, res) => {
   const { searchBy, searchInput } = req.body;
@@ -225,22 +236,14 @@ const getSingleUserAllData = async (req, res) => {
      
     ).then((result) => {
 
-      res.render('teacher/studentsRequests', {
-        title: 'StudentsRequests',
-        path: req.path,
-        modalData: result,
-        modalDelete: null,
-        studentsRequests: null,
-     
-      
-        isSearching: false,
-        nextPage: null,
-        previousPage: null, // Calculate previous page
-      });
+      res.status(200).send(result);
     }).catch((error) => {
       console.log(error);
     });
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+    
+  }
 };
 
 const updateUserData = async (req, res) => {
@@ -297,6 +300,7 @@ const updateUserData = async (req, res) => {
 
     // Handle group update only if centerName is provided
     if (centerName) {
+      console.log('Updating group data...');
       // Remove the student from any previous group
       await Group.updateMany(
         { students: updatedUser._id },
@@ -325,9 +329,7 @@ const updateUserData = async (req, res) => {
     // Redirect or send a success response
     res
       .status(200)
-      .redirect(
-        `/teacher/studentsRequests?centerName=${centerName}&Grade=${Grade}&gradeType=${gradeType}&groupTime=${groupTime}`
-      );
+      .json({ message: 'User data updated successfully.', updatedUser });
   } catch (error) {
     console.error('Error updating user data:', error);
     res.status(500).json({ error: 'Internal server error.' });

@@ -150,5 +150,15 @@ router.get('/whatsApp2/getDataStudentInWhatsApp', authMiddleware, teacherControl
 
 
 
+// ==================  END whatsApp 2  ================= //
+
+// ==================  Convert Group  ================= //
+
+router.get('/convertGroup', authMiddleware, teacherController.convertGroup_get);
+
+router.get('/getDataToTransferring/:Code', authMiddleware, teacherController.getDataToTransferring);
+
+router.put('/transferStudent/:Code', authMiddleware, teacherController.transferStudent);
+
 
 module.exports = router;

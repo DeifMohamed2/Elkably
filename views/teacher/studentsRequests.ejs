@@ -100,7 +100,7 @@
                     <label for="ModalSchoolName">School Name :</label> 
                     <input type="text" id="schoolName" class="modal-input" name="schoolName" value=""> <br>
                     <input type="text" id="StudentID" class="d-none" value="">
-                    <button type="button" class="btn btn-outline-primary" id="transferStudent">نقل الطالب الي</button>
+                    <!-- <button type="button" class="btn btn-outline-primary" id="transferStudent">نقل الطالب الي</button>
 
                     <div class="group d-none" id="selectionGroup">
                       
@@ -127,7 +127,7 @@
                           </select>
 
 
-                    </div>
+                    </div> -->
 
               </div>
 
@@ -540,7 +540,7 @@ document.getElementById('Grade').addEventListener('change', updateGroupTimes);
 document.getElementById('gradeType').addEventListener('change', updateGroupTimes);
 
 </script>
-
+<!-- 
 <script>
 
     const centerNamesToUpdate = {
@@ -726,16 +726,9 @@ function updateGroupTimes() {
 document.getElementById('GradeToUpdate').addEventListener('change', updateGroupTimes);
 document.getElementById('gradeTypeToUpdate').addEventListener('change', updateGroupTimes);
 
-</script>
+</script> -->
 
 
-<script>
-    const transferStudent = document.getElementById('transferStudent');
-    transferStudent.addEventListener('click',()=>{
-        const selectionGroup = document.getElementById('selectionGroup');
-        selectionGroup.classList.toggle('d-none');
-    })
-</script>
 
 <script>
     const spinner = document.getElementById('spinner');
@@ -784,10 +777,7 @@ document.getElementById('gradeTypeToUpdate').addEventListener('change', updateGr
         attendingType: document.getElementById('attendingType').value,
         bookTaken: document.getElementById('bookTaken').value,
         schoolName: document.getElementById('schoolName').value,
-        centerName: document.getElementById('centerNameToUpdate').value,
-        Grade: document.getElementById('GradeToUpdate').value,
-        gradeType: document.getElementById('gradeTypeToUpdate').value,
-        groupTime: document.getElementById('groupTimeToUpdate').value
+
       };
       console.log(data)
       fetch(`/teacher/updateUserData/${id}`, {

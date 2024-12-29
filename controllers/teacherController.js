@@ -10,7 +10,7 @@ const waapiAPI2 = process.env.WAAPIAPI2;
 
 const Excel = require('exceljs');
 
-const dash_get = (req, res) => {
+const dash_get = async(req, res) => {
   //   const idsToKeep = [
   //     "65e4cfe6022bba8f9ed4a80f",
   //     "65e4d024022bba8f9ed4a811",
@@ -25,6 +25,10 @@ const dash_get = (req, res) => {
   //   .catch(error => {
   //       console.error("Error deleting users:", error);
   //   });
+
+
+
+ 
 
   res.render('teacher/dash', { title: 'DashBoard', path: req.path });
 };
@@ -253,10 +257,7 @@ const updateUserData = async (req, res) => {
       phone,
       parentPhone,
       balance,
-      centerName,
-      Grade,
-      gradeType,
-      groupTime,
+ 
       absences,
       amountRemaining,
       GradeLevel,
@@ -284,11 +285,12 @@ const updateUserData = async (req, res) => {
     if (bookTaken) updateFields.bookTaken = bookTaken;
     if (schoolName) updateFields.schoolName = schoolName;
     if (absences) updateFields.absences = absences
+
     // Optional fields with additional checks
-    if (centerName) updateFields.centerName = centerName;
-    if (Grade) updateFields.Grade = Grade;
-    if (gradeType) updateFields.gradeType = gradeType;
-    if (groupTime) updateFields.groupTime = groupTime;
+    // if (centerName) updateFields.centerName = centerName;
+    // if (Grade) updateFields.Grade = Grade;
+    // if (gradeType) updateFields.gradeType = gradeType;
+    // if (groupTime) updateFields.groupTime = groupTime;
 
     // Update the student document
     const updatedUser = await User.findByIdAndUpdate(studentID, updateFields, {
@@ -299,32 +301,32 @@ const updateUserData = async (req, res) => {
     }
 
     // Handle group update only if centerName is provided
-    if (centerName) {
-      console.log('Updating group data...');
-      // Remove the student from any previous group
-      await Group.updateMany(
-        { students: updatedUser._id },
-        { $pull: { students: updatedUser._id } }
-      );
+    // if (centerName) {
+    //   console.log('Updating group data...');
+    //   // Remove the student from any previous group
+    //   await Group.updateMany(
+    //     { students: updatedUser._id },
+    //     { $pull: { students: updatedUser._id } }
+    //   );
 
-      // Find the new group
-      const newGroup = await Group.findOne({
-        CenterName: centerName,
-        Grade,
-        gradeType,
-        GroupTime: groupTime,
-      });
+    //   // Find the new group
+    //   const newGroup = await Group.findOne({
+    //     CenterName: centerName,
+    //     Grade,
+    //     gradeType,
+    //     GroupTime: groupTime,
+    //   });
 
-      if (!newGroup) {
-        return res.status(404).json({ error: 'Target group not found.' });
-      }
+    //   if (!newGroup) {
+    //     return res.status(404).json({ error: 'Target group not found.' });
+    //   }
 
-      // Add the student to the new group
-      if (!newGroup.students.includes(updatedUser._id)) {
-        newGroup.students.push(updatedUser._id);
-        await newGroup.save();
-      }
-    }
+    //   // Add the student to the new group
+    //   if (!newGroup.students.includes(updatedUser._id)) {
+    //     newGroup.students.push(updatedUser._id);
+    //     await newGroup.save();
+    //   }
+    // }
 
     // Redirect or send a success response
     res
@@ -571,19 +573,66 @@ const convertToExcelAllUserData = async (req, res) => {
 // =================================================== END MyStudent ================================================ //
 
 const addCardGet = async (req, res) => {
-//   console.log('Fafaf');
-//  const group = await Group.findById('672137d7e7a46e43d89e7f02');
-//   console.log(group.students);
-//   const groupTotransferStudent = await Group.findById(
-//     '6721408ae7a46e43d8c7f087'
-//   );
-//    groupTotransferStudent.students = group.students;
+  //   console.log('Fafaf');
+  //  const group = await Group.findById('672137d7e7a46e43d89e7f02');
+  //   console.log(group.students);
+  //   const groupTotransferStudent = await Group.findById(
+  //     '6721408ae7a46e43d8c7f087'
+  //   );
+  //    groupTotransferStudent.students = group.students;
 
-//   await groupTotransferStudent.save();
-//   console.log(groupTotransferStudent.students);
+  //   await groupTotransferStudent.save();
+  //   console.log(groupTotransferStudent.students);
 
+  // console.log('Fafaf');
+
+  // const setUserAbsent = await User.updateMany(
+  //   {
+  //     centerName: 'GTA',
+  //     Grade: 'EST1',
+  //     gradeType: 'adv',
+  //     groupTime: 'group2',
+  //   },
+  //   { $set: { absences: 0 } }
+  // );
+
+  // console.log(setUserAbsent);
+
+
+  // const attendance = await Attendance.findById('67713a24758c5e84ba3933a9');
+  // if (attendance) {
+  //   attendance.studentsPresent.push(...attendance.studentsExcused);
+  //   attendance.studentsExcused = [];
+  //   await attendance.save();
+  //   console.log('Transferred excused students to present.');
+  // } else {
+  //   console.error('Attendance record not found.');
+  // }
+
+  // // const usersToUpdate = await User.find({
+  //   centerName: 'GTA',
+  //   Grade: 'EST1',
+  //   gradeType: 'adv',
+  //   groupTime: 'group3',
+  // });
+
+  // const targetGroup = await Group.findOne({
+  //   CenterName: 'GTA',
+  //   Grade: 'EST1',
+  //   gradeType: 'adv',
+  //   GroupTime: 'group3',
+  // });
+
+  // console.log(usersToUpdate, targetGroup, usersToUpdate.length);
+
+  // if (targetGroup) {
+  //   targetGroup.students = usersToUpdate.map(user => user._id);
+  //   await targetGroup.save();
+  //   console.log('Users have been added to the target group.');
+  // } else {
+  //   console.error('Target group not found.');
+  // }
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
- 
 }
 
 const addCardToStudent = async (req, res) => {
@@ -2361,6 +2410,94 @@ const getDataStudentInWhatsApp = async (req, res) => {
 
 }
 
+// =================================================== END Whats app 2 =================================================== //
+
+// =================================================== Convert Group =================================================== //
+
+
+const convertGroup_get = (req, res) => {
+  res.render('teacher/convertGroup', { title: 'convertGroup', path: req.path });
+}
+
+const getDataToTransferring = async (req, res) => {
+  const {Code} = req.params;
+
+  try {
+    const student = await User.findOne({
+      $or: [{ cardId: Code }, { Code: +Code }],
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const groups = await Group.find({ Grade: student.Grade, CenterName: student.centerName, gradeType: student.gradeType });
+
+    if (!groups) {
+      return res.status(404).json({ message: 'No groups found for this student' });
+    }
+
+    res.status(200).json(  student  );
+  }
+  catch (error) {
+    console.error('Error fetching groups:', error);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+}
+
+const transferStudent = async (req, res) => {
+  const {  centerName, Grade, gradeType, groupTime } = req.body;
+  const {Code} = req.params;
+  console.log(req.body)
+  try {
+    const student = await User.findOne({
+      $or: [{ cardId: Code }, { Code: +Code }],
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const group = await Group.findOne({
+      Grade,
+      CenterName: centerName,
+      GroupTime: groupTime,
+      gradeType,
+    });
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Remove the student from any previous group
+    await Group.updateMany(
+      { students: student._id },
+      { $pull: { students: student._id } }
+    );
+
+    // Check if the student is already in the group
+    if (group.students.includes(student._id)) {
+      return res.status(400).json({ message: 'Student is already in the group' });
+    }
+
+
+    // Update the student's group info
+    student.centerName = centerName;
+    student.Grade = Grade;
+    student.gradeType = gradeType;
+    student.groupTime = groupTime;
+    await student.save();
+
+    // Transfer the student to the new group
+    group.students.push(student._id);
+    await group.save();
+
+    res.status(200).json({ message: 'Student transferred successfully' });
+  } catch (error) {
+    console.error('Error transferring student:', error);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+};
 
 // =================================================== Log Out =================================================== //
 
@@ -2419,6 +2556,11 @@ module.exports = {
   // WhatsApp 2
   whatsApp2_get,
   getDataStudentInWhatsApp,
+
+  // Convert Group
+  convertGroup_get,
+  getDataToTransferring,
+  transferStudent,
 
   logOut,
 };

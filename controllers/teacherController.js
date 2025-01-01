@@ -2259,8 +2259,8 @@ const sendGradeMessages = async (req, res) => {
 
       try {
 
-        if (instanceID === '24954') {
-          waapi.auth(waapiAPI)
+        if (instanceID === '34155') {
+          waapi.auth(waapiAPI);
         } else {
           waapi.auth(waapiAPI2);
         }
@@ -2332,7 +2332,7 @@ ${msg}
       `;
 
       try {
-        if (instanceID === '24954') {
+        if (instanceID === '34155') {
           waapi.auth(waapiAPI)
         } else {
          waapi.auth(waapiAPI2);

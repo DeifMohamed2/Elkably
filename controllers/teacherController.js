@@ -2254,7 +2254,7 @@ const sendGradeMessages = async (req, res) => {
       let message = `
 السلام عليكم 
 مع حضرتك assistant mr kably EST/ACT math teacher 
-برجاء العلم ان تم الحصول الطالب ${name} على درجة (${grade}) من (${maxGrade}) في (${quizName}) 
+برجاء العلم ان تم حصول الطالب ${name} على درجة (${grade}) من (${maxGrade}) في (${quizName}) 
       `;
 
       try {
@@ -2410,6 +2410,91 @@ const getDataStudentInWhatsApp = async (req, res) => {
 
 }
 
+const submitData = async (req, res) => {
+  const { data, option, quizName, maxGrade, instanceID } = req.body;
+  let n = 0;
+  req.io.emit('sendingMessages', {
+    nMessages: n,
+  });
+
+  try {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (const student of data) {
+      console.log(student);
+      let theMessage = '';
+        if (option === 'HWStatus') {
+          let msg = '';
+        if (student['hwStatus'] == 'no') {
+          msg = `لم يقم الطالب ${student['studentName']} بحل واجب حصة اليوم`;
+        } else {
+          msg = `لقد قام الطالب ${student['studentName']} بحل واجب حصة اليوم`;
+        }
+theMessage = `
+السلام عليكم 
+مع حضرتك assistant mr kably EST/ACT math teacher 
+${msg}
+`;
+
+      }else if (option === 'gradeMsg') {
+        theMessage = `
+السلام عليكم
+مع حضرتك assistant mr kably EST/ACT math teacher
+برجاء العلم ان تم حصول الطالب ${student['studentName']} على درجة (${student['grade']}) من (${maxGrade}) في (${quizName})
+`;
+      }
+
+      console.log(theMessage  , student['parentPhone']);
+
+      try {
+        if (instanceID === '34155') {
+          waapi.auth(waapiAPI);
+        } else {
+          waapi.auth(waapiAPI2);
+        }
+        await waapi
+          .postInstancesIdClientActionSendMessage(
+            {
+              chatId: `2${student['parentPhone']}@c.us`,
+              message: theMessage,
+            },
+            { id: instanceID }
+          )
+          .then((result) => {
+            console.log(result);
+            req.io.emit('sendingMessages', {
+              nMessages: ++n,
+            });
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      } catch (err) {
+        console.error(`Error sending message to ${student['studentName']}:`, err);
+      }
+
+      // Introduce a random delay between 1 and 10 seconds
+      const randomDelay = Math.floor(Math.random() * (5 - 1 + 1) + 1) * 1000;
+      console.log(
+        `Delaying for ${
+          randomDelay / 1000
+        } seconds before sending the next message.`
+      );
+      await delay(randomDelay);
+    }
+
+    res.status(200).json({ message: 'Messages sent successfully' });
+  } catch (error) {
+    console.error('Error sending messages:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+
+
+
+
+}
+
+
 // =================================================== END Whats app 2 =================================================== //
 
 // =================================================== Convert Group =================================================== //
@@ -2556,6 +2641,7 @@ module.exports = {
   // WhatsApp 2
   whatsApp2_get,
   getDataStudentInWhatsApp,
+  submitData,
 
   // Convert Group
   convertGroup_get,

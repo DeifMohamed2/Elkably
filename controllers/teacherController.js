@@ -339,23 +339,23 @@ const updateUserData = async (req, res) => {
 };
 
 
-const confirmDeleteStudent = async (req, res) => {
-  try {
-    const studentID = req.params.studentID;
-    res.render('teacher/studentsRequests', {
-      title: 'StudentsRequests',
-      path: req.path,
-      modalData: null,
-      modalDelete: studentID,
-      studentsRequests: null,
-      studentPlace: query.place || 'All',
-      Grade: query.Grade,
-      isSearching: false,
-      nextPage: null,
-      previousPage: null, // Calculate previous page
-    });
-  } catch (error) {}
-};
+// const confirmDeleteStudent = async (req, res) => {
+//   try {
+//     const studentID = req.params.studentID;
+//     res.render('teacher/studentsRequests', {
+//       title: 'StudentsRequests',
+//       path: req.path,
+//       modalData: null,
+//       modalDelete: studentID,
+//       studentsRequests: null,
+//       studentPlace: query.place || 'All',
+//       Grade: query.Grade,
+//       isSearching: false,
+//       nextPage: null,
+//       previousPage: null, // Calculate previous page
+//     });
+//   } catch (error) {}
+// };
 
 const DeleteStudent = async (req, res) => {
   try {
@@ -370,13 +370,17 @@ const DeleteStudent = async (req, res) => {
     ) {
       return res.status(400).json({ error: 'You can not delete this user' });
     }
-    await User.findByIdAndDelete(studentID).then((result) => {
-      res
-        .status(200)
-        .redirect(
-          `/teacher/studentsRequests?Grade=${query.Grade}&studentPlace=All`
-        );
-    });
+
+    await Group.updateMany(
+      { students: studentID },
+      { $pull: { students: studentID } }
+    ).then(async(result) => {
+      await User.findByIdAndDelete(studentID).then((result) => {
+        res
+          .status(200)
+          .json({ message: 'User deleted successfully.', result });
+      });
+  });
   } catch (error) {
     console.log(error);
   }
@@ -2600,7 +2604,7 @@ module.exports = {
   myStudent_get,
 
   studentsRequests_get,
-  confirmDeleteStudent,
+  // confirmDeleteStudent,
   DeleteStudent,
   searchForUser,
   converStudentRequestsToExcel,

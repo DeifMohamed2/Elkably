@@ -2195,9 +2195,9 @@ const sendGradeMessages = async (req, res) => {
 
       try {
 
-        if (instanceID === '34155') {
+        if (instanceID === '34202') {
           waapi.auth(waapiAPI);
-        } else {
+        } else if(instanceID === '28889'){
           waapi.auth(waapiAPI2);
         }
 
@@ -2383,9 +2383,9 @@ ${msg}
       console.log(theMessage  , student['parentPhone']);
 
       try {
-        if (instanceID === '34155') {
+        if (instanceID === '34202') {
           waapi.auth(waapiAPI);
-        } else {
+        } else if(instanceID === '28889'){ 
           waapi.auth(waapiAPI2);
         }
         await waapi

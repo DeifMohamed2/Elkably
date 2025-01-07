@@ -24,7 +24,7 @@ const authMiddleware =async (req,res,next)=>{
  
       await User.findOne({'_id':decode.userId}).then((result)=>{
         if (result.isTeacher) {
-          
+          req.userData = result;  
           next();
         }else{
           res.clearCookie('token');

@@ -576,66 +576,34 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
+async function sendWappiMessage(message, phone,adminPhone) {
+  let instanceId = '';
+  if (adminPhone == '01065057897') {
+    instanceId = '28889';
+    waapi.auth(waapiAPI2);
+  }else if (adminPhone == '01055640148') {
+    instanceId = '34202';
+    waapi.auth(waapiAPI);
+  }
+
+   await waapi
+     .postInstancesIdClientActionSendMessage(
+       {
+         chatId: `2${phone}@c.us`,
+         message: message,
+       },
+       { id: instanceId }
+     )
+     .then(({ data }) => {})
+     .catch((err) => {
+       console.log(err);
+     });
+}
+
+
+
 const addCardGet = async (req, res) => {
-  //   console.log('Fafaf');
-  //  const group = await Group.findById('672137d7e7a46e43d89e7f02');
-  //   console.log(group.students);
-  //   const groupTotransferStudent = await Group.findById(
-  //     '6721408ae7a46e43d8c7f087'
-  //   );
-  //    groupTotransferStudent.students = group.students;
-
-  //   await groupTotransferStudent.save();
-  //   console.log(groupTotransferStudent.students);
-
-  // console.log('Fafaf');
-
-  // const setUserAbsent = await User.updateMany(
-  //   {
-  //     centerName: 'GTA',
-  //     Grade: 'EST1',
-  //     gradeType: 'adv',
-  //     groupTime: 'group2',
-  //   },
-  //   { $set: { absences: 0 } }
-  // );
-
-  // console.log(setUserAbsent);
-
-
-  // const attendance = await Attendance.findById('67713a24758c5e84ba3933a9');
-  // if (attendance) {
-  //   attendance.studentsPresent.push(...attendance.studentsExcused);
-  //   attendance.studentsExcused = [];
-  //   await attendance.save();
-  //   console.log('Transferred excused students to present.');
-  // } else {
-  //   console.error('Attendance record not found.');
-  // }
-
-  // // const usersToUpdate = await User.find({
-  //   centerName: 'GTA',
-  //   Grade: 'EST1',
-  //   gradeType: 'adv',
-  //   groupTime: 'group3',
-  // });
-
-  // const targetGroup = await Group.findOne({
-  //   CenterName: 'GTA',
-  //   Grade: 'EST1',
-  //   gradeType: 'adv',
-  //   GroupTime: 'group3',
-  // });
-
-  // console.log(usersToUpdate, targetGroup, usersToUpdate.length);
-
-  // if (targetGroup) {
-  //   targetGroup.students = usersToUpdate.map(user => user._id);
-  //   await targetGroup.save();
-  //   console.log('Users have been added to the target group.');
-  // } else {
-  //   console.error('Target group not found.');
-  // }
+  
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }
 
@@ -844,18 +812,30 @@ const markAttendance = async (req, res) => {
 *شكرًا لتعاونكم.*`;
 
       // Send the message via the waapi (already present)
-      await waapi
-        .postInstancesIdClientActionSendMessage(
-          {
-            chatId: `2${student.parentPhone}@c.us`,
-            message: messageWappi,
-          },
-          { id: '28889' }
-        )
-        .then(({ data }) => {})
-        .catch((err) => {
-          console.log(err);
-        });
+
+    await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
+
+      // let instanceId = '';
+      // if (req.userData.phone == '01065057897') {
+      //   instanceId = '28889';
+      //   waapi.auth(waapiAPI2);
+      // }else if (req.userData.phone == '01055640148') {
+      //   instanceId = '34202';
+      //   waapi.auth(waapiAPI);
+      // }
+
+      // await waapi
+      //   .postInstancesIdClientActionSendMessage(
+      //     {
+      //       chatId: `2${student.parentPhone}@c.us`,
+      //       message: messageWappi,
+      //     },
+      //     { id: instanceId }
+      //   )
+      //   .then(({ data }) => {})
+      //   .catch((err) => {
+      //     console.log(err);
+      //   });
 
       return res.status(200).json({
         message: 'The Student Marked As Late \n' + message,
@@ -922,21 +902,10 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
 الوقت: ${new Date().toLocaleTimeString()}
 *شكرًا لتعاونكم.*`;
 
+
       // Send the message via the waapi (already present)
-      await waapi
-        .postInstancesIdClientActionSendMessage(
-          {
-            chatId: `2${student.parentPhone}@c.us`,
-            message: messageWappi,
-          },
-          { id: '28889' }
-        ).then(({ data }) => {
-          console.log(data);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-      
+      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
+
       await student.save();
       return res.status(200).json({
         message:
@@ -1361,22 +1330,8 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
 *شكرًا لتعاونكم.*`;
 
 
-
-   // Send the message via the waapi (already present)
-   await waapi
-     .postInstancesIdClientActionSendMessage(
-       {
-         chatId: `2${student.parentPhone}@c.us`,
-         message: messageWappi,
-       },
-       { id: '28889' }
-     )
-
-     .then(({ data }) => {})
-     .catch((err) => {
-       console.log(err);
-     });
-
+      // Send the message via the waapi (already present)
+      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
 
 
 
@@ -1470,23 +1425,10 @@ const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Usern
 وقد تم تسجيل غيابه .\n
 عدد مرات الغياب: *${student.absences}*.${subMessage}\n\n
 *شكرًا لتعاونكم.*`;
+ 
 
-
-
-   // Send the message via the waapi (already present)
-   await waapi
-     .postInstancesIdClientActionSendMessage(
-       {
-         chatId: `2${student.parentPhone}@c.us`,
-         message: messageWappi,
-       },
-       { id: '28889' }
-     )
-
-     .then(({ data }) => {})
-     .catch((err) => {
-       console.log(err);
-     });
+      // Send the message via the waapi (already present)
+      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
 
  
 
@@ -1933,20 +1875,10 @@ const convertAttendeesToExcel = async (req, res) => {
 عدد مرات الغياب: *${student.absences}*.\n\n
 *شكرًا لتعاونكم.*`;
 
-      // Send the message via the waapi (already present)
-      await waapi
-        .postInstancesIdClientActionSendMessage(
-          {
-            chatId: `2${student.parentPhone}@c.us`,
-            message: messageWappi,
-          },
-          { id: '28889' }
-        )
 
-        .then(({ data }) => {})
-        .catch((err) => {
-          console.log(err);
-        });
+      // Send the message via the waapi (already present)
+      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
+
     });
 
     // Add total row for Present Other Group  Students

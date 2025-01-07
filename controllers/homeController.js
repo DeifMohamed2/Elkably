@@ -7,7 +7,7 @@ const qrcode = require('qrcode');
 
 
 const jwtSecret = process.env.JWTSECRET;
-const waapiAPI = process.env.WAAPIAPI3;
+const waapiAPI = process.env.WAAPIAPI2;
 waapi.auth(`${waapiAPI}`);
 
 

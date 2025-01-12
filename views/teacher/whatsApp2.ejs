@@ -104,6 +104,13 @@
         transform: translate(-50%, -50%);
     }
 
+    .search{
+ 
+        width: 20% !important;
+    
+
+    }
+
     </style>
 
     <div class="container-fluid">
@@ -199,6 +206,9 @@
 
                     <div class="row">
                      <div class="student-table hidden" id="HWStatusTabel">
+                            <div class="col-md-12 mb-4">
+                                <input type="text" id="searchStudent" class="form-control search mx-auto" placeholder="By Code">
+                            </div>
                             <h2 style="color: white;">Homework Status</h2>
                             <table  style="color: white;">
                                 <thead>
@@ -218,7 +228,9 @@
                             </table>
                     </div>
                     <div class="student-table hidden" id="quizGradesTable">
-              
+                            <div class="col-md-12 mb-4">
+                                <input type="text" id="searchStudent2" class="form-control search  mx-auto" placeholder="By Code">
+                            </div>
                             <h2 style="color: white;">Quiz Grades</h2>
                             <table class="table" style="color: white;">
                                 <thead>
@@ -434,6 +446,37 @@
   submitDataButton.addEventListener('click', submitData);
 </script>
 
+<script>
+    const searchStudentInput = document.getElementById('searchStudent');
+    searchStudentInput.addEventListener('input', () => {
+        const filter = searchStudentInput.value.toUpperCase();
+        const rows = document.querySelectorAll('#HWStatusTbody tr');
+        rows.forEach(row => {
+            const studentCode = row.cells[2].innerText.toUpperCase();
+            if (studentCode.indexOf(filter) > -1) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    const searchStudentInput2 = document.getElementById('searchStudent2');
+    searchStudentInput2.addEventListener('input', () => {
+        const filter = searchStudentInput2.value.toUpperCase();
+        const rows = document.querySelectorAll('#quizGradesTbody tr');
+        rows.forEach(row => {
+            const studentCode = row.cells[2].innerText.toUpperCase();
+            if (studentCode.indexOf(filter) > -1) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+
+</script>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -447,6 +490,9 @@
 
       });
     </script>
+
+
+
 
 
  

@@ -660,6 +660,7 @@ const markAttendance = async (req, res) => {
     GroupTime,
     attendId,
     gradeType,
+    isSolving,
     attendAbsencet,
     attendOtherGroup,
   } = req.body;
@@ -720,10 +721,15 @@ const markAttendance = async (req, res) => {
         timeZone: 'Africa/Cairo', // Egypt's time zone
     }).format(new Date());
 
+
+
+
     let attendance = await Attendance.findOne({
         date: today,
         groupId: group._id,
-    });
+        isSolving: isSolving,
+      });
+ 
 
     if (!attendance) {
       attendance = new Attendance({
@@ -733,6 +739,7 @@ const markAttendance = async (req, res) => {
         studentsAbsent: [],
         studentsLate: [],
         isFinalized: false,
+        isSolving: isSolving,
       });
     }
 
@@ -801,8 +808,16 @@ const markAttendance = async (req, res) => {
       await attendance.populate('studentsPresent');
       await attendance.populate('studentsExcused');
 
+      let message = '';
+
+      if(isSolving){
+        message = 'تأخر في حضور ال Solving Session';
+      }else{
+        message = 'تأخر في الحضور ';
+      }
+
       const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأنه تم التحديث ابنكم قد *تأخر في الحضور اليوم*.\n
+نود إعلامكم بأنه تم التحديث ابنكم قد *${message} اليوم*.\n
 وقد تم تسجيل حضوره *متأخرًا*.\n
 وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
 عدد مرات الغياب: *${student.absences}*.\n\n
@@ -815,27 +830,6 @@ const markAttendance = async (req, res) => {
 
     await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
 
-      // let instanceId = '';
-      // if (req.userData.phone == '01065057897') {
-      //   instanceId = '28889';
-      //   waapi.auth(waapiAPI2);
-      // }else if (req.userData.phone == '01055640148') {
-      //   instanceId = '34202';
-      //   waapi.auth(waapiAPI);
-      // }
-
-      // await waapi
-      //   .postInstancesIdClientActionSendMessage(
-      //     {
-      //       chatId: `2${student.parentPhone}@c.us`,
-      //       message: messageWappi,
-      //     },
-      //     { id: instanceId }
-      //   )
-      //   .then(({ data }) => {})
-      //   .catch((err) => {
-      //     console.log(err);
-      //   });
 
       return res.status(200).json({
         message: 'The Student Marked As Late \n' + message,
@@ -892,9 +886,15 @@ const markAttendance = async (req, res) => {
           status: 'Present',
         });
       }
+  let message2 = '';
+      if (isSolving) {
+        message2 = 'حضر ال Solving Session';
+      } else {
+        message2 = 'حضر';
+      }      
 
 const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
+نود إعلامكم بأن ابنكم قد *${message2} اليوم في المعاد المحدد*.\n
 وقد تم تسجيل حضوره *بنجاح*.\n
 وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
 عدد مرات الغياب: *${student.absences}*.\n
@@ -915,6 +915,7 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
         studentsExcused: attendance.studentsExcused,
       });
     }
+
   } catch (error) {
     console.error('Error marking attendance:', error);
     res.status(500).json({ message: 'Server error. Please try again.' });
@@ -923,7 +924,7 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
 
 
 const getAttendedUsers = async (req, res) => {
-  const { Grade, centerName, GroupTime, attendId, gradeType } = req.body;
+  const { Grade, centerName, GroupTime, attendId, gradeType ,isSolving } = req.body;
   const group = await Group.findOne({
     CenterName: centerName,
     Grade: Grade,
@@ -948,6 +949,7 @@ const getAttendedUsers = async (req, res) => {
   const attendance = await Attendance.findOne({
     groupId: group._id,
     date: today,
+    isSolving : isSolving,
   }).populate('studentsPresent studentsLate studentsExcused');
   console.log(attendance);
   if (!attendance) {
@@ -961,7 +963,7 @@ const getAttendedUsers = async (req, res) => {
 
 
 const removeAttendance = async (req, res) => {
-  const { centerName, Grade, GroupTime, gradeType } = req.body;
+  const { centerName, Grade, GroupTime, gradeType ,isSolving } = req.body;
   const studentId = req.params.studentId;
 
   try {
@@ -994,6 +996,7 @@ const removeAttendance = async (req, res) => {
     const attendance = await Attendance.findOne({
       date: today,
       groupId: group._id,
+      isSolving : isSolving,
     });
 
     if (!attendance) {
@@ -1078,7 +1081,7 @@ const updateAmount = async (req, res) => {
 };
 
 const finalizeAttendance = async (req, res) => {
-  const { centerName, Grade, GroupTime, gradeType } = req.body;
+  const { centerName, Grade, GroupTime, gradeType, isSolving } = req.body;
 
   try {
     // Find the group
@@ -1101,6 +1104,7 @@ const finalizeAttendance = async (req, res) => {
     let attendance = await Attendance.findOne({
       groupId: group._id,
       date: today,
+      isSolving : isSolving,
     });
 
     if (!attendance) {
@@ -1419,9 +1423,13 @@ let subMessage = '';
 if (student.absences >= 3) {
   subMessage = `\n\n❌ *وفقًا لعدد مرات الغياب التي تم تسجيلها لابنكم*، يرجى العلم أنه *لن يتمكن من دخول الحصة القادمة*.`;
 }
+let subMessage2 = '';
+if(isSolving){
+  subMessage2 = 'في Solving Session';
+}
 
 const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم *لم يحضر اليوم*.\n
+نود إعلامكم بأن ابنكم *لم يحضر ${subMessage2} اليوم*.\n
 وقد تم تسجيل غيابه .\n
 عدد مرات الغياب: *${student.absences}*.${subMessage}\n\n
 *شكرًا لتعاونكم.*`;
@@ -1482,7 +1490,7 @@ const handelAttendanceGet = async (req, res) => {
 
 
 const getDates = async (req, res) => {
-  const { Grade, centerName, GroupTime , gradeType } = req.body;
+  const { Grade, centerName, GroupTime, gradeType, isSolving } = req.body;
   console.log(Grade, centerName, GroupTime);
   try {
     const group = await Group.findOne({ Grade, CenterName: centerName, GroupTime , gradeType });
@@ -1491,7 +1499,10 @@ const getDates = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    const attendanceRecords = await Attendance.find({ groupId: group._id });
+    const attendanceRecords = await Attendance.find({
+      groupId: group._id,
+      isSolving,
+    });
     console.log(attendanceRecords);
     if (!attendanceRecords) {
       return res.status(404).json({ message: 'No attendance records found for this session.' });
@@ -1507,7 +1518,8 @@ const getDates = async (req, res) => {
 }
 
 const getAttendees = async (req, res) => {
-    const { Grade, centerName, GroupTime, gradeType, date } = req.body;
+    const { Grade, centerName, GroupTime, gradeType, date, isSolving } =
+      req.body;
 
     try {
       const group = await Group.findOne({
@@ -1521,7 +1533,13 @@ const getAttendees = async (req, res) => {
         return res.status(404).json({ message: 'Group not found' });
       }
 
-      const attendance = await Attendance.findOne({ groupId: group._id, date }).populate('studentsPresent studentsAbsent studentsLate studentsExcused');
+      const attendance = await Attendance.findOne({
+        groupId: group._id,
+        date,
+        isSolving,
+      }).populate(
+        'studentsPresent studentsAbsent studentsLate studentsExcused'
+      );
 
       if (!attendance) {
         return res.status(404).json({ message: 'No attendance record found for this session.' });
@@ -1537,7 +1555,7 @@ const getAttendees = async (req, res) => {
 }
 
 const convertAttendeesToExcel = async (req, res) => {
-  const { centerName, Grade, GroupTime , gradeType } = req.body;
+  const { centerName, Grade, GroupTime, gradeType, isSolving } = req.body;
 
   try {
     // Find the group
@@ -1560,6 +1578,7 @@ const convertAttendeesToExcel = async (req, res) => {
     let attendance = await Attendance.findOne({
       groupId: group._id,
       date: today,
+      isSolving,
     }).populate('studentsPresent studentsAbsent studentsLate studentsExcused');
 
     if (!attendance) {
@@ -1867,17 +1886,6 @@ const convertAttendeesToExcel = async (req, res) => {
           fgColor: { argb: 'DDDDDD' },
         };
       }
-
-      const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
-وقد تم تسجيل حضوره *بنجاح*.\n
-المبلغ المتبقي من سعر الحصة هو: *${student.totalAmount4} جنيه*.\n
-عدد مرات الغياب: *${student.absences}*.\n\n
-*شكرًا لتعاونكم.*`;
-
-
-      // Send the message via the waapi (already present)
-      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
 
     });
 
@@ -2373,11 +2381,24 @@ ${msg}
 `;
 
       }else if (option === 'gradeMsg') {
+        
+        if(!student['grade']){
+          theMessage = `
+السلام عليكم
+مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
+برجاء العلم ان الطالب ${student['studentName']} لم يقم بحضور امتحان (${quizName}) 
+وهذا بتاريخ اليوم ${new Date().toLocaleDateString()}
+`;
+        }else{
         theMessage = `
 السلام عليكم
-مع حضرتك assistant mr kably EST/ACT math teacher
+مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
 برجاء العلم ان تم حصول الطالب ${student['studentName']} على درجة (${student['grade']}) من (${maxGrade}) في (${quizName})
 `;
+        }
+
+
+
       }
 
       console.log(theMessage  , student['parentPhone']);

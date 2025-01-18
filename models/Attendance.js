@@ -1,6 +1,4 @@
 const mongoose = require('mongoose');
-const { required } = require('nodemon/lib/config');
-const { ref } = require('pdfkit');
 const Schema = mongoose.Schema;
 
 const attendanceSchema = new Schema(
@@ -12,6 +10,7 @@ const attendanceSchema = new Schema(
     studentsLate: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     studentsExcused: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isFinalized: { type: Boolean, default: false },
+    isSolving: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -168,22 +168,26 @@
 
                                    <select name="Grade" class="Grade" id="Grade" required>
                                     <option value="" selected>اختر الصف </option>
-                                       <option value="EST">EST</option>
-                                        <option value="EST1">EST1</option>
-                                        <option value="EST2">EST2</option>
-                                        <option value="ACT">ACT</option>
+                           
 
                                    </select>
 
                                 <select name="gradeType" class="Grade" id="gradeType" value="" required>
                                 <option value=""> Type</option>
                                 </select>
+
+                                
                                             
                                  <select name="groupTime" class="Grade" id="groupTime" required>
                                 <option value="" selected>مجموعه</option>
                                </select>
 
-                                 
+                                <select name="isSolving" class="Grade" id="isSolving" value="" required>
+                                  <option value=""> نوع الحضور</option>
+                                  <option value="false" selected>Normal</option>
+                                  <option value="true">Solving</option>
+                                </select>
+
                                    <button type="button" id="saveAndStart" class="btn btn-secondary btn-md me-3 mt-4">  حفظ والبدأ </button>
                                    
                                </div>
@@ -386,6 +390,7 @@
     const centerName = document.getElementById('centerName');
     const gradeType = document.getElementById('gradeType');
     const GroupTime = document.getElementById('groupTime');
+    const isSolving = document.getElementById('isSolving');
     const CardType = document.getElementById('CardType');
     const attendeeID = document.getElementById('attendeeID');
     const spinnerInTabel = document.getElementById('spinnerInTabel');
@@ -412,7 +417,8 @@
         Grade.setAttribute('disabled', 'disabled');
         centerName.setAttribute('disabled', 'disabled');
         GroupTime.setAttribute('disabled', 'disabled');
-        gradeType.setAttribute('disabled', 'disabled'); 
+        gradeType.setAttribute('disabled', 'disabled');
+        isSolving.setAttribute('disabled', 'disabled');
         attendeeID.focus();
     };
 
@@ -483,6 +489,7 @@
             Grade: Grade.value,
             centerName: centerName.value,
             GroupTime: GroupTime.value,
+            isSolving: isSolving.value,
             gradeType : gradeType.value,
             
         };
@@ -524,6 +531,7 @@
             centerName: centerName.value,
             GroupTime: GroupTime.value,
             gradeType : gradeType.value,
+            isSolving : isSolving.value,
             attendAbsencet : attendAbsencet.checked,
             attendOtherGroup : attendOtherGroup.checked,
             attendId: attendeeID.value
@@ -565,7 +573,8 @@
         Grade: Grade.value,
         centerName: centerName.value,
         GroupTime: GroupTime.value,
-        gradeType :gradeType.value
+        gradeType :gradeType.value,
+        isSolving : isSolving.value,
     };
 
     try {
@@ -635,7 +644,8 @@
                     Grade: Grade.value,
                     centerName: centerName.value,
                     GroupTime: GroupTime.value,
-                    gradeType : gradeType.value
+                    gradeType : gradeType.value,
+                    isSolving : isSolving.value,
                 };
 
                 const response = await fetch(`/teacher/addCard/removeAttendance/${studentId}`, {

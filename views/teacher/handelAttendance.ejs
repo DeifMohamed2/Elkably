@@ -169,6 +169,11 @@
                                 <option value="" selected>مجموعه</option>
                                </select>
 
+                                 <select name="isSolving" class="Grade" id="isSolving" value="" required>
+                                   <option value=""> نوع الحضور</option>
+                                   <option value="false">Normal</option>
+                                   <option value="true">Solving</option>
+                                 </select>
 
                                    <select name="Dates" class="Grade" id="Dates">
 
@@ -268,6 +273,7 @@ function hideSpinner() {
         const Grade = document.getElementById('Grade');
         const centerName = document.getElementById('centerName');
         const gradeType  = document.getElementById('gradeType');
+        const isSolving = document.getElementById('isSolving');
         const spinnerInTabel = document.getElementById('spinnerInTabel');
         const GroupTime = document.getElementById('groupTime');
         const Message = document.getElementById('Message');
@@ -337,10 +343,10 @@ function hideSpinner() {
 
 
 
-        GroupTime.addEventListener('change', async () => {
+        isSolving.addEventListener('change', async () => {
             // Disable the inputs
             showSpinner()
-            if (Grade.value === '' || centerName.value === '' || GroupTime.value === '' || gradeType.value === '') {
+            if (Grade.value === '' || centerName.value === '' || GroupTime.value === '' || gradeType.value === '' || isSolving.value === '') {
                 return;
                 
             }
@@ -350,7 +356,9 @@ function hideSpinner() {
                 Grade: Grade.value,
                 centerName: centerName.value,
                 GroupTime: GroupTime.value,
-                gradeType: gradeType.value
+                gradeType: gradeType.value,
+                isSolving : isSolving.value
+            ,
             };
 
             try {
@@ -408,6 +416,7 @@ function hideSpinner() {
                     centerName: centerName.value,
                     GroupTime: GroupTime.value,
                     gradeType: gradeType.value,
+                    isSolving : isSolving.value,
                     date : Dates.value,
                 };
 
@@ -450,6 +459,7 @@ function hideSpinner() {
                     centerName: centerName.value,
                     GroupTime: GroupTime.value,
                     gradeType: gradeType.value,
+                    isSolving : isSolving.value,
                     date : Dates.value,
                 };
 

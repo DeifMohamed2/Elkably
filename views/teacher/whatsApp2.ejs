@@ -343,7 +343,7 @@
                                     <td>${student.Username}</td>
                                     <td>${student.Code}</td>
                                     <td>${student.parentPhone}</td>
-                                    <td><input type="text" name="quizGrade${index + 1}" class="form-control mx-auto" value="0" dir="ltr"></
+                                    <td><input type="text" name="quizGrade${index + 1}" class="form-control mx-auto" value="" dir="ltr"></
                                 </tr>
                             `;
                         });
@@ -365,6 +365,8 @@
   const submitDataButton = document.getElementById('submitDataButton');
   
   const submitData = async () => {
+    submitDataButton.disabled = true;
+    submitDataButton.textContent = 'Submitting...';
     document.getElementById('nMessagesBox').classList.remove('hidden');
     // Collect data from the table
     const data = [];

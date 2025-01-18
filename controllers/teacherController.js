@@ -1135,8 +1135,7 @@ const finalizeAttendance = async (req, res) => {
           const student = await User.findById(studentId);
          
           if (student) {
-          
-            student.absences = (student.absences || 0) + 1;
+            if(!isSolving){student.absences = (student.absences || 0) + 1;}
             student.AttendanceHistory.push({  
               attendance: attendance._id,
               date: today,
@@ -1425,6 +1424,7 @@ if (student.absences >= 3) {
 }
 let subMessage2 = '';
 if(isSolving){
+
   subMessage2 = 'في Solving Session';
 }
 

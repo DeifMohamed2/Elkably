@@ -809,8 +809,8 @@ const markAttendance = async (req, res) => {
       await attendance.populate('studentsExcused');
 
       let message = '';
-
-      if(isSolving){
+      console.log(isSolving);
+      if(isSolving == 'true'){
         message = 'تأخر في حضور ال Solving Session';
       }else{
         message = 'تأخر في الحضور ';
@@ -887,10 +887,13 @@ const markAttendance = async (req, res) => {
         });
       }
   let message2 = '';
-      if (isSolving) {
+  console.log(isSolving);
+      if (isSolving=='true') {
         message2 = 'حضر ال Solving Session';
+        console.log(message2);
       } else {
         message2 = 'حضر';
+        console.log(message2);
       }      
 
 const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
@@ -1135,7 +1138,7 @@ const finalizeAttendance = async (req, res) => {
           const student = await User.findById(studentId);
          
           if (student) {
-            if(!isSolving){student.absences = (student.absences || 0) + 1;}
+            if(isSolving !=true ){student.absences = (student.absences || 0) + 1;}
             student.AttendanceHistory.push({  
               attendance: attendance._id,
               date: today,
@@ -1423,7 +1426,7 @@ if (student.absences >= 3) {
   subMessage = `\n\n❌ *وفقًا لعدد مرات الغياب التي تم تسجيلها لابنكم*، يرجى العلم أنه *لن يتمكن من دخول الحصة القادمة*.`;
 }
 let subMessage2 = '';
-if(isSolving){
+if(isSolving=='true'){
 
   subMessage2 = 'في Solving Session';
 }

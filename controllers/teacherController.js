@@ -2357,6 +2357,7 @@ const getDataStudentInWhatsApp = async (req, res) => {
 const submitData = async (req, res) => {
   const { data, option, quizName, maxGrade, instanceID } = req.body;
   let n = 0;
+  const errorNumbers = []; // Array to store numbers with issues
   req.io.emit('sendingMessages', {
     nMessages: n,
   });
@@ -2367,48 +2368,46 @@ const submitData = async (req, res) => {
     for (const student of data) {
       console.log(student);
       let theMessage = '';
-        if (option === 'HWStatus') {
-          let msg = '';
-        if (student['hwStatus'] == 'no') {
-          msg = `لم يقم الطالب ${student['studentName']} بحل واجب حصة اليوم`;
-        } else {
-          msg = `لقد قام الطالب ${student['studentName']} بحل واجب حصة اليوم`;
-        }
-theMessage = `
-السلام عليكم 
+
+      // Determine message content based on the option
+      if (option === 'HWStatus') {
+        const msg =
+          student['hwStatus'] === 'no'
+            ? `لم يقم الطالب ${student['studentName']} بحل واجب حصة اليوم`
+            : `لقد قام الطالب ${student['studentName']} بحل واجب حصة اليوم`;
+        theMessage = `
+السلام عليكم
 مع حضرتك assistant mr kably EST/ACT math teacher 
 ${msg}
 `;
-
-      }else if (option === 'gradeMsg') {
-        
-        if(!student['grade']){
+      } else if (option === 'gradeMsg') {
+        if (!student['grade']) {
           theMessage = `
 السلام عليكم
 مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
 برجاء العلم ان الطالب ${student['studentName']} لم يقم بحضور امتحان (${quizName}) 
 وهذا بتاريخ اليوم ${new Date().toLocaleDateString()}
 `;
-        }else{
-        theMessage = `
+        } else {
+          theMessage = `
 السلام عليكم
 مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
 برجاء العلم ان تم حصول الطالب ${student['studentName']} على درجة (${student['grade']}) من (${maxGrade}) في (${quizName})
 `;
         }
-
-
-
       }
 
-      console.log(theMessage  , student['parentPhone']);
+      console.log(theMessage, student['parentPhone']);
 
       try {
+        // Authenticate API
         if (instanceID === '34202') {
           waapi.auth(waapiAPI);
-        } else if(instanceID === '28889'){ 
+        } else if (instanceID === '28889') {
           waapi.auth(waapiAPI2);
         }
+
+        // Send message
         await waapi
           .postInstancesIdClientActionSendMessage(
             {
@@ -2425,31 +2424,36 @@ ${msg}
           })
           .catch((err) => {
             console.error(err);
+            errorNumbers.push(student['parentPhone']); // Add phone number to error array
           });
       } catch (err) {
         console.error(`Error sending message to ${student['studentName']}:`, err);
+        errorNumbers.push(student['parentPhone']); // Add phone number to error array
       }
 
-      // Introduce a random delay between 1 and 10 seconds
+      // Introduce a random delay between 1 and 5 seconds
       const randomDelay = Math.floor(Math.random() * (5 - 1 + 1) + 1) * 1000;
       console.log(
-        `Delaying for ${
-          randomDelay / 1000
-        } seconds before sending the next message.`
+        `Delaying for ${randomDelay / 1000} seconds before sending the next message.`
       );
       await delay(randomDelay);
     }
 
-    res.status(200).json({ message: 'Messages sent successfully' });
+    // If errors occurred, send a response with the problematic numbers
+    if (errorNumbers.length > 0) {
+      res.status(200).json({
+        message: 'Messages sent with some errors',
+        errors: errorNumbers,
+      });
+    } else {
+      res.status(200).json({ message: 'Messages sent successfully' });
+    }
   } catch (error) {
     console.error('Error sending messages:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
 
-
-
-
-}
 
 
 // =================================================== END Whats app 2 =================================================== //

@@ -364,86 +364,93 @@
 <script>
   const submitDataButton = document.getElementById('submitDataButton');
   
-  const submitData = async () => {
-    submitDataButton.disabled = true;
-    submitDataButton.textContent = 'Submitting...';
-    document.getElementById('nMessagesBox').classList.remove('hidden');
-    // Collect data from the table
-    const data = [];
-    let isValid = true;
+ const submitData = async () => {
+  submitDataButton.disabled = true;
+  submitDataButton.textContent = 'Submitting...';
+  document.getElementById('nMessagesBox').classList.remove('hidden');
 
-    if (optionSelect.value === 'HWStatus') {
-        const rows = document.querySelectorAll('#HWStatusTbody tr');
-        rows.forEach((row, index) => {
-            const studentName = row.cells[1].innerText;
-            const studentCode = row.cells[2].innerText;
-            const parentPhone = row.cells[3].innerText;
-            const hwStatusInput = row.querySelector(`input[name="hwStatus${index + 1}"]:checked`);
-            const hwStatus = hwStatusInput ? hwStatusInput.value : "no"; // Default to "no" if not checked
-            data.push({
-                studentName,
-                studentCode,
-                parentPhone,
-                hwStatus
-            });
-        });
-    } else if (optionSelect.value === 'gradeMsg') {
-        const quizName = document.getElementById('quizName').value;
-        const maxGrade = document.getElementById('maxGrade').value;
+  // Collect data from the table
+  const data = [];
+  let isValid = true;
 
-        if (!quizName || !maxGrade) {
-            isValid = false;
-            alert('Please enter quiz name and max grade.');
-            return;
-        }
+  if (optionSelect.value === 'HWStatus') {
+    const rows = document.querySelectorAll('#HWStatusTbody tr');
+    rows.forEach((row, index) => {
+      const studentName = row.cells[1].innerText;
+      const studentCode = row.cells[2].innerText;
+      const parentPhone = row.cells[3].innerText;
+      const hwStatusInput = row.querySelector(
+        `input[name="hwStatus${index + 1}"]:checked`
+      );
+      const hwStatus = hwStatusInput ? hwStatusInput.value : 'no'; // Default to "no" if not checked
+      data.push({
+        studentName,
+        studentCode,
+        parentPhone,
+        hwStatus,
+      });
+    });
+  } else if (optionSelect.value === 'gradeMsg') {
+    const quizName = document.getElementById('quizName').value;
+    const maxGrade = document.getElementById('maxGrade').value;
 
-        const rows = document.querySelectorAll('#quizGradesTbody tr');
-        rows.forEach((row, index) => {
-            const studentName = row.cells[1].innerText;
-            const studentCode = row.cells[2].innerText;
-            const parentPhone = row.cells[3].innerText;
-            const gradeInput = row.querySelector(`input[name="quizGrade${index + 1}"]`);
-            const grade = gradeInput ? gradeInput.value : "0"; // Default to "0" if empty
-            data.push({
-                studentName,
-                studentCode,
-                parentPhone,
-                grade
-            });
-        });
+    if (!quizName || !maxGrade) {
+      isValid = false;
+      alert('Please enter quiz name and max grade.');
+      return;
     }
 
-    if (!isValid) return;
+    const rows = document.querySelectorAll('#quizGradesTbody tr');
+    rows.forEach((row, index) => {
+      const studentName = row.cells[1].innerText;
+      const studentCode = row.cells[2].innerText;
+      const parentPhone = row.cells[3].innerText;
+      const gradeInput = row.querySelector(
+        `input[name="quizGrade${index + 1}"]`
+      );
+      const grade = gradeInput ? gradeInput.value : '0'; // Default to "0" if empty
+      data.push({
+        studentName,
+        studentCode,
+        parentPhone,
+        grade,
+      });
+    });
+  }
 
-    console.log(data);
-    // console.log(document.getElementById('quizName').value, document.getElementById('maxGrade').value);
-    console.log(optionSelect.value);
+  if (!isValid) return;
 
-    // Send data to the server
-  const response =   await fetch('/teacher/whatsApp2/submitData', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          data,
-          option: optionSelect.value,
-          quizName: document.getElementById('quizName').value||'',
-          maxGrade: document.getElementById('maxGrade').value||'',
-          instanceID: document.getElementById('numberSelected').value
-        })
-      })
-      if(response.ok){
-        console.log('Data submitted successfully!');
-        alert('Data submitted successfully!');
-        window.location.reload();
-      }else{
-        console.log('Failed to submit data!');
-        alert('Failed to submit data!');
-      }
-      
-  
-  };
+  // Send data to the server
+  const response = await fetch('/teacher/whatsApp2/submitData', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      data,
+      option: optionSelect.value,
+      quizName: document.getElementById('quizName').value || '',
+      maxGrade: document.getElementById('maxGrade').value || '',
+      instanceID: document.getElementById('numberSelected').value,
+    }),
+  });
+
+  const result = await response.json();
+  if (response.ok) {
+    if (result.errors && result.errors.length > 0) {
+      alert(
+        `Messages sent, but errors occurred with these numbers: ${result.errors.join(
+          ', '
+        )}`
+      );
+    } else {
+      alert('Data submitted successfully!');
+    }
+    window.location.reload();
+  } else {
+    alert('Failed to submit data!');
+  }
+};
 
   submitDataButton.addEventListener('click', submitData);
 </script>

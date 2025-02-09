@@ -603,7 +603,11 @@ async function sendWappiMessage(message, phone,adminPhone) {
 
 
 const addCardGet = async (req, res) => {
-  
+  // await User.deleteMany({
+  //   centerName: 'GTA',
+  //   Grade: 'EST1',
+  //   gradeType: 'adv',
+  // });
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }
 

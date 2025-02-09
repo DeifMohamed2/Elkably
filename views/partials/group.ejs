@@ -56,7 +56,12 @@
     ACT: [{
       value: 'adv',
       text: 'advanced'
-    }]
+    },
+    {
+      value: 'basic',
+      text: 'Basics'
+    }
+  ]
   };
 
   // Group times for each center
@@ -109,11 +114,7 @@
       EST: {
         adv: [{
             value: 'group1',
-            text: "Group(1) - Sunday @ 6PM & Wednesday @ 6PM"
-          },
-          {
-            value: 'group2',
-            text: "Group(2) - Monday & Wednesday @ 1PM"
+            text: "Group(1) - Sunday @ 9PM & Wednesday @ 9PM"
           },
           {
             value: 'group4',
@@ -123,10 +124,10 @@
 
 
         ],
-        // basic :[
-        //  { value: 'group1', text: "Group(1) - Sunday & Wednesday @ 8PM" },
+        basic :[
+         { value: 'group1', text: "Group(1) - Monday @ 8PM" },
 
-        // ],
+        ],
 
       },
       EST2: {
@@ -142,10 +143,14 @@
 
         adv: [{
             value: 'group1',
-            text: "Group(1) - Sunday @ 4PM & Wednesday @ 4PM"
+            text: "Group(1) - Sunday @ 6PM & Wednesday @ 6PM"
           },
 
         ],
+        basic: [{
+          value: 'group1',
+          text: "Group(1) - Monday @ 6PM"
+        }]
       }
     }
   };

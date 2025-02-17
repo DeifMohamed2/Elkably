@@ -100,7 +100,7 @@ const public_login_post = async (req, res) => {
       if (user.subscribe) {
         return res.redirect('/student/dash');
       } else {
-        return res.redirect('/login?StudentCode=' + user.Code);
+        return res.redirect('/login');
       }
     }
   } catch (error) {

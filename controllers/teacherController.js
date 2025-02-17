@@ -604,9 +604,9 @@ async function sendWappiMessage(message, phone,adminPhone) {
 
 const addCardGet = async (req, res) => {
   // await User.deleteMany({
-  //   centerName: 'GTA',
-  //   Grade: 'EST1',
-  //   gradeType: 'adv',
+  //   centerName: 'tagmo3',
+  // }).then((result) => {
+  //   console.log(`${result.deletedCount} users deleted.`);
   // });
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }
@@ -2368,7 +2368,7 @@ const submitData = async (req, res) => {
   req.io.emit('sendingMessages', {
     nMessages: n,
   });
-
+  console.log(data);
   try {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -2380,12 +2380,15 @@ const submitData = async (req, res) => {
       if (option === 'HWStatus') {
         const msg =
           student['hwStatus'] === 'no'
-            ? `لم يقم الطالب ${student['studentName']} بحل واجب حصة اليوم`
-            : `لقد قام الطالب ${student['studentName']} بحل واجب حصة اليوم`;
+            ? `لم يقم الطالب *${student['studentName']}* بحل واجب حصة اليوم`
+            : `لقد قام الطالب *${student['studentName']}* بحل واجب حصة اليوم`;
+            
         theMessage = `
 السلام عليكم
-مع حضرتك assistant mr kably EST/ACT math teacher 
+مع حضرتك Assistant Mr Kably EST/ACT Math Teacher 
+
 ${msg}
+${student['solvStatus']=="true" ? "*ولقد قام بحل الواجب بالخطوات*" : "*ولم يقم بحل الواجب بالخطوات*"}
 `;
       } else if (option === 'gradeMsg') {
         if (!student['grade']) {

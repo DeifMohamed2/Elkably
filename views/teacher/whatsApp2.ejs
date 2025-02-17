@@ -219,6 +219,7 @@
                                         <th>Parent Phone</th>
                                         <th>Yes</th>
                                         <th>No</th>
+                                        <th>WithOut Steps</th>
                                     </tr>
                                 </thead>
                                 <tbody id="HWStatusTbody">
@@ -327,6 +328,7 @@
                                     <td>${student.parentPhone}</td>
                                     <td><input type="radio" name="hwStatus${index + 1}" value="yes"></td>
                                     <td><input type="radio" name="hwStatus${index + 1}" value="no"></td>
+                                    <td><input type="radio" name="solvStatus${index + 1}" value="true"></td>
                                 </tr>
                             `;
                         });
@@ -382,12 +384,17 @@
       const hwStatusInput = row.querySelector(
         `input[name="hwStatus${index + 1}"]:checked`
       );
+      const solvStatusInput = row.querySelector(
+        `input[name="solvStatus${index + 1}"]:checked`
+      );
       const hwStatus = hwStatusInput ? hwStatusInput.value : 'no'; // Default to "no" if not checked
+      const solvStatus = solvStatusInput ? solvStatusInput.value : 'false'; // Default to "false" if not checked
       data.push({
         studentName,
         studentCode,
         parentPhone,
         hwStatus,
+        solvStatus,
       });
     });
   } else if (optionSelect.value === 'gradeMsg') {

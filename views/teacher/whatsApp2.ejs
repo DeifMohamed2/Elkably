@@ -329,6 +329,7 @@
                                     <td><input type="radio" name="hwStatus${index + 1}" value="yes"></td>
                                     <td><input type="radio" name="hwStatus${index + 1}" value="no"></td>
                                     <td><input type="radio" name="solvStatus${index + 1}" value="true"></td>
+                                    <td class="hidden">${student._id}</td>
                                 </tr>
                             `;
                         });
@@ -381,15 +382,17 @@
       const studentName = row.cells[1].innerText;
       const studentCode = row.cells[2].innerText;
       const parentPhone = row.cells[3].innerText;
+      const studentId = row.cells[7].innerText;
       const hwStatusInput = row.querySelector(
         `input[name="hwStatus${index + 1}"]:checked`
       );
       const solvStatusInput = row.querySelector(
         `input[name="solvStatus${index + 1}"]:checked`
       );
-      const hwStatus = hwStatusInput ? hwStatusInput.value : 'no'; // Default to "no" if not checked
+      const hwStatus = hwStatusInput ? hwStatusInput.value : 'none'; // Default to "no" if not checked
       const solvStatus = solvStatusInput ? solvStatusInput.value : 'false'; // Default to "false" if not checked
       data.push({
+        studentId,
         studentName,
         studentCode,
         parentPhone,
@@ -435,6 +438,10 @@
     },
     body: JSON.stringify({
       data,
+      centerName: centerName.value,
+      Grade: Grade.value,
+      gradeType: gradeType.value,
+      groupTime: groupTime.value,
       option: optionSelect.value,
       quizName: document.getElementById('quizName').value || '',
       maxGrade: document.getElementById('maxGrade').value || '',

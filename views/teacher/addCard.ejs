@@ -210,6 +210,20 @@
                                         </div>
 
                                     </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check mt-3">
+                                            <input type="checkbox" class="form-check-input" id="HWwithOutSteps">
+                                            <label class="form-check-label" for="HWwithOutSteps">HW WithOut Steps</label>
+                                        </div>
+
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check mt-3">
+                                            <input type="checkbox" class="form-check-input" id="attendWithOutHW">
+                                            <label class="form-check-label" for="attendWithOutHW">Attend WithOut HW</label>
+                                        </div>
+
+                                    </div>
                                 </div>
                             <div class="student-table">
                                     <div class="row" style="margin-bottom: 0 !important;">
@@ -401,6 +415,9 @@
     const attendAbsencet = document.getElementById('attendAbsencet');
     const attendOtherGroup = document.getElementById('attendOtherGroup');
 
+    const HWwithOutSteps = document.getElementById('HWwithOutSteps')
+    const attendWithOutHW = document.getElementById('attendWithOutHW')
+
     const table = document.querySelector('tbody');
 
     const showMessage = (message, isError = false) => {
@@ -534,7 +551,9 @@
             isSolving : isSolving.value,
             attendAbsencet : attendAbsencet.checked,
             attendOtherGroup : attendOtherGroup.checked,
-            attendId: attendeeID.value
+            attendId: attendeeID.value,
+            HWwithOutSteps : HWwithOutSteps.checked,
+            attendWithOutHW : attendWithOutHW.checked,
         };
 
         try {
@@ -559,6 +578,10 @@
         } catch (error) {
             console.error('Error:', error);
         } finally {
+            attendAbsencet.checked = false;
+            attendOtherGroup.checked = false;
+            HWwithOutSteps.checked = false;
+            attendWithOutHW.checked = false;
             enableInputs();
             attendeeID.value = "";
             attendeeID.focus();

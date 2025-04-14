@@ -18,6 +18,7 @@ waapi.auth(`${waapiAPI}`);
 
 async function sendQRCode(chatId, message, studentCode, centerName) {
   try {
+    console.log(centerName);
     // Generate a high-quality QR code in Base64 format
     const qrData = await qrcode.toDataURL(studentCode, {
       margin: 2, // White border around the QR code
@@ -40,7 +41,7 @@ async function sendQRCode(chatId, message, studentCode, centerName) {
         id:
           centerName === 'tagmo3'
             ? instanceID2
-            : centerName === 'maadi'
+            : centerName === 'GTA'
             ? instanceID1
             : instanceID3,
       }

@@ -608,6 +608,13 @@ const addCardGet = async (req, res) => {
   // }).then((result) => {
   //   console.log(`${result.deletedCount} users deleted.`);
   // });
+
+  // await User.updateMany(
+  //   { centerName: 'GTA', Grade: 'EST1', gradeType: 'adv', groupTime: 'group3' },
+  //   { groupTime: 'group2' }
+  // ).then((result) => {
+  //   console.log(`${result.nModified} users updated.`);
+  // });
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }
 

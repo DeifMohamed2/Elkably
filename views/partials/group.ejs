@@ -1,16 +1,7 @@
 <script>
   const centerNames = {
-    GTA: [{
-        value: 'EST1',
-        text: 'EST1'
-      },
-      {
-        value: 'EST2',
-        text: 'EST2'
-      },
-      // { value: 'ACT', text: 'ACT' }
-    ],
-    tagmo3: [{
+
+    Online: [{
         value: 'EST',
         text: 'EST'
       },
@@ -19,8 +10,45 @@
         text: 'EST2'
       },
       {
+        value: 'SAT',
+        text: 'SAT'
+      },
+      {
+        value: 'Basics',
+        text: 'Basics'
+      },
+      {
         value: 'ACT',
         text: 'ACT'
+      }
+    ],
+
+    GTA: [{
+        value: 'EST',
+        text: 'EST'
+      },
+      {
+        value: 'SAT',
+        text: 'SAT'
+      },
+      {
+        value: 'Basics',
+        text: 'Basics'
+      },
+
+      // { value: 'ACT', text: 'ACT' }
+    ],
+    tagmo3: [{
+        value: 'EST',
+        text: 'EST'
+      },
+      {
+        value: 'SAT',
+        text: 'SAT'
+      },
+      {
+        value: 'Basics',
+        text: 'Basics'
       },
 
 
@@ -35,12 +63,22 @@
         value: 'adv',
         text: 'Advanced'
       },
-      {
-        value: 'basic',
-        text: 'Basic'
-      }
+      // {
+      //   value: 'basic',
+      //   text: 'Basic'
+      // }
     ],
-    EST1: [{
+    SAT: [{
+        value: 'adv',
+        text: 'Advanced'
+      },
+
+    ],
+    Basics: [{
+      value: 'normal',
+      text: 'Normal'
+    }],
+    ACT: [{
         value: 'adv',
         text: 'Advanced'
       },
@@ -48,111 +86,133 @@
         value: 'basic',
         text: 'Basic'
       }
+
     ],
+
     EST2: [{
-      value: 'normal',
-      text: 'Normal'
-    }],
-    ACT: [{
-      value: 'adv',
-      text: 'advanced'
-    },
-    {
-      value: 'basic',
-      text: 'Basics'
-    }
-  ]
+        value: 'normal',
+        text: 'normal'
+      },
+
+    ],
+
+
+
   };
 
   // Group times for each center
   const groupTimes = {
     GTA: {
-      EST1: {
+      EST: {
         adv: [{
             value: 'group1',
-            text: 'Group(1) - Saturday & Tuesday @ 8PM'
+            text: 'Group(1) - Saturday & Tuesday @ 6PM'
           },
 
-          {
-            value: 'group2',
-            text: 'Group(2) - Tuesday @ 1PM & Friday @ 2PM'
-          },
+          // {
+          //   value: 'group2',
+          //   text: 'Group(2) - Tuesday @ 1PM & Friday @ 2PM'
+          // },
 
-          {
-            value: 'group3',
-            text: 'Group(3) - Sunday & Tuesday @ 1PM'
-          },
-          {
-            value: 'Test',
-            text: 'Test'
-          },
+          // {
+          //   value: 'group3',
+          //   text: 'Group(3) - Sunday & Tuesday @ 1PM'
+          // },
+          // {
+          //   value: 'Test',
+          //   text: 'Test'
+          // },
+
         ],
-        basic: [{
-            value: 'group1',
-            text: "Group(1) - Saturday & Tuesday @ 8PM"
-          },
 
-        ]
       },
-      EST2: {
+      Basics: {
         normal: [{
             value: 'group1',
-            text: "Group(1) - Saturday @ 1PM & Monday @ 7PM"
+            text: "Group(1) - Monday @ 6PM & Friday @ 5PM"
           },
 
         ]
       },
-      // ACT: {
-      //   normal: [
-      //     { value: 'group1', text: "Group(1) - Sunday @ 7PM & Wednesday @ 6PM" },
+      SAT: {
+        adv: [{
+            value: 'group1',
+            text: "Group(1) - Saturday @ 3:30PM & Tuesday @ 8PM"
+          },
 
+        ]
+      },
 
-      //   ]
-      // }
     },
     tagmo3: {
       EST: {
         adv: [{
             value: 'group1',
-            text: "Group(1) - Sunday @ 9PM & Wednesday @ 9PM"
+            text: "Group(1) - Sunday @ 6:30PM & Wednesday @ 4:30PM"
           },
-          {
-            value: 'group4',
-            text: "TEST"
-          },
+
           // { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
-
-
-        ],
-        basic :[
-         { value: 'group1', text: "Group(1) - Monday @ 8PM" },
-
         ],
 
       },
-      EST2: {
+      Basics: {
         normal: [{
             value: 'group1',
-            text: "Group(1) - Sunday @ 8PM & Wednesday @ 8PM "
+            text: "Group(1) - Sunday & Wednesday @ 8:30PM "
+          },
+
+        ]
+      },
+      SAT: {
+        adv: [{
+            value: 'group1',
+            text: "Group(1) - Sunday @ 4:30PM & Wednesday @ 6:30PM "
           },
 
         ]
       },
 
-      ACT: {
 
+    },
+
+    Online: {
+      EST: {
         adv: [{
-            value: 'group1',
-            text: "Group(1) - Sunday @ 6PM & Wednesday @ 6PM"
-          },
-
-        ],
-        basic: [{
           value: 'group1',
-          text: "Group(1) - Monday @ 6PM"
+          text: "Group(1) - Online "
+        }],
+      },
+      Basics: {
+        normal: [{
+          value: 'group1',
+          text: "Group(1) - Online "
         }]
-      }
+      },
+      SAT: {
+        adv: [{
+          value: 'group1',
+          text: "Group(1) - Online "
+        }]
+      },
+      ACT: {
+        adv: [{
+          value: 'group1',
+          text: "Group(1) - Online"
+        }],
+        basic: [{
+          value: 'group2',
+          text: "Group(2) - Online "
+        }]
+      },
+      EST2: {
+        normal: [{
+          value: 'group1',
+          text: "Group(1) - Online "
+        }]
+      },
     }
+
+
   };
 
 

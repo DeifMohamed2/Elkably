@@ -582,22 +582,24 @@ async function sendWappiMessage(message, phone,adminPhone) {
     instanceId = '28889';
     waapi.auth(waapiAPI2);
   }else if (adminPhone == '01055640148') {
-    instanceId = '34202';
-    waapi.auth(waapiAPI);
+    instanceId = '54015';
+    waapi.auth(waapiAPI2);
+  }else if (adminPhone == '01147929010') {
+    waapi.auth(waapiAPI2);
+    instanceId = '59589';
   }
-
-   await waapi
-     .postInstancesIdClientActionSendMessage(
-       {
-         chatId: `2${phone}@c.us`,
-         message: message,
-       },
-       { id: instanceId }
-     )
-     .then(({ data }) => {})
-     .catch((err) => {
-       console.log(err);
-     });
+    await waapi
+      .postInstancesIdClientActionSendMessage(
+        {
+          chatId: `2${phone}@c.us`,
+          message: message,
+        },
+        { id: instanceId }
+      )
+      .then(({ data }) => {})
+      .catch((err) => {
+        console.log(err);
+      });
 }
 
 

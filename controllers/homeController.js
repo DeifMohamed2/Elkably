@@ -8,11 +8,15 @@ const qrcode = require('qrcode');
 
 const jwtSecret = process.env.JWTSECRET;
 const waapiAPI = process.env.WAAPIAPI2;
+const instanceID1 = process.env.instanceID1;
+const instanceID2 = process.env.instanceID2;
+const instanceID3 = process.env.instanceID3;
+
 waapi.auth(`${waapiAPI}`);
 
 
 
-async function sendQRCode(chatId, message,studentCode) {
+async function sendQRCode(chatId, message, studentCode, centerName) {
   try {
     // Generate a high-quality QR code in Base64 format
     const qrData = await qrcode.toDataURL(studentCode, {
@@ -22,8 +26,7 @@ async function sendQRCode(chatId, message,studentCode) {
     });
     const base64Image = qrData.split(',')[1]; // Extract only the Base64 data
 
-    console.log('Generated QR Code Base64:', base64Image);
-    console.log('Sending to Chat ID:', chatId);
+    
 
     const response = await waapi.postInstancesIdClientActionSendMedia(
       {
@@ -33,7 +36,14 @@ async function sendQRCode(chatId, message,studentCode) {
         mediaCaption: message,
         asSticker: false, // Set true if you want to send as a sticker
       },
-      { id: '28889' } // Replace with your actual instance ID
+      {
+        id:
+          centerName === 'tagmo3'
+            ? instanceID2
+            : centerName === 'maadi'
+            ? instanceID1
+            : instanceID3,
+      }
     );
 
     console.log('QR code sent successfully:', response.data);
@@ -331,7 +341,14 @@ const public_Register_post = async (req, res) => {
         )
           .then(() => {
 
-            sendQRCode(`2${phone}@c.us`, `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${bookTaken ? 'Yes' : 'No'} \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `, Code);
+            sendQRCode(
+              `2${phone}@c.us`,
+              `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${
+                bookTaken ? 'Yes' : 'No'
+              } \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `,
+              Code,
+              centerName
+            );
             res
               .status(201)
               .redirect('Register');

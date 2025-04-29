@@ -579,14 +579,14 @@ const convertToExcelAllUserData = async (req, res) => {
 async function sendWappiMessage(message, phone,adminPhone) {
   let instanceId = '';
   if (adminPhone == '01065057897') {
-    instanceId = '28889';
+    instanceId = '62906';
     waapi.auth(waapiAPI2);
   }else if (adminPhone == '01055640148') {
-    instanceId = '54015';
+    instanceId = '62905';
     waapi.auth(waapiAPI2);
   }else if (adminPhone == '01147929010') {
     waapi.auth(waapiAPI2);
-    instanceId = '59589';
+    instanceId = '62904';
   }
     await waapi
       .postInstancesIdClientActionSendMessage(

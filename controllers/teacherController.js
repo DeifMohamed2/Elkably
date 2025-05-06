@@ -842,15 +842,15 @@ if(attendWithOutHW){
       }
 
       const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأنه تم التحديث ابنكم قد *${message} اليوم*.\n
-وقد تم تسجيل حضوره *متأخرًا*.\n
-وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
-عدد مرات الغياب: *${student.absences}*.\n\n
-*يرجى الانتباه لمواعيد الحضور مستقبلًا*.\n\n
-${HWmessage}\n
-التاريخ: ${today}
-الوقت: ${new Date().toLocaleTimeString()}
-*شكرًا لتعاونكم.*`;
+      نود إعلامكم بأنه تم التحديث ابنكم قد *${message} اليوم*.\n
+      وقد تم تسجيل حضوره *متأخرًا*.\n
+      وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
+      عدد مرات الغياب: *${student.absences}*.\n\n
+      *يرجى الانتباه لمواعيد الحضور مستقبلًا*.\n\n
+      ${HWmessage}\n
+      التاريخ: ${today}
+      الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
+      *شكرًا لتعاونكم.*`;
 
       // Send the message via the waapi (already present)
 
@@ -929,7 +929,7 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
 عدد مرات الغياب: *${student.absences}*.\n
 ${HWmessage}\n
 التاريخ: ${today}
-الوقت: ${new Date().toLocaleTimeString()}
+الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
 *شكرًا لتعاونكم.*`;
 
 
@@ -1551,6 +1551,7 @@ const getAttendees = async (req, res) => {
     const { Grade, centerName, GroupTime, gradeType, date, isSolving } =
       req.body;
 
+      console.log(Grade, centerName, GroupTime , gradeType, date, isSolving);
     try {
       const group = await Group.findOne({
         Grade,
@@ -1585,8 +1586,8 @@ const getAttendees = async (req, res) => {
 }
 
 const convertAttendeesToExcel = async (req, res) => {
-  const { centerName, Grade, GroupTime, gradeType, isSolving } = req.body;
-
+  const { centerName, Grade, GroupTime, gradeType, isSolving, date } = req.body;
+  console.log(centerName, Grade, GroupTime, gradeType, isSolving);
   try {
     // Find the group
     const group = await Group.findOne({
@@ -1595,21 +1596,23 @@ const convertAttendeesToExcel = async (req, res) => {
       GroupTime: GroupTime,
       gradeType: gradeType,
     });
-
+    console.log(group);
     if (!group) {
-      return res.status(404).json({ message: 'Group not found' });
+      throw new Error('Group not found');
     }
 
     // Find today's attendance record for the group
-    const today = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Africa/Cairo', // Egypt's time zone
-    }).format(new Date());
+    // const today = new Intl.DateTimeFormat('en-CA', {
+    //   timeZone: 'Africa/Cairo', // Egypt's time zone
+    // }).format(new Date());
 
     let attendance = await Attendance.findOne({
       groupId: group._id,
-      date: today,
+      date: date,
       isSolving,
     }).populate('studentsPresent studentsAbsent studentsLate studentsExcused');
+
+    console.log(attendance);
 
     if (!attendance) {
       return res
@@ -1635,7 +1638,7 @@ const convertAttendeesToExcel = async (req, res) => {
     ]);
     groupInfoRow.font = { bold: true };
 
-    worksheet.addRow([Grade, centerName, GroupTime, today]);
+    worksheet.addRow([Grade, centerName, GroupTime, date]);
 
     // Add present students section
     let row = worksheet.addRow([]);

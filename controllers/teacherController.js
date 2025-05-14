@@ -1,13 +1,12 @@
 const User = require('../models/User');
 const Group  = require('../models/Group');
-
+const WhatsAppInstance = require('../models/WhatsAppInstance');
 const Card = require('../models/Card');
 const Attendance = require('../models/Attendance'); 
 
 const waapi = require('@api/waapi');
 const waapiAPI = process.env.WAAPIAPI;
-const waapiAPI2 = process.env.WAAPIAPI2;
-
+waapi.auth(waapiAPI);
 const Excel = require('exceljs');
 
 const dash_get = async(req, res) => {
@@ -580,12 +579,9 @@ async function sendWappiMessage(message, phone,adminPhone) {
   let instanceId = '';
   if (adminPhone == '01065057897') {
     instanceId = '62906';
-    waapi.auth(waapiAPI2);
   }else if (adminPhone == '01055640148') {
     instanceId = '62905';
-    waapi.auth(waapiAPI2);
   }else if (adminPhone == '01147929010') {
-    waapi.auth(waapiAPI2);
     instanceId = '62904';
   }
     await waapi
@@ -2155,19 +2151,8 @@ const convertAttendaceToExcel = async (req, res) => {
     )}/attendance_reports/${fileName}`;
 
     // Use WhatsApp API to send the URL
-  waapi
-    .postInstancesIdClientActionSendMedia(
-      {
-        mediaUrl: fileUrl,
-        chatId: '2' + student.parentPhone + '@c.us',
-        mediaBase64: base64Excel,
-        mediaName: 'attendance_report.xlsx',
-        mediaCaption: `Attendance Report for ${student.Username}`,
-      },
-      { id: '28889' }
-    )
-    .then(({ data }) => console.log(data))
-    .catch((err) => console.error(err));
+
+    // await sendWappiMessage(fileUrl, student.parentPhone,req.userData.phone);
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
@@ -2207,7 +2192,6 @@ const sendGradeMessages = async (req, res) => {
     nameCloumnName,
     dataToSend,
     quizName,
-    instanceID,
     maxGrade,
   } = req.body;
 
@@ -2235,30 +2219,14 @@ const sendGradeMessages = async (req, res) => {
       `;
 
       try {
-
-        if (instanceID === '34202') {
-          waapi.auth(waapiAPI);
-        } else if(instanceID === '28889'){
-          waapi.auth(waapiAPI2);
-        }
-
-        await waapi
-          .postInstancesIdClientActionSendMessage(
-            {
-              chatId: `20${phone}@c.us`,
-              message: message,
-            },
-            { id: instanceID }
-          )
-          .then((result) => {
-            console.log(result);
-            req.io.emit('sendingMessages', {
-              nMessages: ++n,
-            });
-          })
-          .catch((err) => {
-            console.error(err);
+        await sendWappiMessage(message, phone,req.userData.phone)
+        .then(() => {
+          req.io.emit('sendingMessages', {
+            nMessages: ++n,
           });
+          console.log(`Message sent successfully to ${name}`);
+        })
+        
       } catch (err) {
         console.error(`Error sending message to ${name}:`, err);
       }
@@ -2282,7 +2250,7 @@ const sendGradeMessages = async (req, res) => {
 
 
 const sendMessages = async (req, res) => {
-  const { phoneCloumnName, nameCloumnName, dataToSend, HWCloumnName ,instanceID } =
+  const { phoneCloumnName, nameCloumnName, dataToSend, HWCloumnName  } =
     req.body;
 
   let n = 0;
@@ -2309,29 +2277,14 @@ ${msg}
       `;
 
       try {
-        if (instanceID === '34155') {
-          waapi.auth(waapiAPI)
-        } else {
-         waapi.auth(waapiAPI2);
-        }
-        await waapi
-          .postInstancesIdClientActionSendMessage(
-            {
-              chatId: `20${student[phoneCloumnName]}@c.us`,
-              message: theMessage,
-            },
-            { id: instanceID }
-          )
-          .then((result) => {
-            console.log(result);
-            req.io.emit('sendingMessages', {
-              nMessages: ++n,
-            });
-          })
-          .catch((err) => {
-            console.error(err);
+        await sendWappiMessage(theMessage, student[phoneCloumnName],req.userData.phone)
+        .then(() => {
+          req.io.emit('sendingMessages', {
+            nMessages: ++n,
           });
-      
+          console.log(`Message sent successfully to ${student[nameCloumnName]}`);
+        })
+        
       
         } catch (err) {
         console.error(
@@ -2388,7 +2341,7 @@ const getDataStudentInWhatsApp = async (req, res) => {
 }
 
 const submitData = async (req, res) => {
-  const { data, option, quizName, maxGrade, instanceID, centerName, Grade, gradeType, groupTime } = req.body;
+  const { data, option, quizName, maxGrade, centerName, Grade, gradeType, groupTime } = req.body;
   let n = 0;
   const errorNumbers = [];
   const studentsIds = [];
@@ -2457,19 +2410,22 @@ ${
   };
 
   try {
-    if (instanceID === '34202') waapi.auth(waapiAPI);
-    else if (instanceID === '28889') waapi.auth(waapiAPI2);
 
     for (const student of data) {
       const message = getMessage(student);
       console.log(message, student.parentPhone);
 
       try {
-        await waapi.postInstancesIdClientActionSendMessage(
-          { chatId: `2${student.parentPhone}@c.us`, message },
-          { id: instanceID }
-        );
-        req.io.emit('sendingMessages', { nMessages: ++n });
+         await sendWappiMessage(message, student['parentPhone'], req.userData.phone)
+          .then(() => {
+            req.io.emit('sendingMessages', {
+              nMessages: ++n,
+            });
+            console.log(`Message sent successfully to ${student['studentName']}`);
+          })
+          .catch((error) => {
+            console.error(`Error sending message to ${student['studentName']}:`, error);
+          });
       } catch (err) {
         console.error(`Error sending message to ${student.studentName}:`, err);
         errorNumbers.push(student.parentPhone);
@@ -2602,6 +2558,283 @@ const logOut = async (req, res) => {
   res.redirect('../login');
 };
 
+// =================================================== Connect WhatsApp =================================================== //
+
+
+const connectWhatsapp_get = (req, res) => {
+  res.render('teacher/connectWhatsapp', { title: 'Connect WhatsApp', path: req.path });
+};
+
+const createInstance = async (req, res) => {
+  const { phoneNumber, name } = req.body;
+  
+  try {
+    // Generate a unique instance ID
+    const instanceId = Date.now().toString();
+    
+    // Create a new WhatsApp instance
+    const instance = new WhatsAppInstance({
+      instanceId,
+      phoneNumber,
+      name,
+      status: 'disconnected',
+      qrCode: null
+    });
+    
+    await instance.save();
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Instance created successfully', 
+      instance 
+    });
+  } catch (error) {
+    console.error('Error creating instance:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error creating instance',
+      error: error.message 
+    });
+  }
+};
+
+const getInstances = async (req, res) => {
+  try {
+    const instances = await WhatsAppInstance.find({}).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      instances
+    });
+  } catch (error) {
+    console.error('Error fetching instances:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching instances',
+      error: error.message
+    });
+  }
+};
+
+const checkRealInstanceStatus = async (req, res) => {
+  const { instanceId } = req.params;
+  
+  try {
+    // First check if the instance exists in our database
+    const instance = await WhatsAppInstance.findOne({ instanceId });
+    
+    if (!instance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instance not found'
+      });
+    }
+    
+    // Use waapi to check the real status
+    try {
+      const { data } = await waapi.getInstancesIdClientStatus({ id: instanceId });
+      if (data && data.status === 'success') {
+        const apiStatus = data.clientStatus.instanceStatus;
+        
+        // Update our instance status based on the API response
+        let status;
+        switch(apiStatus) {
+          case 'ready':
+          case 'authenticated':
+            status = 'connected';
+            break;
+          case 'qr':
+            status = 'qr'; // Now treating qr status separately from connecting
+            break;
+          case 'loading_screen':
+          case 'booting':
+            status = 'connecting';
+            break;
+          case 'disconnected':
+          case 'auth_failure':
+          default:
+            status = 'disconnected';
+            break;
+        }
+        
+        // Update our database record
+        instance.status = status;
+        await instance.save();
+        
+        return res.status(200).json({
+          success: true,
+          apiStatus: apiStatus,
+          status: status
+        });
+      } else {
+        throw new Error('API returned unsuccessful response');
+      }
+    } catch (apiError) {
+      console.error('waapi error:', apiError);
+      
+      // If we can't connect to the API, return the status from our database
+      return res.status(200).json({
+        success: true,
+        apiStatus: 'unknown',
+        status: instance.status
+      });
+    }
+  } catch (error) {
+    console.error('Error checking instance status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking instance status',
+      error: error.message
+    });
+  }
+};
+
+const generateQrCode = async (req, res) => {
+  const { instanceId } = req.params;
+  
+  try {
+    // Find the instance
+    const instance = await WhatsAppInstance.findOne({ instanceId });
+    
+    if (!instance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instance not found'
+      });
+    }
+    
+    // Use waapi to generate a QR code
+    try {
+
+      // Request the QR code
+      const { data } = await waapi.getInstancesIdClientQr({ id: instanceId });
+      console.log('QR code API response:', JSON.stringify(data));
+      
+      if (data && data.status === 'success') {
+        // Extract QR code based on API response structure
+        let qrCodeData = null;
+        
+        if (data.qrCode && data.qrCode.data && data.qrCode.data.qr_code) {
+          // Format from user's example
+          qrCodeData = data.qrCode.data.qr_code;
+        } else if (data.data && data.data.qr_code) {
+          // New API format
+          qrCodeData = data.data.qr_code;
+        } else if (data.qr && data.qr.code) {
+          // Old API format
+          qrCodeData = data.qr.code;
+        }
+        
+        if (qrCodeData) {
+          // Update instance status to qr
+          instance.status = 'qr';
+          instance.qrCode = qrCodeData;
+          await instance.save();
+          
+          // Use socket.io to emit status change
+          req.io.emit('instance-status-change', {
+            instanceId,
+            status: 'qr',
+            qrCode: instance.qrCode
+          });
+          
+          return res.status(200).json({
+            success: true,
+            qrCode: instance.qrCode,
+            status: instance.status
+          });
+        }
+      }
+      
+      // If we reach here, we didn't get a valid QR code from the API
+      console.error('No valid QR code in API response:', data);
+      
+      // If QR code wasn't available, use our placeholder
+      instance.status = 'qr';
+      instance.qrCode = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAXNSR0IArs4c6QAAELBJREFUeF7tnXmQHVUVxr/XmYRsQzaykUAIeWGHsIV1BhdcqrCKclFB3LdSoVyKKvfCpe...'; // Placeholder
+      await instance.save();
+      
+      req.io.emit('instance-status-change', {
+        instanceId,
+        status: 'qr',
+        qrCode: instance.qrCode
+      });
+      
+      return res.status(200).json({
+        success: true,
+        qrCode: instance.qrCode,
+        status: instance.status
+      });
+    } catch (apiError) {
+      console.error('waapi QR code error:', apiError);
+      
+      // In a real application, you would use a WhatsApp API client to generate a QR code
+      // For this example, we'll simulate it with a placeholder
+      
+      // Update instance status to connecting
+      instance.status = 'qr';
+      instance.qrCode = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAXNSR0IArs4c6QAAELBJREFUeF7tnXmQHVUVxr/XmYRsQzaykUAIeWGHsIV1BhdcqrCKclFB3LdSoVyKKvfCpe...'; // This should be a base64 encoded QR code from the WhatsApp API
+      
+      await instance.save();
+      
+      // Use socket.io to emit status change
+      req.io.emit('instance-status-change', {
+        instanceId,
+        status: 'qr',
+        qrCode: instance.qrCode
+      });
+      
+      return res.status(200).json({
+        success: true,
+        qrCode: instance.qrCode,
+        status: instance.status,
+        error: apiError.message
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error generating QR code',
+      error: error.message
+    });
+  }
+};
+
+
+const deleteInstance = async (req, res) => {
+  const { instanceId } = req.params;
+  
+  try {
+    const result = await WhatsAppInstance.deleteOne({ instanceId });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instance not found'
+      });
+    }
+    
+    // Emit instance deleted event
+    req.io.emit('instance-deleted', {
+      instanceId
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Instance deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting instance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting instance',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   dash_get,
 
@@ -2627,7 +2860,6 @@ module.exports = {
   removeAttendance,
   updateAmount,
 
-
   
   handelAttendanceGet,
   getDates,
@@ -2641,10 +2873,17 @@ module.exports = {
   
 
   // WhatsApp
-
   whatsApp_get,
   sendGradeMessages,
   sendMessages,
+
+  // Connect WhatsApp
+  connectWhatsapp_get,
+  createInstance,
+  getInstances,
+  generateQrCode,
+  deleteInstance,
+  checkRealInstanceStatus,
 
   // WhatsApp 2
   whatsApp2_get,

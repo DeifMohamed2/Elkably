@@ -132,14 +132,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-1 mb-4">
-                            <select name="numberSelected" id="numberSelected" class="Grade w-100 text-center" required>
-                                <option value="">اختر الرقم  </option>
-                                <option value="28889">01065057897</option>
-                                <option value="54015">01055640148</option>
-                                <option value="59589">01147929010</option>
-                            </select>
-                        </div>
+                 
 
                             <div class="col-md-2">
                                 <select name="centerName" class="Grade w-100" id="centerName" value="" required>
@@ -283,7 +276,6 @@
 
 
   <script>
-        const numberSelected = document.getElementById('numberSelected');
         const centerName = document.getElementById('centerName');
         const Grade = document.getElementById('Grade');
         const gradeType = document.getElementById('gradeType');
@@ -294,13 +286,12 @@
         const getData =async () => {
        
           // Validate inputs
-          if (!numberSelected.value || !centerName.value || !Grade.value || !gradeType.value || !groupTime.value || !optionSelect.value) {
+          if (!centerName.value || !Grade.value || !gradeType.value || !groupTime.value || !optionSelect.value) {
             alert('Please fill in all the required fields.');
             return;
           }
 
             // Disable all buttons
-            numberSelected.disabled = true;
             centerName.disabled = true;
             Grade.disabled = true;
             gradeType.disabled = true;
@@ -309,7 +300,7 @@
             getDataButton.disabled = true;
 
             // Get data
-          await fetch(`/teacher/whatsApp2/getDataStudentInWhatsApp?numberSelected=${numberSelected.value}&centerName=${centerName.value}&Grade=${Grade.value}&gradeType=${gradeType.value}&groupTime=${groupTime.value}&optionSelect=${optionSelect.value}`)
+          await fetch(`/teacher/whatsApp2/getDataStudentInWhatsApp?centerName=${centerName.value}&Grade=${Grade.value}&gradeType=${gradeType.value}&groupTime=${groupTime.value}&optionSelect=${optionSelect.value}`)
                 .then(res => res.json())
                 .then(data => {
                     console.log(data);
@@ -446,7 +437,6 @@
       option: optionSelect.value,
       quizName: document.getElementById('quizName').value || '',
       maxGrade: document.getElementById('maxGrade').value || '',
-      instanceID: document.getElementById('numberSelected').value,
     }),
   });
 

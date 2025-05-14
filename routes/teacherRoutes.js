@@ -138,6 +138,15 @@ router.get('/whatsApp', authMiddleware, teacherController.whatsApp_get);
 router.post('/sendGradeMessages', authMiddleware, teacherController.sendGradeMessages);
 router.post('/sendMessages', authMiddleware, teacherController.sendMessages);
 
+// ================== Connect WhatsApp ====================== //
+
+router.get('/connectWhatsapp', authMiddleware, teacherController.connectWhatsapp_get);
+router.post('/createInstance', authMiddleware, teacherController.createInstance);
+router.get('/getInstances', authMiddleware, teacherController.getInstances);
+router.get('/generateQrCode/:instanceId', authMiddleware, teacherController.generateQrCode);
+router.delete('/deleteInstance/:instanceId', authMiddleware, teacherController.deleteInstance);
+router.get('/checkRealInstanceStatus/:instanceId', authMiddleware, teacherController.checkRealInstanceStatus);
+
 // ================== END Whats App ====================== //
 
 // ==================  whatsApp 2  ================= //

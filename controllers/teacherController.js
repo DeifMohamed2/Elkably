@@ -587,7 +587,7 @@ async function sendWappiMessage(message, phone,adminPhone) {
     await waapi
       .postInstancesIdClientActionSendMessage(
         {
-          chatId: `20${phone}@c.us`,
+          chatId: `2${phone}@c.us`,
           message: message,
         },
         { id: instanceId }

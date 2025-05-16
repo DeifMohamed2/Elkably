@@ -575,7 +575,7 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
-async function sendWappiMessage(message, phone,adminPhone) {
+async function sendWappiMessage(message, phone,adminPhone,isExcel = false) {
   let instanceId = '';
   if (adminPhone == '01065057897') {
     instanceId = '62906';
@@ -584,10 +584,14 @@ async function sendWappiMessage(message, phone,adminPhone) {
   }else if (adminPhone == '01147929010') {
     instanceId = '62904';
   }
+  let phoneNumber = `2${phone}@c.us`;
+  if(isExcel) {
+    phoneNumber = `20${phone}@c.us`;
+  }
     await waapi
       .postInstancesIdClientActionSendMessage(
         {
-          chatId: `2${phone}@c.us`,
+          chatId: phoneNumber,
           message: message,
         },
         { id: instanceId }
@@ -2219,7 +2223,7 @@ const sendGradeMessages = async (req, res) => {
       `;
 
       try {
-        await sendWappiMessage(message, phone,req.userData.phone)
+        await sendWappiMessage(message, phone,req.userData.phone,true)
         .then(() => {
           req.io.emit('sendingMessages', {
             nMessages: ++n,
@@ -2277,7 +2281,7 @@ ${msg}
       `;
 
       try {
-        await sendWappiMessage(theMessage, student[phoneCloumnName],req.userData.phone)
+        await sendWappiMessage(theMessage, student[phoneCloumnName],req.userData.phone,true)
         .then(() => {
           req.io.emit('sendingMessages', {
             nMessages: ++n,

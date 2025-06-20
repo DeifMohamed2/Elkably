@@ -724,7 +724,7 @@
                         </div>
                     </div>
 
-                    <div class="row mb-4 d-none">
+                    <div class="row mb-4 ">
                         <div class="col-12">
                             <div class="card shadow-sm bg-dark text-white border-0">
                                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -912,7 +912,7 @@
                 }
             }
 
-            // Function to check the real status from waapi
+            // Function to check the real status from Waziper API
             async function checkRealInstanceStatus(instanceId) {
                 try {
                     const response = await fetch(`/teacher/checkRealInstanceStatus/${instanceId}`);
@@ -931,46 +931,54 @@
                 const card = document.querySelector(`[data-instance-id="${instanceId}"]`);
                 if (!card) return;
                 
-                const statusIcon = card.querySelector('.fa-check-circle, .fa-sync-alt, .fa-times-circle');
+                const statusContainer = card.querySelector('.status-container');
+                const statusIcon = card.querySelector('.status-icon i');
                 const statusText = card.querySelector('.status-text');
+                const statusBadge = card.querySelector('.status-badge');
                 const generateQrButton = card.querySelector('.generate-qr');
+                const deleteButton = card.querySelector('.delete-instance');
                 
-                let status;
-                
-                // Map waapi instance status to our status
-                switch(apiStatus) {
-                    case 'ready':
-                    case 'authenticated':
-                        status = 'connected';
-                        break;
-                    case 'qr':
-                        status = 'qr';
-                        break;
-                    case 'loading_screen':
-                    case 'booting':
-                        status = 'connecting';
-                        break;
-                    case 'disconnected':
-                    case 'auth_failure':
-                    default:
-                        status = 'disconnected';
-                        break;
-                }
+                // Update status container class
+                statusContainer.className = `status-container ${getStatusClass(apiStatus)}`;
                 
                 // Update status icon class
-                statusIcon.className = getStatusIcon(status);
+                statusIcon.className = getStatusIcon(apiStatus);
                 
                 // Update status text class and content
-                statusText.className = `status-text ms-2 text-${getStatusClass(status)}`;
-                statusText.textContent = getStatusText(status);
+                statusText.className = `status-text ms-2 text-${getStatusClass(apiStatus)}`;
+                statusText.textContent = getStatusText(apiStatus);
                 
-                // Disable generate QR button if the instance is connected
-                generateQrButton.disabled = status === 'connected';
+                // Update status badge
+                statusBadge.className = `status-badge badge bg-${getStatusClass(apiStatus)} status-detail`;
+                statusBadge.innerHTML = `<i class="fas fa-circle fa-xs me-1"></i><span>${apiStatus}</span>`;
                 
-                // Add a badge with API status for more detail
-                const statusDetail = card.querySelector('.status-detail');
-                if (statusDetail) {
-                    statusDetail.textContent = apiStatus;
+                // Enable/disable buttons based on status
+                generateQrButton.disabled = apiStatus === 'connected';
+                deleteButton.disabled = apiStatus === 'connecting'; // Only disable delete during connecting state
+                
+                // Apply a highlight effect to show the status change
+                statusContainer.style.transition = 'all 0.3s ease';
+                statusContainer.style.transform = 'scale(1.05)';
+                
+                setTimeout(() => {
+                    statusContainer.style.transform = 'scale(1)';
+                }, 500);
+                
+                // If the instance is connected, add a success message
+                if (apiStatus === 'connected' && !card.querySelector('.connected-message')) {
+                    const actionButtons = card.querySelector('.action-buttons');
+                    const connectedMessage = document.createElement('div');
+                    connectedMessage.className = 'alert alert-success mt-2 connected-message';
+                    connectedMessage.innerHTML = '<i class="fas fa-check-circle me-2"></i> تم الاتصال بنجاح!';
+                    actionButtons.after(connectedMessage);
+                    
+                    // Remove the message after 5 seconds
+                    setTimeout(() => {
+                        const message = card.querySelector('.connected-message');
+                        if (message) {
+                            message.remove();
+                        }
+                    }, 5000);
                 }
             }
 
@@ -1114,6 +1122,7 @@
                     document.querySelector('.qr-instructions').classList.add('d-none');
                     
                     // Request QR code generation
+                    console.log(`Requesting QR code for instance: ${instanceId}`);
                     const response = await fetch(`/teacher/generateQrCode/${instanceId}`);
                     const data = await response.json();
                     
@@ -1128,19 +1137,16 @@
                         console.log("QR Code received, length:", data.qrCode.length);
                         console.log("QR Code starts with:", data.qrCode.substring(0, 50) + "...");
                         
-                        // Check if it's a valid data URL
-                        if (!data.qrCode.startsWith('data:image')) {
-                            console.warn("QR code doesn't appear to be a valid data URL");
-                            // Try to fix it if it's just a base64 string without proper prefix
-                            if (!data.qrCode.includes(',') && !data.qrCode.includes(':')) {
-                                data.qrCode = 'data:image/png;base64,' + data.qrCode;
-                                console.log("Fixed QR code format");
-                            }
+                        // Check if it's a valid data URL or URL
+                        let qrCodeSrc = data.qrCode;
+                        if (!qrCodeSrc.startsWith('data:') && !qrCodeSrc.startsWith('http')) {
+                            console.log("QR code doesn't appear to be a valid URL or data URL, adding prefix");
+                            qrCodeSrc = 'data:image/png;base64,' + data.qrCode;
                         }
                         
                         qrCodeContainer.innerHTML = `
                             <div class="qr-image-container text-center">
-                                <img src="${data.qrCode}" alt="QR Code" class="img-fluid" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=QR+Code+Error'; console.error('QR code image failed to load');">
+                                <img src="${qrCodeSrc}" alt="QR Code" class="img-fluid" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=QR+Code+Error'; console.error('QR code image failed to load');">
                                 <div class="qr-scan-overlay">
                                     <div class="scan-animation"></div>
                                 </div>
@@ -1225,21 +1231,59 @@
                 }
                 
                 // Check status immediately
-                checkRealInstanceStatus(instanceId);
+                checkInstanceStatus(instanceId);
                 
                 // Then check every 3 seconds
                 pollingInterval = setInterval(() => {
-                    checkRealInstanceStatus(instanceId);
+                    checkInstanceStatus(instanceId);
                 }, 3000);
             }
             
-            // Stop polling when modal is closed
-            document.getElementById('qrCodeModal').addEventListener('hidden.bs.modal', function () {
-                if (pollingInterval) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
+            // Function to check instance status
+            async function checkInstanceStatus(instanceId) {
+                try {
+                    console.log(`Checking status for instance: ${instanceId}`);
+                    const response = await fetch(`/teacher/checkRealInstanceStatus/${instanceId}`);
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        console.error('Error checking status:', data.message);
+                        return;
+                    }
+                    
+                    console.log(`Status check result: ${data.status} (API status: ${data.apiStatus})`);
+                    
+                    // Update UI based on status
+                    updateInstanceStatusUI(instanceId, data.status);
+                    
+                    // If we're showing the QR code modal and the instance is connected, update the modal
+                    if (currentInstanceId === instanceId && data.status === 'connected') {
+                        qrCodeContainer.innerHTML = `
+                            <div class="text-center">
+                                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                                <h5 class="text-dark">تم الاتصال بنجاح!</h5>
+                            </div>
+                        `;
+                        qrCodeStatus.innerHTML = 'تم الاتصال بنجاح. يمكنك استخدام الرقم الآن.';
+                        
+                        // Hide instructions
+                        document.querySelector('.qr-instructions').classList.add('d-none');
+                        
+                        // Auto-close modal after a delay
+                        setTimeout(() => {
+                            qrCodeModal.hide();
+                            
+                            // Stop polling
+                            if (pollingInterval) {
+                                clearInterval(pollingInterval);
+                                pollingInterval = null;
+                            }
+                        }, 3000);
+                    }
+                } catch (error) {
+                    console.error('Error checking instance status:', error);
                 }
-            });
+            }
 
             // Function to delete an instance
             async function deleteInstance(instanceId) {
@@ -1346,39 +1390,10 @@
 
             // Socket event listeners for real-time updates
             socket.on('instance-status-change', function(data) {
-                // Update the instance card status
-                const card = document.querySelector(`[data-instance-id="${data.instanceId}"]`);
+                console.log('Socket event: instance-status-change', data);
                 
-                if (card) {
-                    const statusContainer = card.querySelector('.status-container');
-                    const statusIcon = card.querySelector('.status-icon i');
-                    const statusText = card.querySelector('.status-text');
-                    const statusBadge = card.querySelector('.status-badge');
-                    const generateQrButton = card.querySelector('.generate-qr');
-                    
-                    // Update status classes
-                    statusContainer.className = `status-container ${getStatusClass(data.status)}`;
-                    
-                    // Update icon class
-                    statusIcon.className = getStatusIcon(data.status);
-                    
-                    // Update text and content
-                    statusText.textContent = getStatusText(data.status);
-                    
-                    // Update badge
-                    statusBadge.className = `status-badge badge bg-${getStatusClass(data.status)} status-detail`;
-                    
-                    // Disable generate QR button if the instance is connected
-                    generateQrButton.disabled = data.status === 'connected';
-                    
-                    // Apply a highlight effect to show the status change
-                    statusContainer.style.transition = 'all 0.3s ease';
-                    statusContainer.style.transform = 'scale(1.05)';
-                    
-                    setTimeout(() => {
-                        statusContainer.style.transform = 'scale(1)';
-                    }, 500);
-                }
+                // Update the instance card status
+                updateInstanceStatusUI(data.instanceId, data.status);
                 
                 // Update QR code modal if it's open for this instance
                 if (currentInstanceId === data.instanceId) {
@@ -1397,15 +1412,30 @@
                         // Auto-close modal after a delay
                         setTimeout(() => {
                             qrCodeModal.hide();
+                            
+                            // Stop polling
+                            if (pollingInterval) {
+                                clearInterval(pollingInterval);
+                                pollingInterval = null;
+                            }
                         }, 3000);
-                        
-                        // Stop polling
-                        if (pollingInterval) {
-                            clearInterval(pollingInterval);
-                            pollingInterval = null;
+                    } else if (data.status === 'qr' && data.qrCode) {
+                        // If we received a new QR code, update it
+                        let qrCodeSrc = data.qrCode;
+                        if (!qrCodeSrc.startsWith('data:') && !qrCodeSrc.startsWith('http')) {
+                            qrCodeSrc = 'data:image/png;base64,' + data.qrCode;
                         }
-                    } else if (data.status === 'qr') {
+                        
+                        qrCodeContainer.innerHTML = `
+                            <div class="qr-image-container text-center">
+                                <img src="${qrCodeSrc}" alt="QR Code" class="img-fluid" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=QR+Code+Error'; console.error('QR code image failed to load');">
+                                <div class="qr-scan-overlay">
+                                    <div class="scan-animation"></div>
+                                </div>
+                            </div>
+                        `;
                         qrCodeStatus.innerHTML = 'في انتظار مسح الرمز - اسرع قبل انتهاء صلاحية الرمز';
+                        
                         // Show instructions
                         document.querySelector('.qr-instructions').classList.remove('d-none');
                     }
@@ -1428,6 +1458,14 @@
 
             // Load instances on page load
             loadInstances();
+
+            // Stop polling when modal is closed
+            document.getElementById('qrCodeModal').addEventListener('hidden.bs.modal', function () {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+            });
         });
     </script>
 

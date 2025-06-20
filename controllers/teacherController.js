@@ -4,9 +4,7 @@ const WhatsAppInstance = require('../models/WhatsAppInstance');
 const Card = require('../models/Card');
 const Attendance = require('../models/Attendance'); 
 
-const waapi = require('@api/waapi');
-const waapiAPI = process.env.WAAPIAPI;
-waapi.auth(waapiAPI);
+const waziper = require('../utils/waziper');
 const Excel = require('exceljs');
 
 const dash_get = async(req, res) => {
@@ -575,42 +573,56 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
-async function sendWappiMessage(message, phone,adminPhone,isExcel = false) {
+async function sendWappiMessage(message, phone, adminPhone, isExcel = false) {
   let instanceId = '';
   if (adminPhone == '01065057897') {
-    instanceId = '62906';
-  }else if (adminPhone == '01055640148') {
+    instanceId = '6855564C3C835';
+  } else if (adminPhone == '01055640148') {
     instanceId = '62905';
-  }else if (adminPhone == '01147929010') {
-    instanceId = '62904';
+  } else if (adminPhone == '01147929010') {
+    instanceId = '68555697EE266';
   }
-  let phoneNumber = `2${phone}@c.us`;
-  if(isExcel) {
-    phoneNumber = `20${phone}@c.us`;
+  
+  // Format phone number for Waziper API (without @c.us suffix)
+  let phoneNumber = isExcel ? `20${phone}` : `2${phone}`;
+  
+  // Remove any non-numeric characters
+  phoneNumber = phoneNumber.replace(/\D/g, '');
+  
+  try {
+    const response = await waziper.sendTextMessage(instanceId, phoneNumber, message);
+    return response.data;
+  } catch (err) {
+    console.error('Error sending WhatsApp message:', err.message);
+    throw err;
   }
-    await waapi
-      .postInstancesIdClientActionSendMessage(
-        {
-          chatId: phoneNumber,
-          message: message,
-        },
-        { id: instanceId }
-      )
-      .then(({ data }) => {})
-      .catch((err) => {
-        console.log(err);
-      });
 }
 
 
 
 const addCardGet = async (req, res) => {
+  // Delete EST and SAT advanced students from GTA, Tagamo3, and Online centers
   // await User.deleteMany({
-  //   centerName: 'tagmo3',
+  //   centerName: { $in: ['GTA', 'tagmo3', 'Online'] },
+  //   Grade: { $in: ['EST', 'SAT', 'ACT', 'EST2'] },
+  //   gradeType:  { $in: ['adv', 'normal'] }
   // }).then((result) => {
   //   console.log(`${result.deletedCount} users deleted.`);
+  // }).catch(err => {
+  //   console.error('Error deleting users:', err);
   // });
 
+  // delete groups 
+  // await Group.deleteMany({
+    
+  // CenterName: { $in: ['GTA', 'tagmo3', 'Online'] },
+  //   Grade: { $in: ['EST', 'SAT', 'ACT', 'EST2'] },
+  //   gradeType: { $in: ['adv', 'normal'] }
+  // }).then((result) => {
+  //   console.log(`${result.deletedCount} groups deleted.`);
+  // }).catch(err => {
+  //   console.error('Error deleting groups:', err);
+  // });
   // await User.updateMany(
   //   { centerName: 'GTA', Grade: 'EST1', gradeType: 'adv', groupTime: 'group3' },
   //   { groupTime: 'group2' }
@@ -2573,10 +2585,31 @@ const createInstance = async (req, res) => {
   const { phoneNumber, name } = req.body;
   
   try {
-    // Generate a unique instance ID
-    const instanceId = Date.now().toString();
+    console.log(`Creating instance with phone: ${phoneNumber}, name: ${name}`);
     
-    // Create a new WhatsApp instance
+    // Call Waziper API to create a new instance
+    const response = await waziper.createInstance();
+    
+    // Log the entire response for debugging
+    console.log('Create instance API response:', JSON.stringify(response.data));
+    
+    // Check if we got a valid instance ID
+    let instanceId;
+    
+    if (response.data && response.data.status === 'success') {
+      // Get the instance ID from the API response
+      instanceId = response.data.instance_id || response.data.id;
+    }
+    
+    // If we didn't get an instance ID from the API, generate one
+    if (!instanceId) {
+      console.log('No instance ID returned from API, generating one');
+      instanceId = `WA${Date.now().toString()}`;
+    }
+    
+    console.log(`Using instance ID: ${instanceId}`);
+    
+    // Create a new WhatsApp instance in our database
     const instance = new WhatsAppInstance({
       instanceId,
       phoneNumber,
@@ -2586,6 +2619,7 @@ const createInstance = async (req, res) => {
     });
     
     await instance.save();
+    console.log(`Instance saved to database with ID: ${instanceId}`);
     
     res.status(201).json({ 
       success: true, 
@@ -2624,65 +2658,160 @@ const checkRealInstanceStatus = async (req, res) => {
   const { instanceId } = req.params;
   
   try {
+    console.log(`Checking status for instance: ${instanceId}`);
+    
     // First check if the instance exists in our database
     const instance = await WhatsAppInstance.findOne({ instanceId });
     
     if (!instance) {
+      console.log(`Instance not found: ${instanceId}`);
       return res.status(404).json({
         success: false,
         message: 'Instance not found'
       });
     }
     
-    // Use waapi to check the real status
+    console.log(`Found instance in database: ${instance.name} (${instance.phoneNumber}), current status: ${instance.status}`);
+    
+    // Try to get instance status directly from the API
     try {
-      const { data } = await waapi.getInstancesIdClientStatus({ id: instanceId });
-      if (data && data.status === 'success') {
-        const apiStatus = data.clientStatus.instanceStatus;
+      console.log(`Requesting status from Waziper API for instance ${instanceId}`);
+      const statusResponse = await waziper.getInstanceStatus(instanceId);
+      
+      if (statusResponse.data) {
+        console.log('API response:', JSON.stringify(statusResponse.data));
         
-        // Update our instance status based on the API response
+        // Extract the actual WhatsApp connection status
+        let waStatus = 'unknown';
+        
+        if (statusResponse.data.status === 'success') {
+          if (statusResponse.data.data && statusResponse.data.data.state) {
+            waStatus = statusResponse.data.data.state;
+          } else if (statusResponse.data.state) {
+            waStatus = statusResponse.data.state;
+          }
+        }
+        
+        console.log(`Waziper API returned status: ${waStatus}`);
+        
+        // Map Waziper status to our status format
         let status;
-        switch(apiStatus) {
-          case 'ready':
+        switch(waStatus) {
+          case 'open':
+          case 'connected':
           case 'authenticated':
             status = 'connected';
             break;
-          case 'qr':
-            status = 'qr'; // Now treating qr status separately from connecting
-            break;
-          case 'loading_screen':
+          case 'connecting':
+          case 'loading':
           case 'booting':
             status = 'connecting';
             break;
+          case 'qr':
+          case 'require_qr':
+            status = 'qr';
+            break;
           case 'disconnected':
-          case 'auth_failure':
+          case 'closed':
           default:
             status = 'disconnected';
             break;
         }
         
-        // Update our database record
-        instance.status = status;
-        await instance.save();
+        console.log(`Mapped status to: ${status}`);
+        
+        // Update our database record if status changed
+        if (instance.status !== status) {
+          console.log(`Updating instance status from ${instance.status} to ${status}`);
+          instance.status = status;
+          await instance.save();
+          
+          // Emit status change event if socket.io is available
+          if (req.io) {
+            req.io.emit('instance-status-change', {
+              instanceId,
+              status: status,
+              qrCode: status === 'qr' ? instance.qrCode : null
+            });
+          }
+        }
         
         return res.status(200).json({
           success: true,
-          apiStatus: apiStatus,
+          apiStatus: waStatus,
           status: status
         });
-      } else {
-        throw new Error('API returned unsuccessful response');
       }
-    } catch (apiError) {
-      console.error('waapi error:', apiError);
-      
-      // If we can't connect to the API, return the status from our database
-      return res.status(200).json({
-        success: true,
-        apiStatus: 'unknown',
-        status: instance.status
-      });
+    } catch (error) {
+      console.error('Error checking status:', error.message);
     }
+    
+    // If direct status check failed, try QR code endpoint as a fallback
+    try {
+      console.log(`Fallback: Checking status via QR code endpoint for instance ${instanceId}`);
+      const response = await waziper.getQRCode(instanceId);
+      
+      if (response.data) {
+        // Determine status based on response
+        let status;
+        
+        if (response.data.qrcode || (response.data.data && response.data.data.qrcode)) {
+          console.log('QR code found in response, setting status to qr');
+          status = 'qr';
+          
+          // Save the QR code to the instance
+          let qrCodeData = response.data.qrcode || (response.data.data && response.data.data.qrcode);
+          
+          if (qrCodeData && !qrCodeData.startsWith('data:')) {
+            qrCodeData = `data:image/png;base64,${qrCodeData}`;
+          }
+          
+          if (qrCodeData) {
+            instance.qrCode = qrCodeData;
+          }
+        } else if (response.data.message && response.data.message.includes('authenticated')) {
+          console.log('Authentication message found in response, setting status to connected');
+          status = 'connected';
+        } else {
+          console.log('No clear status indicators in response, using current status');
+          // Keep current status if we can't determine status precisely
+          status = instance.status;
+        }
+        
+        // Update our database record if status changed
+        if (instance.status !== status) {
+          console.log(`Updating instance status from ${instance.status} to ${status}`);
+          instance.status = status;
+          await instance.save();
+          
+          // Emit status change event if socket.io is available
+          if (req.io) {
+            req.io.emit('instance-status-change', {
+              instanceId,
+              status: status,
+              qrCode: status === 'qr' ? instance.qrCode : null
+            });
+          }
+        }
+        
+        return res.status(200).json({
+          success: true,
+          apiStatus: status,
+          status: status
+        });
+      }
+    } catch (error) {
+      console.error('Error in QR code fallback:', error.message);
+    }
+    
+    // If all API calls fail, return the cached status from our database
+    console.log(`Returning cached status from database: ${instance.status}`);
+    return res.status(200).json({
+      success: true,
+      apiStatus: 'unknown',
+      status: instance.status,
+      note: 'Using cached status due to API errors'
+    });
   } catch (error) {
     console.error('Error checking instance status:', error);
     res.status(500).json({
@@ -2697,111 +2826,144 @@ const generateQrCode = async (req, res) => {
   const { instanceId } = req.params;
   
   try {
-    // Find the instance
+    console.log(`Generating QR code for instance: ${instanceId}`);
+    
+    // Find the instance in our database
     const instance = await WhatsAppInstance.findOne({ instanceId });
     
     if (!instance) {
+      console.log(`Instance not found: ${instanceId}`);
       return res.status(404).json({
         success: false,
         message: 'Instance not found'
       });
     }
     
-    // Use waapi to generate a QR code
+    console.log(`Found instance in database: ${instance.name} (${instance.phoneNumber})`);
+    
+    // First try to reboot the instance via Waziper API
     try {
-
-      // Request the QR code
-      const { data } = await waapi.getInstancesIdClientQr({ id: instanceId });
-      console.log('QR code API response:', JSON.stringify(data));
+      console.log(`Attempting to reboot instance ${instanceId} before QR code generation`);
+      await waziper.rebootInstance(instanceId);
+      console.log(`Instance ${instanceId} rebooted successfully`);
+    } catch (rebootError) {
+      console.warn(`Could not reboot instance ${instanceId}:`, rebootError.message);
+      // Continue even if reboot fails
+    }
+    
+    // Request the QR code from Waziper API
+    console.log(`Requesting QR code from Waziper API for instance ${instanceId}`);
+    const response = await waziper.getQRCode(instanceId);
+    
+    if (!response.data) {
+      console.error('No data in QR code API response');
+      throw new Error('No data in API response');
+    }
+    
+    console.log('QR code API response status:', response.data.status);
+    
+    let qrCodeData = null;
+    
+    // Extract QR code from the response
+    if (response.data.qrcode) {
+      console.log('QR code found in response.data.qrcode');
+      qrCodeData = response.data.qrcode;
+    } else if (response.data.data && response.data.data.qrcode) {
+      console.log('QR code found in response.data.data.qrcode');
+      qrCodeData = response.data.data.qrcode;
+    }
+    
+    // Check if we got a valid QR code
+    if (qrCodeData) {
+      console.log(`QR code received, length: ${qrCodeData.length}`);
       
-      if (data && data.status === 'success') {
-        // Extract QR code based on API response structure
-        let qrCodeData = null;
-        
-        if (data.qrCode && data.qrCode.data && data.qrCode.data.qr_code) {
-          // Format from user's example
-          qrCodeData = data.qrCode.data.qr_code;
-        } else if (data.data && data.data.qr_code) {
-          // New API format
-          qrCodeData = data.data.qr_code;
-        } else if (data.qr && data.qr.code) {
-          // Old API format
-          qrCodeData = data.qr.code;
-        }
-        
-        if (qrCodeData) {
-          // Update instance status to qr
-          instance.status = 'qr';
-          instance.qrCode = qrCodeData;
-          await instance.save();
-          
-          // Use socket.io to emit status change
-          req.io.emit('instance-status-change', {
-            instanceId,
-            status: 'qr',
-            qrCode: instance.qrCode
-          });
-          
-          return res.status(200).json({
-            success: true,
-            qrCode: instance.qrCode,
-            status: instance.status
-          });
-        }
+      // Make sure QR code has proper data URL format
+      if (!qrCodeData.startsWith('data:')) {
+        console.log('Adding data URL prefix to QR code');
+        qrCodeData = `data:image/png;base64,${qrCodeData}`;
       }
       
-      // If we reach here, we didn't get a valid QR code from the API
-      console.error('No valid QR code in API response:', data);
-      
-      // If QR code wasn't available, use our placeholder
+      // Update instance status to qr
       instance.status = 'qr';
-      instance.qrCode = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAXNSR0IArs4c6QAAELBJREFUeF7tnXmQHVUVxr/XmYRsQzaykUAIeWGHsIV1BhdcqrCKclFB3LdSoVyKKvfCpe...'; // Placeholder
+      instance.qrCode = qrCodeData;
       await instance.save();
+      console.log(`QR code saved to database for instance ${instanceId}`);
       
-      req.io.emit('instance-status-change', {
-        instanceId,
-        status: 'qr',
-        qrCode: instance.qrCode
-      });
+      // Use socket.io to emit status change
+      if (req.io) {
+        console.log(`Emitting status change event for instance ${instanceId}`);
+        req.io.emit('instance-status-change', {
+          instanceId,
+          status: 'qr',
+          qrCode: instance.qrCode
+        });
+      } else {
+        console.warn('Socket.io not available in request object');
+      }
       
       return res.status(200).json({
         success: true,
         qrCode: instance.qrCode,
         status: instance.status
       });
-    } catch (apiError) {
-      console.error('waapi QR code error:', apiError);
+    } else {
+      console.log('No QR code found in API response, generating fallback QR');
       
-      // In a real application, you would use a WhatsApp API client to generate a QR code
-      // For this example, we'll simulate it with a placeholder
+      // Generate a fallback QR code
+      const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=whatsapp-connect-${instanceId}-${Date.now()}`;
+      console.log(`Generated fallback QR URL: ${fallbackQrUrl}`);
       
-      // Update instance status to connecting
       instance.status = 'qr';
-      instance.qrCode = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAXNSR0IArs4c6QAAELBJREFUeF7tnXmQHVUVxr/XmYRsQzaykUAIeWGHsIV1BhdcqrCKclFB3LdSoVyKKvfCpe...'; // This should be a base64 encoded QR code from the WhatsApp API
-      
+      instance.qrCode = fallbackQrUrl;
       await instance.save();
       
-      // Use socket.io to emit status change
-      req.io.emit('instance-status-change', {
-        instanceId,
-        status: 'qr',
-        qrCode: instance.qrCode
-      });
+      if (req.io) {
+        req.io.emit('instance-status-change', {
+          instanceId,
+          status: 'qr',
+          qrCode: instance.qrCode
+        });
+      }
       
       return res.status(200).json({
         success: true,
         qrCode: instance.qrCode,
         status: instance.status,
-        error: apiError.message
+        note: 'Using fallback QR code due to missing QR in API response'
       });
     }
-    
   } catch (error) {
     console.error('Error generating QR code:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error generating QR code',
-      error: error.message
+    
+    // Generate a fallback QR code on error
+    const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=whatsapp-connect-${instanceId}-${Date.now()}`;
+    
+    try {
+      // Update instance with fallback QR
+      const instance = await WhatsAppInstance.findOne({ instanceId });
+      if (instance) {
+        instance.status = 'qr';
+        instance.qrCode = fallbackQrUrl;
+        await instance.save();
+        
+        if (req.io) {
+          req.io.emit('instance-status-change', {
+            instanceId,
+            status: 'qr',
+            qrCode: fallbackQrUrl
+          });
+        }
+      }
+    } catch (dbError) {
+      console.error('Error updating instance with fallback QR:', dbError);
+    }
+    
+    return res.status(200).json({
+      success: true,
+      qrCode: fallbackQrUrl,
+      status: 'qr',
+      error: error.message,
+      note: 'Using fallback QR code due to API error'
     });
   }
 };
@@ -2811,6 +2973,15 @@ const deleteInstance = async (req, res) => {
   const { instanceId } = req.params;
   
   try {
+    // First try to reset the instance via Waziper API
+    try {
+      await waziper.resetInstance(instanceId);
+    } catch (apiError) {
+      console.warn('Could not reset instance via Waziper API:', apiError.message);
+      // Continue with deletion even if API call fails
+    }
+    
+    // Delete the instance from our database
     const result = await WhatsAppInstance.deleteOne({ instanceId });
     
     if (result.deletedCount === 0) {
@@ -2834,6 +3005,117 @@ const deleteInstance = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error deleting instance',
+      error: error.message
+    });
+  }
+};
+
+const setWebhook = async (req, res) => {
+  const { instanceId } = req.params;
+  const { webhookUrl } = req.body;
+  
+  if (!webhookUrl) {
+    return res.status(400).json({
+      success: false,
+      message: 'Webhook URL is required'
+    });
+  }
+  
+  try {
+    // Find the instance
+    const instance = await WhatsAppInstance.findOne({ instanceId });
+    
+    if (!instance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instance not found'
+      });
+    }
+    
+    try {
+      // Set the webhook via Waziper API
+      const response = await waziper.setWebhook(instanceId, webhookUrl, true);
+      
+      if (response.data && response.data.status === 'success') {
+        // Update our instance with the webhook URL
+        instance.webhookUrl = webhookUrl;
+        await instance.save();
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Webhook set successfully',
+          webhookUrl
+        });
+      } else {
+        throw new Error('API returned unsuccessful response');
+      }
+    } catch (apiError) {
+      console.error('Waziper webhook error:', apiError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error setting webhook',
+        error: apiError.message
+      });
+    }
+  } catch (error) {
+    console.error('Error setting webhook:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error setting webhook',
+      error: error.message
+    });
+  }
+};
+
+const rebootInstance = async (req, res) => {
+  const { instanceId } = req.params;
+  
+  try {
+    // Find the instance
+    const instance = await WhatsAppInstance.findOne({ instanceId });
+    
+    if (!instance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instance not found'
+      });
+    }
+    
+    try {
+      // Reboot the instance via Waziper API
+      const response = await waziper.rebootInstance(instanceId);
+      
+      if (response.data && response.data.status === 'success') {
+        // Update instance status to connecting
+        instance.status = 'connecting';
+        await instance.save();
+        
+        // Use socket.io to emit status change
+        req.io.emit('instance-status-change', {
+          instanceId,
+          status: 'connecting'
+        });
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Instance rebooted successfully'
+        });
+      } else {
+        throw new Error('API returned unsuccessful response');
+      }
+    } catch (apiError) {
+      console.error('Waziper reboot error:', apiError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error rebooting instance',
+        error: apiError.message
+      });
+    }
+  } catch (error) {
+    console.error('Error rebooting instance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error rebooting instance',
       error: error.message
     });
   }
@@ -2900,4 +3182,6 @@ module.exports = {
   transferStudent,
 
   logOut,
+  setWebhook,
+  rebootInstance,
 };

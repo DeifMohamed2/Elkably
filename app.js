@@ -7,54 +7,51 @@ const MongoStore = require('connect-mongo')
 const session = require('express-session')
 const fileUpload = require('express-fileupload');
 const cors = require('cors')
-
-
+const socketio = require('socket.io');
 
 const homeRoutes = require('./routes/homeRoutes')
 const teacherRoutes = require('./routes/teacherRoutes')
+
 // express app
 const app = express();
 app.use(express.json());
 
-const socketio = require('socket.io');
-
-
-// CONECT to mongodb
-let io
+// CONNECT to MongoDB
 const dbURI = 'mongodb+srv://deif:1qaz2wsx@3devway.aa4i6ga.mongodb.net/elkably?retryWrites=true&w=majority&appName=Cluster0'
+let io;
+
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then((result) => {
-        let server = app.listen(8400);
-
-        io = socketio(server)
+        const server = app.listen(8400);
+        
+        // Initialize Socket.io
+        io = socketio(server);
         io.on('connection', (socket) => {
-            console.log(`New connection: ${socket.id}`);
-        })
-
-        console.log("Local Host Running on port 8400")
-    
-    }).catch((err) => {
-        console.log(err)
+            console.log(`New socket connection: ${socket.id}`);
+            
+            socket.on('disconnect', () => {
+                console.log(`Socket disconnected: ${socket.id}`);
+            });
+        });
+        
+        console.log("Server running on port 8400");
     })
+    .catch((err) => {
+        console.log("MongoDB connection error:", err);
+    });
 
-// register view engine
+// Register view engine
 app.set('view engine', 'ejs');
-// listen for requests
 
-
-app.use(cors())
-app.use((req, res, next) => {
-    req.io = io; // Attach io to the request object
-    next(); // Move to the next middleware or route handler
-});
-
+// Middleware
+app.use(cors());
 app.use(morgan('dev'));
-app.use(express.static('public'))
-app.use(express.urlencoded({ extended: true }))
-app.use(cookieParser())
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(fileUpload());
-// let uri = ""; // Declare the 'uri' variable
 
+// Session middleware
 app.use(session({
     secret: "Keybord",
     resave: false,
@@ -62,19 +59,19 @@ app.use(session({
     store: MongoStore.create({
         mongoUrl: dbURI
     }),
+}));
 
-}))
+// Make io accessible in all routes
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
+// Routes
+app.use('/', homeRoutes);
+app.use('/teacher', teacherRoutes);
 
-// Custom middlfsdfeware to make io accessible in all routes
-
-
-app.use('/', homeRoutes)
-app.use('/teacher', teacherRoutes)
-
-
-
-
+// 404 handler
 app.use((req, res) => {
     res.status(404).render('404', { title: '404' });
 });

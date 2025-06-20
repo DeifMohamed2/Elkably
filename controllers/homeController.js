@@ -8,9 +8,9 @@ const qrcode = require('qrcode');
 
 const jwtSecret = process.env.JWTSECRET;
 // Get instance IDs from environment variables and provide defaults if not found
-const instanceID1 = process.env.instanceID1 || '6855564C3C835';
-const instanceID2 = process.env.instanceID2 || '62905';
-const instanceID3 = process.env.instanceID3 || '68555697EE266';
+const instanceID1 = '6855564C3C835';
+const instanceID2 = '68555884791C6';
+const instanceID3 = '68555697EE266';
 
 console.log('WhatsApp Instance IDs loaded:');
 console.log('instanceID1 (GTA):', instanceID1);

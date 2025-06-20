@@ -578,7 +578,7 @@ async function sendWappiMessage(message, phone, adminPhone, isExcel = false) {
   if (adminPhone == '01065057897') {
     instanceId = '6855564C3C835';
   } else if (adminPhone == '01055640148') {
-    instanceId = '62905';
+    instanceId = '68555884791C6';
   } else if (adminPhone == '01147929010') {
     instanceId = '68555697EE266';
   }

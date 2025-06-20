@@ -24,6 +24,10 @@ const whatsAppInstanceSchema = new Schema({
     type: String,
     default: null
   },
+  webhookUrl: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

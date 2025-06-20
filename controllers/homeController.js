@@ -1,55 +1,63 @@
 const User = require('../models/User');
 const Group = require('../models/Group');
-const waapi = require('@api/waapi');
+const waziper = require('../utils/waziper');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const qrcode = require('qrcode'); 
 
 
 const jwtSecret = process.env.JWTSECRET;
-const waapiAPI = process.env.WAAPIAPI2;
-const instanceID1 = process.env.instanceID1;
-const instanceID2 = process.env.instanceID2;
-const instanceID3 = process.env.instanceID3;
+// Get instance IDs from environment variables and provide defaults if not found
+const instanceID1 = process.env.instanceID1 || '6855564C3C835';
+const instanceID2 = process.env.instanceID2 || '62905';
+const instanceID3 = process.env.instanceID3 || '68555697EE266';
 
-waapi.auth(`${waapiAPI}`);
+console.log('WhatsApp Instance IDs loaded:');
+console.log('instanceID1 (GTA):', instanceID1);
+console.log('instanceID2 (tagmo3):', instanceID2);
+console.log('instanceID3 (Online):', instanceID3);
 
 
 
 async function sendQRCode(chatId, message, studentCode, centerName) {
   try {
-    console.log(centerName);
-    // Generate a high-quality QR code in Base64 format
-    const qrData = await qrcode.toDataURL(studentCode, {
-      margin: 2, // White border around the QR code
-      scale: 10, // Scale factor (default is 4, increase for better quality)
-      width: 500, // Adjust width for higher resolution (optional)
-    });
-    const base64Image = qrData.split(',')[1]; // Extract only the Base64 data
+    console.log('Sending QR code for center:', centerName);
 
+    // Each center has its own dedicated WhatsApp instance for sending messages
+    // - tagmo3 center uses instanceID2
+    // - GTA center uses instanceID1
+    // - All other centers (including Online, etc.) use instanceID3
+    const instanceId = centerName === 'tagmo3'
+      ? instanceID2
+      : centerName === 'GTA'
+        ? instanceID1
+        : instanceID3;
+    
+    console.log('Using WhatsApp instance ID:', instanceId);
+    
+    // Format phone number for Waziper API (remove @c.us suffix)
+    const phoneNumber = chatId.replace('@c.us', '');
+    console.log('Sending to phone number:', phoneNumber);
     
 
-    const response = await waapi.postInstancesIdClientActionSendMedia(
-      {
-        chatId: chatId, // Target chat ID
-        mediaBase64: base64Image,
-        mediaName: 'qrcode.png',
-        mediaCaption: message,
-        asSticker: false, // Set true if you want to send as a sticker
-      },
-      {
-        id:
-          centerName === 'tagmo3'
-            ? instanceID2
-            : centerName === 'GTA'
-            ? instanceID1
-            : instanceID3,
-      }
+    // Then create a publicly accessible URL for the QR code
+    // For this example, we'll use a placeholder URL that generates QR codes
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(studentCode)}`;
+    
+    // Send the QR code as a media message
+    const mediaResponse = await waziper.sendMediaMessage(
+      instanceId,
+      phoneNumber,
+      message,
+      qrCodeUrl,
+      'qrcode.png'
     );
 
-    console.log('QR code sent successfully:', response.data);
+    console.log('QR code sent successfully:', mediaResponse.data);
+    return { success: true };
   } catch (error) {
     console.error('Error sending QR code:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -340,19 +348,31 @@ const public_Register_post = async (req, res) => {
           { $push: { students: result._id } },
           { new: true, upsert: true }
         )
-          .then(() => {
-
-            sendQRCode(
-              `2${phone}@c.us`,
-              `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${
-                bookTaken ? 'Yes' : 'No'
-              } \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `,
-              Code,
-              centerName
-            );
-            res
-              .status(201)
-              .redirect('Register');
+          .then(async () => {
+            try {
+              console.log("Attempting to send QR code to student...");
+              
+              const qrResult = await sendQRCode(
+                `2${phone}@c.us`,
+                `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${
+                  bookTaken ? 'Yes' : 'No'
+                } \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `,
+                Code,
+                centerName
+              );
+              
+              console.log("QR code sending result:", qrResult);
+              
+              res
+                .status(201)
+                .redirect('Register');
+            } catch (qrError) {
+              console.error("Failed to send QR code:", qrError);
+              // Still redirect to Register even if QR code sending fails
+              res
+                .status(201)
+                .redirect('Register');
+            }
           })
           .catch((err) => {
             console.log(err);
@@ -401,29 +421,39 @@ const send_verification_code = async (req, res) => {
     const code = Math.floor(Math.random() * 400000 + 600000);
     const message = `كود التحقق الخاص بك هو ${code}`;
 
-    // Send the message via the waapi (already present)
-    await waapi
-      .postInstancesIdClientActionSendMessage(
-        {
-          chatId: `2${phone}@c.us`,
-          message: message,
-        },
-        { id: '22432' }
-      )
+    console.log(`Sending verification code ${code} to phone number: ${phone}`);
+    
+    // Format phone number for Waziper API
+    const phoneNumber = `2${phone}`;
 
-      .then(({ data }) => {
-        // Store the verification code and phone in the session or database
-        req.session.verificationCode = code; // Assuming session middleware is used
-        req.session.phone = phone;
+    try {
+      console.log(`Using Waziper API to send message to ${phoneNumber}`);
+      
+      // Use instanceID1 instead of hardcoded ID
+      const instanceId = instanceID1;
+      console.log(`Using WhatsApp instance ID: ${instanceId}`);
+      
+      // Send the message via the Waziper API
+      const response = await waziper.sendTextMessage(
+        instanceId,
+        phoneNumber,
+        message
+      );
 
-        // Send a successful response after setting the session
-        res.status(201).json({ success: true, data });
-      })
-      .catch((err) => {
-        // Handle any error that occurs during the waapi call
-        console.error(err);
-        res.status(500).json({ success: false, error: err });
-      });
+      console.log('Verification code sent successfully:', response.data);
+      
+      // Store the verification code and phone in the session or database
+      req.session.verificationCode = code; // Assuming session middleware is used
+      req.session.phone = phone;
+
+      // Send a successful response
+      res.status(201).json({ success: true, data: response.data });
+    } catch (err) {
+      // Handle any error that occurs during the Waziper API call
+      console.error('Error sending verification code:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).send('Internal Server Error');
@@ -460,8 +490,31 @@ const forgetPassword_post = async (req, res) => {
       });
       const link = `http://localhost:3000/reset-password/${user._id}/${token}`;
 
-      console.log('aerd', link, postData);
-
+      // Send reset password link via WhatsApp using Waziper API
+      try {
+        // Format phone number for Waziper API
+        const phoneNumber = `2${phone}`;
+        const message = `رابط إعادة تعيين كلمة المرور الخاص بك: ${link}`;
+        
+        // Determine which instance to use (using default instance for this example)
+        const instanceId = instanceID1;
+        
+        await waziper.sendTextMessage(instanceId, phoneNumber, message);
+        
+        res.render('forgetPassword', {
+          title: 'Forget Password',
+          error: null,
+          success: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى رقم الهاتف الخاص بك',
+        });
+      } catch (err) {
+        console.error('Error sending reset password link:', err);
+        res.render('forgetPassword', {
+          title: 'Forget Password',
+          error: 'حدث خطأ أثناء إرسال رابط إعادة تعيين كلمة المرور',
+          success: null,
+        });
+      }
+      
       return '';
     }
   } catch (error) {

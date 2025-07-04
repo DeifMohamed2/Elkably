@@ -582,14 +582,15 @@ async function sendWappiMessage(message, phone, adminPhone, isExcel = false, cou
   } else if (adminPhone == '01147929010') {
     instanceId = '68555697EE266';
   }
-  let countryCodeWithout0 = countryCode.replace(/^0+/, ''); // Remove leading zeros
-
+  let countryCodeWithout0 = countryCode.replace('0', ''); // Remove leading zeros
+  console.log(countryCodeWithout0);
   // Format phone number for Waziper API (without @c.us suffix)
   let phoneNumber = isExcel ? `${countryCode}${phone}` : `${countryCodeWithout0}${phone}`;
   
   // Remove any non-numeric characters
   phoneNumber = phoneNumber.replace(/\D/g, '');
   
+  console.log(phoneNumber);
   try {
     const response = await waziper.sendTextMessage(instanceId, phoneNumber, message);
     return response.data;

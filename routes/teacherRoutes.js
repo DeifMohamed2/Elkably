@@ -15,7 +15,7 @@ const authMiddleware =async (req,res,next)=>{
     const token = req.cookies.token ; 
   
     if (!token) {
-      res.status(401).redirect('../login')
+      return res.status(401).redirect('../login');
     }
   
     try {
@@ -28,13 +28,13 @@ const authMiddleware =async (req,res,next)=>{
           next();
         }else{
           res.clearCookie('token');
-          res.status(301).redirect('../login')
+          return res.status(301).redirect('../login');
         }
      
       })
 
     } catch (error) {
-      res.status(401).redirect('../login')
+      return res.status(401).redirect('../login');
   
     }
 }

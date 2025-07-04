@@ -26,10 +26,20 @@ const userSchema = new Schema(
       required: true,
     },
 
+    phoneCountryCode: {
+      type: String,
+      default: '20',
+    },
+
     parentPhone: {
       type: String,
       required: true,
       unique: false,
+    },
+
+    parentPhoneCountryCode: {
+      type: String,
+      default: '20',
     },
 
     centerName: {

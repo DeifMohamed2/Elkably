@@ -126,6 +126,22 @@
     cursor: not-allowed;
   }
 
+  .country-code-select {
+    width: 140px;
+    padding: 10px;
+    border-radius: 20px;
+    margin-right: 5px;
+    border: 1px solid #e3b228;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-align: center;
+  }
+
+  .country-code-select option {
+    background-color: #333;
+    color: #fff;
+  }
+
 </style>
 <body>
 
@@ -198,6 +214,12 @@
                 
 
                 <div class="col-12 text-center">
+                  <select name="phoneCountryCode" id="phoneCountryCode" class="country-code-select" required>
+                    <option value="20">مصر (+20)</option>
+                    <option value="966">السعودية (+966)</option>
+                    <option value="971">الإمارات (+971)</option>
+                    <option value="965">الكويت (+965)</option>
+                  </select>
                   <input type="number" name="phone" id="phone" placeholder="رقم هاتف الطالب" required>
 
                   <!-- <button type="button" class="verificationBTN" id="verificationBTN" onclick="sendVerificationCode()">ارسال كود تأكيد</button>
@@ -207,6 +229,12 @@
 
                 
                 <div class="col-12 text-center">
+                  <select name="parentPhoneCountryCode" id="parentPhoneCountryCode" class="country-code-select" required>
+                    <option value="20">مصر (+20)</option>
+                    <option value="966">السعودية (+966)</option>
+                    <option value="971">الإمارات (+971)</option>
+                    <option value="965">الكويت (+965)</option>
+                  </select>
                   <input type="number" name="parentPhone" id="parentPhone"
                     placeholder=" رقم هاتف ولي الامر " value="<%= formData.parentPhone || '' %>" required>
                 </div>

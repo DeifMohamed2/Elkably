@@ -228,6 +228,8 @@ const public_Register_post = async (req, res) => {
     Grade,
     phone,
     parentPhone,
+    phoneCountryCode,
+    parentPhoneCountryCode,
     centerName,
     gradeType,
     groupTime,
@@ -237,24 +239,21 @@ const public_Register_post = async (req, res) => {
     attendingType,
     bookTaken,
     schoolName,
-
-
   } = req.body;
 
   // Create an object to store validation errors
   const errors = {};
 
-
-  // Check if the phone number has 11 digits
-  if (phone.length !== 11) {
+  // Phone validation is now more flexible due to different country codes
+  if (!phone || phone.length < 8) {
     req.body.phone = '';
-    errors.phone = '- رقم الهاتف يجب ان يحتوي علي 11 رقم';
+    errors.phone = '- رقم الهاتف غير صحيح';
   }
 
-  // Check if the parent's phone number has 11 digits
-  if (parentPhone.length !== 11) {
+  // Parent phone validation
+  if (!parentPhone || parentPhone.length < 8) {
     req.body.parentPhone = '';
-    errors.parentPhone = '- رقم هاتف ولي الامر يجب ان يحتوي علي 11 رقم';
+    errors.parentPhone = '- رقم هاتف ولي الامر غير صحيح';
   }
 
   // Check if phone is equal to parentPhone
@@ -319,12 +318,18 @@ const public_Register_post = async (req, res) => {
   const hashedPassword = await bcrypt.hash('1qaz2wsx', 10);
 
   try {
+    // Format phone numbers with country codes
+    const formattedPhone = `${phoneCountryCode || '20'}${phone}`;
+    const formattedParentPhone = `${parentPhoneCountryCode || '20'}${parentPhone}`;
+    
     const user = new User({
       Username: Username,
       Password: hashedPassword,
       Code: Code,
-      phone: phone,
-      parentPhone: parentPhone,
+      phone: formattedPhone,
+      parentPhone: formattedParentPhone,
+      phoneCountryCode: phoneCountryCode || '20',
+      parentPhoneCountryCode: parentPhoneCountryCode || '20',
       centerName: centerName,
       Grade: Grade,
       gradeType: gradeType,
@@ -352,8 +357,9 @@ const public_Register_post = async (req, res) => {
             try {
               console.log("Attempting to send QR code to student...");
               
+              // Use the formatted phone with country code
               const qrResult = await sendQRCode(
-                `2${phone}@c.us`,
+                `${formattedPhone}@c.us`,
                 `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${
                   bookTaken ? 'Yes' : 'No'
                 } \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `,
@@ -423,11 +429,14 @@ const send_verification_code = async (req, res) => {
 
     console.log(`Sending verification code ${code} to phone number: ${phone}`);
     
+    // Get country code from request or use default (20 for Egypt)
+    const countryCode = req.body.phoneCountryCode || '20';
+    
     // Format phone number for Waziper API
-    const phoneNumber = `2${phone}`;
+    const phoneNumber = `${countryCode}${phone}`;
 
     try {
-      console.log(`Using Waziper API to send message to ${phoneNumber}`);
+      console.log(`Using Waziper API to send message to ${phoneNumber} with country code ${countryCode}`);
       
       // Use instanceID1 instead of hardcoded ID
       const instanceId = instanceID1;

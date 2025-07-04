@@ -573,7 +573,7 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
-async function sendWappiMessage(message, phone, adminPhone, isExcel = false) {
+async function sendWappiMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
   let instanceId = '';
   if (adminPhone == '01065057897') {
     instanceId = '6855564C3C835';
@@ -582,9 +582,10 @@ async function sendWappiMessage(message, phone, adminPhone, isExcel = false) {
   } else if (adminPhone == '01147929010') {
     instanceId = '68555697EE266';
   }
-  
+  let countryCodeWithout0 = countryCode.replace(/^0+/, ''); // Remove leading zeros
+
   // Format phone number for Waziper API (without @c.us suffix)
-  let phoneNumber = isExcel ? `20${phone}` : `2${phone}`;
+  let phoneNumber = isExcel ? `${countryCode}${phone}` : `${countryCodeWithout0}${phone}`;
   
   // Remove any non-numeric characters
   phoneNumber = phoneNumber.replace(/\D/g, '');
@@ -866,7 +867,7 @@ if(attendWithOutHW){
 
       // Send the message via the waapi (already present)
 
-    await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
+    await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone,false,student['parentPhoneCountryCode']);
 
 
       return res.status(200).json({
@@ -934,7 +935,20 @@ if(attendWithOutHW){
         console.log(message2);
       }      
 
-const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+let messageWappi = '';
+if(student.centerName==="Online"){
+  messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأن ابنكم قد *حضر اليوم*.\n
+وقد تم تسجيل حضوره *بنجاح*.\n
+وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
+عدد مرات الغياب: *${student.absences}*.\n\n
+سيتم ارسال لحضراتكم تقرير عن حالة الطالب خلال الحصة\n
+التاريخ: ${today}
+الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
+*شكرًا لتعاونكم.*
+Elkably Team`;
+}else{
+ messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
 نود إعلامكم بأن ابنكم قد *${message2} اليوم في المعاد المحدد*.\n
 وقد تم تسجيل حضوره *بنجاح*.\n
 وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
@@ -942,11 +956,14 @@ const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Usern
 ${HWmessage}\n
 التاريخ: ${today}
 الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
-*شكرًا لتعاونكم.*`;
-
+*شكرًا لتعاونكم.*
+Elkably Team
+`;
+    
+}
 
       // Send the message via the waapi (already present)
-      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
+      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone,false,student['parentPhoneCountryCode']);
 
       await student.save();
       return res.status(200).json({
@@ -1478,7 +1495,7 @@ const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Usern
  
 
       // Send the message via the waapi (already present)
-      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone);
+      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone,false,student['parentPhoneCountryCode']);
 
  
 
@@ -2432,7 +2449,7 @@ ${
       console.log(message, student.parentPhone);
 
       try {
-         await sendWappiMessage(message, student['parentPhone'], req.userData.phone)
+         await sendWappiMessage(message, student['parentPhone'], req.userData.phone,)
           .then(() => {
             req.io.emit('sendingMessages', {
               nMessages: ++n,

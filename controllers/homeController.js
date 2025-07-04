@@ -319,15 +319,13 @@ const public_Register_post = async (req, res) => {
 
   try {
     // Format phone numbers with country codes
-    const formattedPhone = `${phoneCountryCode || '20'}${phone}`;
-    const formattedParentPhone = `${parentPhoneCountryCode || '20'}${parentPhone}`;
-    
+ 
     const user = new User({
       Username: Username,
       Password: hashedPassword,
       Code: Code,
-      phone: formattedPhone,
-      parentPhone: formattedParentPhone,
+      phone: phone,
+      parentPhone: parentPhone,
       phoneCountryCode: phoneCountryCode || '20',
       parentPhoneCountryCode: parentPhoneCountryCode || '20',
       centerName: centerName,

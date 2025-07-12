@@ -62,7 +62,7 @@ async function sendQRCode(chatId, message, studentCode, centerName) {
 }
 
 // Example usage
-// sendQRCode('201156012078@c.us', '31313');
+// sendQRCode('201156012078@c.us', '313"Dasdadad13',"222","Online");
 
 
 const home_page = (req, res) => {
@@ -357,7 +357,7 @@ const public_Register_post = async (req, res) => {
               
               // Use the formatted phone with country code
               const qrResult = await sendQRCode(
-                `${formattedPhone}@c.us`,
+                `2${phone}@c.us`,
                 `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${
                   bookTaken ? 'Yes' : 'No'
                 } \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `,

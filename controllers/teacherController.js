@@ -24,7 +24,7 @@ const dash_get = async(req, res) => {
   //   });
 
 
-
+  
  
 
   res.render('teacher/dash', { title: 'DashBoard', path: req.path });
@@ -3139,6 +3139,125 @@ const rebootInstance = async (req, res) => {
   }
 };
 
+// =================================================== Send Registration Message =================================================== //
+
+const sendRegistrationMessage = async (req, res) => {
+  try {
+    // Get all students created before August 2nd, 2025
+    // Note: Changed the date from February 8th to August 2nd, 2025
+    const cutoffDate = new Date('2025-08-02');
+    console.log(cutoffDate);
+    const students = await User.find({
+      createdAt: { $lt: cutoffDate },
+      parentPhone: { $exists: true, $ne: null, $ne: '' }
+    }).select('Username parentPhone parentPhoneCountryCode centerName phone phoneCountryCode');
+
+    console.log(`Found ${students.length} students before cutoff date`);
+
+    if (!students || students.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No students found created before February 8th, 2025'
+      });
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (const student of students) {
+      try {
+        let senderPhone;
+        let message;
+        
+        // Determine sender phone and message based on center name
+        if (student.centerName === "Online") {
+          senderPhone = "01147929010"; // Online center phone
+          message = `السلام عليكم 
+برجاء العلم ان تم فتح تسجيل الكورسات من يوم 8/2 الى يوم 8/15 
+و لن يقبل اي حجز بعد هذا الموعد  
+برجاء التواصل معنا للحجز`;
+        } else if (student.centerName === "GTA") {
+          senderPhone = "01065057897"; // GTA center phone
+          message = `السلام عليكم 
+برجاء العلم ان تم فتح التسجيل في السنتر من يوم 8/2 الى يوم 8/15 
+و لن يقبل اي حجز بعد هذا الموعد 
+بمبلغ 700 جنيه شامل اول حصة + الكتاب 
+برجاء التوجه لأقرب سنتر سواء التجمع و المعادي لحجز الاماكن`;
+        } else if (student.centerName === "tagmo3") { // Default to Tagamo3
+          senderPhone = "01055640148"; // Tagamo3 center phone
+          message = `السلام عليكم 
+برجاء العلم ان تم فتح التسجيل في السنتر من يوم 8/2 الى يوم 8/15 
+و لن يقبل اي حجز بعد هذا الموعد 
+بمبلغ 700 جنيه شامل اول حصة + الكتاب 
+برجاء التوجه لأقرب سنتر سواء التجمع و المعادي لحجز الاماكن`;
+        } 
+        // Send message to parent
+        await sendWappiMessage(
+          message, 
+          student.parentPhone, 
+          senderPhone, 
+          false, 
+          student.parentPhoneCountryCode
+        );
+        
+        // Send message to student if phone exists
+        if (student.phone) {
+          await sendWappiMessage(
+            message, 
+            student.phone, 
+            senderPhone, 
+            false, 
+            student.phoneCountryCode
+          );
+        }
+        
+        successCount++;
+        console.log(`Message sent successfully to parent of ${student.Username} (${student.parentPhone}) from ${senderPhone}`);
+        
+      } catch (error) {
+        errorCount++;
+        errors.push({
+          studentName: student.Username,
+          phone: student.parentPhone,
+          error: error.message
+        });
+        console.error(`Error sending message to parent of ${student.Username} (${student.parentPhone}):`, error);
+      }
+
+      // Add delay between messages to avoid rate limiting
+      const randomDelay = Math.floor(Math.random() * 3000) + 2000; // 2-5 seconds
+      console.log(`Waiting for ${randomDelay}ms before next message`);
+      await delay(randomDelay);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Registration message sent to ${successCount} out of ${students.length} students`,
+      totalStudents: students.length,
+      successCount,
+      errorCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('Error sending registration messages:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending registration messages',
+      error: error.message
+    });
+  }
+};
+
+// =================================================== END Send Registration Message =================================================== //
+
+
+
+
+
 module.exports = {
   dash_get,
 
@@ -3202,4 +3321,7 @@ module.exports = {
   logOut,
   setWebhook,
   rebootInstance,
+  
+  // Registration Message
+  sendRegistrationMessage,
 };

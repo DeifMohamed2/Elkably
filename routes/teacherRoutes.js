@@ -13,7 +13,6 @@ const jwtSecret = process.env.JWTSECRET
 
 const authMiddleware =async (req,res,next)=>{
     const token = req.cookies.token ; 
-  
     if (!token) {
       return res.status(401).redirect('../login');
     }
@@ -169,6 +168,14 @@ router.get('/convertGroup', authMiddleware, teacherController.convertGroup_get);
 router.get('/getDataToTransferring/:Code', authMiddleware, teacherController.getDataToTransferring);
 
 router.put('/transferStudent/:Code', authMiddleware, teacherController.transferStudent);
+
+// ==================  Send Registration Message  ================= //
+
+router.post('/sendRegistrationMessage', authMiddleware, teacherController.sendRegistrationMessage);
+
+// ==================  END Send Registration Message  ================= //
+
+
 
 
 module.exports = router;

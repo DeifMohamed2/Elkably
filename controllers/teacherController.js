@@ -631,6 +631,11 @@ const addCardGet = async (req, res) => {
   // ).then((result) => {
   //   console.log(`${result.nModified} users updated.`);
   // });
+
+
+  // Add 'G' prefix to all student codes in the system
+
+
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }
 
@@ -2214,7 +2219,35 @@ const convertAttendaceToExcel = async (req, res) => {
 
 
 
-const whatsApp_get = (req,res)=>{
+const whatsApp_get = async (req,res)=>{
+  console.log('whatsApp_get');
+  //   const updateStudentCodes = async () => {
+  //   try {
+  //     // Find all users (students)
+  //     const students = await User.find({});
+  //     let updatedCount = 0;
+  //     console.log(students);
+  //     for (const student of students) {
+  //       console.log(student.Code);
+  //       // Skip if code is already prefixed with 'G'
+  //       if (student.Code && !student.Code.startsWith('G')) {
+  //         // Add 'G' to the start of the code
+  //         student.Code = 'G' + student.Code;
+  //         await student.save();
+  //         updatedCount++;
+  //         console.log(`Updated student code for ${student.Username} to ${student.Code}`);
+  //       }
+  //     }
+      
+  //     console.log(`${updatedCount} student codes have been updated successfully`);
+  //   } catch (error) {
+  //     console.error('Error updating student codes:', error);
+  //   }
+  // };
+  
+  // // Uncomment the line below to run the code update function
+  // await updateStudentCodes();
+
   res.render('teacher/whatsApp', { title: 'whatsApp', path: req.path });
 }
 

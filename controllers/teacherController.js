@@ -709,10 +709,30 @@ if(attendWithOutHW){
 }else{
   HWmessage = '*لقد قام الطالب بحل الواجب بالخطوات*';
 }
+    // Check if attendId contains only numbers
+    const isOnlyNumbers = /^\d+$/.test(attendId);
+    
+    let studentQuery;
+    if (isOnlyNumbers) {
+      // If it's only numbers, search by cardId or Code with prefix
+      studentQuery = {
+        $or: [
+          { cardId: attendId }, 
+          { Code: attendId },
+          { Code: "G" + attendId }
+        ]
+      };
+    } else {
+      // If it contains text (like "G123"), search by cardId and Code directly
+      studentQuery = {
+        $or: [
+          { cardId: attendId }, 
+          { Code: attendId }
+        ]
+      };
+    }
 
-    const student = await User.findOne({
-      $or: [{ cardId: attendId }, { Code: +attendId }],
-    });
+    const student = await User.findOne(studentQuery);
 
     if (!student) {
       return res.status(404).json({ message: 'Student Not found' });
@@ -2220,7 +2240,7 @@ const convertAttendaceToExcel = async (req, res) => {
 
 
 const whatsApp_get = async (req,res)=>{
-  console.log('whatsApp_get');
+  // console.log('whatsApp_get');
   //   const updateStudentCodes = async () => {
   //   try {
   //     // Find all users (students)
@@ -2230,12 +2250,13 @@ const whatsApp_get = async (req,res)=>{
   //     for (const student of students) {
   //       console.log(student.Code);
   //       // Skip if code is already prefixed with 'G'
-  //       if (student.Code && !student.Code.startsWith('G')) {
-  //         // Add 'G' to the start of the code
-  //         student.Code = 'G' + student.Code;
+  //       if (student.Code && student.Code.startsWith('G')&& student.centerName==="tagmo3") {
+  //         // remove 'G' from the start of the code
+  //         student.Code = student.Code.replace('G', '');
+          
   //         await student.save();
   //         updatedCount++;
-  //         console.log(`Updated student code for ${student.Username} to ${student.Code}`);
+  //         console.log(`Updated student code for ${student.Username} to ${student.Code} ${student.centerName}`);
   //       }
   //     }
       

@@ -631,10 +631,36 @@ const addCardGet = async (req, res) => {
   // ).then((result) => {
   //   console.log(`${result.nModified} users updated.`);
   // });
+  console.log('Starting to update Online student codes');
 
-
-  // Add 'G' prefix to all student codes in the system
-
+  // Add 'O' prefix to Online students' codes and remove 'G' if it exists
+  // await User.find({ centerName: 'Online' }).then(async (users) => {
+  //   for (const user of users) {
+  //     let newCode = user.Code;
+      
+  //     // Remove 'G' from start or end if it exists
+  //     if (newCode.startsWith('G')) {
+  //       newCode = newCode.substring(1);
+  //     } else if (newCode.endsWith('G')) {
+  //       newCode = newCode.substring(0, newCode.length - 1);
+  //     }
+      
+  //     // Add 'O' prefix if it doesn't already start with 'O'
+  //     if (!newCode.startsWith('O')) {
+  //       newCode = 'O' + newCode;
+  //     }
+      
+  //     // Only update if code has changed
+  //     if (newCode !== user.Code) {
+  //       console.log('Updating code for user:', user.Username, 'from', user.Code, 'to', newCode);
+  //       await User.updateOne({ _id: user._id }, { Code: newCode });
+  //     }
+    
+  //   }
+  //   console.log('Updated Online student codes');
+  // }).catch(err => {
+  //   console.error('Error updating Online student codes:', err);
+  // });
 
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }

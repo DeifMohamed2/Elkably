@@ -217,7 +217,7 @@
         }]
       },
       ACT2: {
-        adv: [{
+        normal: [{
           value: 'group1',
           text: "Group(1) - Online "
         }]
@@ -311,6 +311,12 @@
     // Check if the selected grade type exists for the grade in the center
     if (!groupTimes[selectedCenter][selectedGrade][selectedGradeType]) {
       console.error(`Grade type "${selectedGradeType}" is not found for grade "${selectedGrade}" in center "${selectedCenter}"`);
+      
+      // Add a default option when group time is missing
+      const option = document.createElement('option');
+      option.value = 'default';
+      option.textContent = 'Default Group Time';
+      groupTime.appendChild(option);
       return;
     }
 

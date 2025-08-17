@@ -27,11 +27,14 @@ async function sendQRCode(chatId, message, studentCode, centerName) {
     // - tagmo3 center uses instanceID2
     // - GTA center uses instanceID1
     // - All other centers (including Online, etc.) use instanceID3
-    const instanceId = centerName === 'tagmo3'
-      ? instanceID2
-      : centerName === 'GTA'
-        ? instanceID1
-        : instanceID3;
+    let instanceId;
+    if (centerName === 'tagmo3') {
+      instanceId = instanceID2;
+    } else if (centerName === 'GTA') {
+      instanceId = instanceID1;
+    } else {
+      instanceId = instanceID3;
+    }
     
     console.log('Using WhatsApp instance ID:', instanceId);
     

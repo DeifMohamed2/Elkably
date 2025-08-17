@@ -1,335 +1,103 @@
 <script>
-  const centerNames = {
+  // Dynamic group options loader
+  (function() {
+    let centerNames = {};
+    let gradeTypeOptions = {};
+    let groupTimes = {};
 
-    Online: [{
-        value: 'EST',
-        text: 'EST'
-      },
-      {
-        value: 'EST2',
-        text: 'EST2'
-      },
-      {
-        value: 'ACT2',
-        text: 'ACT2'
-      },
-      {
-        value: 'SAT',
-        text: 'SAT'
-      },
-      {
-        value: 'Basics',
-        text: 'Basics'
-      },
-      {
-        value: 'ACT',
-        text: 'ACT'
+    async function fetchOptions() {
+      try {
+        const res = await fetch('/teacher/groupOptions');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load group options');
+        centerNames = data.centerNames || {};
+        gradeTypeOptions = data.gradeTypeOptions || {};
+        groupTimes = data.groupTimes || {};
+        window.__groupOptions = { centerNames, gradeTypeOptions, groupTimes };
+      } catch (e) {
+        console.error('groupOptions load error:', e);
       }
-    ],
-
-    GTA: [{
-        value: 'EST',
-        text: 'EST'
-      },
-      {
-        value: 'SAT',
-        text: 'SAT'
-      },
-      {
-        value: 'Basics',
-        text: 'Basics'
-      },
-
-      // { value: 'ACT', text: 'ACT' }
-    ],
-    tagmo3: [{
-        value: 'EST',
-        text: 'EST'
-      },
-      {
-        value: 'SAT',
-        text: 'SAT'
-      },
-      {
-        value: 'Basics',
-        text: 'Basics'
-      },
-
-
-
-      // { value: 'ACT', text: 'ACT' }
-    ]
-  }
-
-  // Define centers for each grade
-  const gradeTypeOptions = {
-    EST: [{
-        value: 'adv',
-        text: 'Advanced'
-      },
-      // {
-      //   value: 'basic',
-      //   text: 'Basic'
-      // }
-    ],
-    SAT: [
-      {
-        value: 'adv',
-        text: 'Advanced'
-      },
-      {
-        value: 'newAdv',
-        text: 'New Advanced'
-      },
-
-    ],
-    Basics: [{
-      value: 'normal',
-      text: 'Normal'
-    }],
-    ACT: [{
-        value: 'adv',
-        text: 'Advanced'
-      },
-      {
-        value: 'basic',
-        text: 'Basic'
-      }
-
-    ],
-
-    ACT2: [{
-      value: 'normal',
-      text: 'normal'
-  }],
-
-    EST2: [{
-        value: 'normal',
-        text: 'normal'
-      },
-
-    ],
-
-
-
-  };
-
-  // Group times for each center
-  const groupTimes = {
-    GTA: {
-      EST: {
-        adv: [{
-            value: 'group1',
-            text: 'Group(1) - Saturday & Tuesday @ 6PM'
-          },
-          {
-            value: 'TEST',
-            text: 'TEST'
-          },
-
-          // {
-          //   value: 'group2',
-          //   text: 'Group(2) - Tuesday @ 1PM & Friday @ 2PM'
-          // },
-
-          // {
-          //   value: 'group3',
-          //   text: 'Group(3) - Sunday & Tuesday @ 1PM'
-          // },
-          // {
-          //   value: 'Test',
-          //   text: 'Test'
-          // },
-
-        ],
-
-      },
-      Basics: {
-        normal: [{
-            value: 'group1',
-            text: "Group(1) - Monday @ 6PM & Friday @ 5PM"
-          },
-
-        ]
-      },
-      SAT: {
-        adv: [{
-            value: 'group1',
-            text: "Group(1) - Saturday @ 3:30PM & Tuesday @ 8PM"
-          },
-
-        ]
-      },
-
-    },
-    tagmo3: {
-      EST: {
-        adv: [{
-            value: 'group1',
-            text: "Group(1) - Sunday @ 6:30PM & Wednesday @ 4:30PM"
-          },
-
-          // { value: 'group2', text: "Group(2) - Sunday & Wednesday @ 6PM" },
-        ],
-
-      },
-      Basics: {
-        normal: [{
-            value: 'group1',
-            text: "Group(1) - Sunday & Wednesday @ 8:30PM "
-          },
-
-        ]
-      },
-      SAT: {
-        adv: [{
-            value: 'group1',
-            text: "Group(1) - Sunday @ 4:30PM & Wednesday @ 6:30PM "
-          },
-
-        ]
-      },
-
-
-    },
-
-    Online: {
-      EST: {
-        adv: [{
-          value: 'group1',
-          text: "Group(1) - Online "
-        }],
-      },
-      Basics: {
-        normal: [{
-          value: 'group1',
-          text: "Group(1) - Online "
-        }]
-      },
-      SAT: {
-        adv: [{
-          value: 'group1',
-          text: "Group(1) - Online "
-        }],
-        newAdv: [{
-          value: 'group1',
-          text: "Group(1) - Online "
-        }]
-      },
-      ACT2: {
-        normal: [{
-          value: 'group1',
-          text: "Group(1) - Online "
-        }]
-      },
-      ACT: {
-        adv: [{
-          value: 'group1',
-          text: "Group(1) - Online"
-        }],
-        basic: [{
-          value: 'group2',
-          text: "Group(2) - Online "
-        }]
-      },
-      EST2: {
-        normal: [{
-          value: 'group1',
-          text: "Group(1) - Online "
-        }]
-      },
     }
 
+    function onCenterChange() {
+      const centerName = document.getElementById('centerName');
+      const Grade = document.getElementById('Grade');
+      if (!centerName || !Grade) return;
 
-  };
+      const centerVal = centerName.value;
+      Grade.innerHTML = '<option value="" selected>Select Grade</option>';
+      if (centerNames[centerVal]) {
+        centerNames[centerVal].forEach(center => {
+          const option = document.createElement('option');
+          option.value = center.value;
+          option.textContent = center.text;
+          Grade.appendChild(option);
+        });
+      }
+      const gradeType = document.getElementById('gradeType');
+      if (gradeType) gradeType.innerHTML = '<option value="" selected>Type</option>';
+    }
 
+    function onGradeChange() {
+      const Grade = document.getElementById('Grade');
+      const gradeType = document.getElementById('gradeType');
+      if (!Grade || !gradeType) return;
 
-  document.getElementById('centerName').addEventListener('change', () => {
-    const centerName = document.getElementById('centerName').value;
-    const Grade = document.getElementById('Grade');
+      const selectedGrade = Grade.value;
+      gradeType.innerHTML = '<option value="" selected>Type</option>';
+      if (gradeTypeOptions[selectedGrade]) {
+        gradeTypeOptions[selectedGrade].forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.text;
+          gradeType.appendChild(option);
+        });
+      }
+      const groupTime = document.getElementById('groupTime');
+      if (groupTime) groupTime.innerHTML = '<option value="" selected>Group Time</option>';
+    }
 
-    // Clear existing grade type options
-    Grade.innerHTML = '<option value="" selected>Select Grade</option>';
-    console.log(centerName, centerNames[centerName])
-    // Add new grade type options based on the selected grade
-    if (centerNames[centerName]) {
-      centerNames[centerName].forEach(center => {
+    function updateGroupTimes() {
+      const centerName = document.getElementById('centerName');
+      const Grade = document.getElementById('Grade');
+      const gradeType = document.getElementById('gradeType');
+      const groupTime = document.getElementById('groupTime');
+      if (!centerName || !Grade || !gradeType || !groupTime) return;
+
+      const selectedCenter = centerName.value;
+      const selectedGrade = Grade.value;
+      const selectedGradeType = gradeType.value;
+
+      groupTime.innerHTML = '<option value="" selected>Group Time</option>';
+
+      if (!groupTimes[selectedCenter] || !groupTimes[selectedCenter][selectedGrade]) {
+        return;
+      }
+      const times = groupTimes[selectedCenter][selectedGrade][selectedGradeType];
+      if (!times || !Array.isArray(times) || times.length === 0) {
         const option = document.createElement('option');
-        option.value = center.value;
-        option.textContent = center.text;
-        Grade.appendChild(option);
+        option.value = 'default';
+        option.textContent = 'Default Group Time';
+        groupTime.appendChild(option);
+        return;
+      }
+      times.forEach(group => {
+        const option = document.createElement('option');
+        option.value = group.value;
+        option.textContent = group.text;
+        groupTime.appendChild(option);
       });
     }
 
-    // Clear the group time options whenever the grade changes
-    document.getElementById('gradeType').innerHTML = '<option value="" selected>Type</option>';
-  });
-  // Handle grade change
-  document.getElementById('Grade').addEventListener('change', function() {
-    const selectedGrade = this.value;
-    const gradeType = document.getElementById('gradeType');
-
-    // Clear existing grade type options
-    gradeType.innerHTML = '<option value="" selected>Type</option>';
-
-    // Add new grade type options based on the selected grade
-    if (gradeTypeOptions[selectedGrade]) {
-      gradeTypeOptions[selectedGrade].forEach(center => {
-        const option = document.createElement('option');
-        option.value = center.value;
-        option.textContent = center.text;
-        gradeType.appendChild(option);
-      });
-    }
-
-    // Clear the group time options whenever the grade changes
-    document.getElementById('groupTime').innerHTML = '<option value="" selected>Group Time</option>';
-  });
-
-  // Handle center name change and update group times
-  function updateGroupTimes() {
-    const selectedCenter = document.getElementById('centerName').value;
-    const selectedGrade = document.getElementById('Grade').value;
-    const selectedGradeType = document.getElementById('gradeType').value;
-    const groupTime = document.getElementById('groupTime');
-
-    // Clear existing group time options
-    groupTime.innerHTML = '<option value="" selected>Group Time</option>';
-
-    // Check if the selected center exists
-    if (!groupTimes[selectedCenter]) {
-      console.error(`Center "${selectedCenter}" is not found in groupTimes`);
-      return;
-    }
-
-    // Check if the selected grade exists for the center
-    if (!groupTimes[selectedCenter][selectedGrade]) {
-      console.error(`Grade "${selectedGrade}" is not found for center "${selectedCenter}"`);
-      return;
-    }
-
-    // Check if the selected grade type exists for the grade in the center
-    if (!groupTimes[selectedCenter][selectedGrade][selectedGradeType]) {
-      console.error(`Grade type "${selectedGradeType}" is not found for grade "${selectedGrade}" in center "${selectedCenter}"`);
-      
-      // Add a default option when group time is missing
-      const option = document.createElement('option');
-      option.value = 'default';
-      option.textContent = 'Default Group Time';
-      groupTime.appendChild(option);
-      return;
-    }
-
-    // Add new group times based on selected center, grade, and gradeType
-    groupTimes[selectedCenter][selectedGrade][selectedGradeType].forEach(group => {
-      const option = document.createElement('option');
-      option.value = group.value;
-      option.textContent = group.text;
-      groupTime.appendChild(option);
+    document.addEventListener('DOMContentLoaded', async () => {
+      await fetchOptions();
+      const centerNameEl = document.getElementById('centerName');
+      const GradeEl = document.getElementById('Grade');
+      const gradeTypeEl = document.getElementById('gradeType');
+      if (centerNameEl) centerNameEl.addEventListener('change', onCenterChange);
+      if (GradeEl) GradeEl.addEventListener('change', onGradeChange);
+      if (GradeEl) GradeEl.addEventListener('change', updateGroupTimes);
+      if (gradeTypeEl) gradeTypeEl.addEventListener('change', updateGroupTimes);
     });
-  }
-
-  // Add event listeners to update group times when the center, grade, or grade type changes
-  document.getElementById('Grade').addEventListener('change', updateGroupTimes);
-  document.getElementById('gradeType').addEventListener('change', updateGroupTimes);
+  })();
 </script>

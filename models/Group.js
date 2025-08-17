@@ -14,7 +14,7 @@ const groupSchema = new Schema(
       type: String,
       required: true,
     },
-    gradeType :{
+    gradeType: {
       type: String,
       required: true,
     },
@@ -22,14 +22,22 @@ const groupSchema = new Schema(
       type: String,
       required: true,
     },
-
-    related : { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
+    displayText: {
+      type: String,
+      required: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    related: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-
-
   },
   { timestamps: true }
 );
+
+// Ensure uniqueness per center/grade/type/time
+groupSchema.index({ CenterName: 1, Grade: 1, gradeType: 1, GroupTime: 1 }, { unique: true });
 
 const Group = mongoose.model('Group', groupSchema);
 

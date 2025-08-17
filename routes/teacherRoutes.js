@@ -169,6 +169,16 @@ router.get('/getDataToTransferring/:Code', authMiddleware, teacherController.get
 
 router.put('/transferStudent/:Code', authMiddleware, teacherController.transferStudent);
 
+// ==================  Edit Groups (Management)  ================= //
+
+router.get('/editGroups', authMiddleware, teacherController.editGroups_get);
+router.get('/groupOptions', authMiddleware, teacherController.getGroupOptions);
+router.get('/registerGroups', authMiddleware, teacherController.listRegisterGroups);
+router.post('/registerGroups', authMiddleware, teacherController.createRegisterGroup);
+router.put('/registerGroups/:id', authMiddleware, teacherController.updateRegisterGroup);
+router.delete('/registerGroups/:id', authMiddleware, teacherController.deleteRegisterGroup);
+router.get('/registerGroups/:id/students', authMiddleware, teacherController.getGroupStudents);
+
 // ==================  Send Registration Message  ================= //
 
 router.post('/sendRegistrationMessage', authMiddleware, teacherController.sendRegistrationMessage);

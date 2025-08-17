@@ -2662,6 +2662,192 @@ const transferStudent = async (req, res) => {
   }
 };
 
+// =================================================== Edit Groups (Management) =================================================== //
+
+const editGroups_get = async (req, res) => {
+  res.render('teacher/editGroups', { title: 'Edit Groups', path: req.path });
+};
+
+// Get hierarchical options for selects across pages (from Group model)
+const getGroupOptions = async (req, res) => {
+  try {
+    const groups = await Group.find({ isActive: true }).select('CenterName Grade gradeType GroupTime displayText').lean();
+
+    const centersSet = new Set();
+    const centerToGrades = {}; // centerName -> Set of Grades
+    const gradeToTypes = {}; // Grade -> Set of gradeTypes
+    const timesTree = {}; // centerName -> Grade -> gradeType -> [{value,text}]
+
+    for (const g of groups) {
+      centersSet.add(g.CenterName);
+
+      if (!centerToGrades[g.CenterName]) centerToGrades[g.CenterName] = new Set();
+      centerToGrades[g.CenterName].add(g.Grade);
+
+      if (!gradeToTypes[g.Grade]) gradeToTypes[g.Grade] = new Set();
+      gradeToTypes[g.Grade].add(g.gradeType);
+
+      if (!timesTree[g.CenterName]) timesTree[g.CenterName] = {};
+      if (!timesTree[g.CenterName][g.Grade]) timesTree[g.CenterName][g.Grade] = {};
+      if (!timesTree[g.CenterName][g.Grade][g.gradeType]) timesTree[g.CenterName][g.Grade][g.gradeType] = [];
+      timesTree[g.CenterName][g.Grade][g.gradeType].push({ value: g.GroupTime, text: g.displayText || g.GroupTime });
+    }
+
+    const centers = Array.from(centersSet);
+    const centerNames = {};
+    for (const center of centers) {
+      centerNames[center] = Array.from(centerToGrades[center] || []).map((gr) => ({ value: gr, text: gr }));
+    }
+
+    const gradeTypeOptions = {};
+    for (const gr of Object.keys(gradeToTypes)) {
+      gradeTypeOptions[gr] = Array.from(gradeToTypes[gr]).map((t) => ({ value: t, text: t }));
+    }
+
+    res.status(200).json({ centers, centerNames, gradeTypeOptions, groupTimes: timesTree });
+  } catch (error) {
+    console.error('Error building group options:', error);
+    res.status(500).json({ message: 'Failed to load group options' });
+  }
+};
+
+// List Groups with counts
+const listRegisterGroups = async (req, res) => {
+  try {
+    const items = await Group.aggregate([
+      { $match: {} },
+      { $project: { CenterName: 1, Grade: 1, gradeType: 1, GroupTime: 1, displayText: 1, isActive: 1, createdAt: 1, studentsCount: { $size: { $ifNull: ['$students', []] } } } },
+      { $sort: { CenterName: 1, Grade: 1, gradeType: 1, GroupTime: 1 } }
+    ]);
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error('Error listing groups:', error);
+    res.status(500).json({ message: 'Failed to list groups' });
+  }
+};
+
+const createRegisterGroup = async (req, res) => {
+  try {
+    const { centerName, Grade, gradeType, groupTime, displayText, isActive } = req.body;
+    if (!centerName || !Grade || !gradeType || !groupTime || !displayText) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    const allowedCenters = new Set(['GTA', 'tagmo3', 'Online']);
+    if (!allowedCenters.has(centerName)) {
+      return res.status(400).json({ message: 'Center must be one of GTA, tagmo3, Online' });
+    }
+    const item = await Group.create({ CenterName: centerName, Grade, gradeType, GroupTime: groupTime, displayText, isActive });
+    res.status(201).json({ item: { ...item.toObject(), studentsCount: (item.students || []).length } });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'A group with the same Center, Grade, Type and Group Key already exists' });
+    }
+    console.error('Error creating group:', error);
+    res.status(500).json({ message: 'Failed to create group' });
+  }
+};
+
+// For safety, restrict edits; allow only displayText/isActive updates
+const updateRegisterGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { displayText, isActive } = req.body;
+    const item = await Group.findByIdAndUpdate(id, { displayText, isActive }, { new: true });
+    if (!item) return res.status(404).json({ message: 'Group not found' });
+    res.status(200).json({ item: { ...item.toObject(), studentsCount: (item.students || []).length } });
+  } catch (error) {
+    console.error('Error updating group:', error);
+    res.status(500).json({ message: 'Failed to update group' });
+  }
+};
+
+const deleteRegisterGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    // Professional note: deleting a group will remove all students from this group
+    // and clear their group affiliation and attendance records related to this group.
+
+    // 1) Remove group reference from students and clear their current group fields
+    await User.updateMany(
+      { _id: { $in: group.students } },
+      { $set: { centerName: null, Grade: null, gradeType: null, groupTime: null } }
+    );
+
+    // 2) Delete attendance records for this group
+    await Attendance.deleteMany({ groupId: group._id });
+
+    // 3) Remove the group
+    await Group.deleteOne({ _id: group._id });
+
+    res.status(200).json({ message: 'Group and related records deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    res.status(500).json({ message: 'Failed to delete group' });
+  }
+};
+
+// Fetch students for a group
+const getGroupStudents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const group = await Group.findById(id).populate('students', 'Username Code phone parentPhone absences balance amountRemaining');
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    res.status(200).json({ students: group.students });
+  } catch (error) {
+    console.error('Error fetching group students:', error);
+    res.status(500).json({ message: 'Failed to fetch group students' });
+  }
+};
+
+// Seed RegisterGroup with legacy options (from old group.ejs)
+const seedRegisterGroups = async (req, res) => {
+  try {
+    const seeds = [
+      // GTA
+      { centerName: 'GTA', Grade: 'EST', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Saturday & Tuesday @ 6PM' },
+      { centerName: 'GTA', Grade: 'EST', gradeType: 'adv', groupTime: 'TEST', displayText: 'TEST' },
+      { centerName: 'GTA', Grade: 'Basics', gradeType: 'normal', groupTime: 'group1', displayText: 'Group(1) - Monday @ 6PM & Friday @ 5PM' },
+      { centerName: 'GTA', Grade: 'SAT', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Saturday @ 3:30PM & Tuesday @ 8PM' },
+
+      // tagmo3
+      { centerName: 'tagmo3', Grade: 'EST', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Sunday @ 6:30PM & Wednesday @ 4:30PM' },
+      { centerName: 'tagmo3', Grade: 'Basics', gradeType: 'normal', groupTime: 'group1', displayText: 'Group(1) - Sunday & Wednesday @ 8:30PM' },
+      { centerName: 'tagmo3', Grade: 'SAT', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Sunday @ 4:30PM & Wednesday @ 6:30PM' },
+
+      // Online
+      { centerName: 'Online', Grade: 'EST', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Online' },
+      { centerName: 'Online', Grade: 'Basics', gradeType: 'normal', groupTime: 'group1', displayText: 'Group(1) - Online' },
+      { centerName: 'Online', Grade: 'SAT', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Online' },
+      { centerName: 'Online', Grade: 'SAT', gradeType: 'newAdv', groupTime: 'group1', displayText: 'Group(1) - Online' },
+      { centerName: 'Online', Grade: 'ACT2', gradeType: 'normal', groupTime: 'group1', displayText: 'Group(1) - Online' },
+      { centerName: 'Online', Grade: 'ACT', gradeType: 'adv', groupTime: 'group1', displayText: 'Group(1) - Online' },
+      { centerName: 'Online', Grade: 'ACT', gradeType: 'basic', groupTime: 'group2', displayText: 'Group(2) - Online' },
+      { centerName: 'Online', Grade: 'EST2', gradeType: 'normal', groupTime: 'group1', displayText: 'Group(1) - Online' },
+    ];
+
+    let inserted = 0;
+    for (const s of seeds) {
+      try {
+        await RegisterGroup.updateOne(
+          { centerName: s.centerName, Grade: s.Grade, gradeType: s.gradeType, groupTime: s.groupTime },
+          { $setOnInsert: s },
+          { upsert: true }
+        );
+        inserted++;
+      } catch (e) {
+        // ignore duplicates
+      }
+    }
+    res.status(200).json({ message: 'Seed completed', count: inserted });
+  } catch (error) {
+    console.error('Error seeding register groups:', error);
+    res.status(500).json({ message: 'Failed to seed groups' });
+  }
+};
+
 // =================================================== Log Out =================================================== //
 
 
@@ -3397,6 +3583,15 @@ module.exports = {
   convertGroup_get,
   getDataToTransferring,
   transferStudent,
+
+  // Edit Groups
+  editGroups_get,
+  getGroupOptions,
+  listRegisterGroups,
+  createRegisterGroup,
+  updateRegisterGroup,
+  deleteRegisterGroup,
+  getGroupStudents,
 
   logOut,
   setWebhook,

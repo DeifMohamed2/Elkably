@@ -3,8 +3,8 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Get API details from environment variables with fallbacks
-const BASE_URL = process.env.WAZIPER_API_URL || 'https://waziper.com/api';
-const ACCESS_TOKEN = process.env.WAZIPER_ACCESS_TOKEN || '685334261fcbe';
+const BASE_URL =  'https://waziper.com/api';
+const ACCESS_TOKEN = '685334261fcbe';
 
 /**
  * Waziper API Client

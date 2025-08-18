@@ -4,8 +4,146 @@
     <%- include("./partials/head.ejs") %>
 
 <style>
+:root {
+    --dark-bg: #121212;
+    --dark-card-bg: #1e1e1e;
+    --dark-text: #e0e0e0;
+    --dark-border: #333;
+    --dark-input-bg: #2d2d2d;
+    --dark-hover: #2c2c2c;
+    --dark-primary: #3a7bd5;
+    --dark-secondary: #4d4d4d;
+    --dark-success: #28a745;
+    --dark-danger: #dc3545;
+    --dark-warning: #ffc107;
+    --dark-info: #17a2b8;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+.container-fluid {
+    background-color: var(--dark-bg);
+}
+
+.card {
+    background-color: var(--dark-card-bg);
+    border-color: var(--dark-border);
+}
+
+.card-header {
+    background-color: var(--dark-secondary);
+    border-color: var(--dark-border);
+}
+
+.modal-content {
+    background-color: var(--dark-card-bg);
+    border-color: var(--dark-border);
+}
+
+.modal-header, .modal-footer {
+    background-color: var(--dark-secondary);
+    border-color: var(--dark-border);
+}
+
+.list-group-item {
+    background-color: var(--dark-card-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+.form-control, select, input, .modal-input, .Grade {
+    background-color: var(--dark-input-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+.form-control:focus, select:focus, input:focus {
+    background-color: var(--dark-input-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-primary);
+    box-shadow: 0 0 0 0.2rem rgba(58, 123, 213, 0.25);
+}
+
+.btn-primary {
+    background-color: var(--dark-primary);
+    border-color: var(--dark-primary);
+}
+
+.btn-secondary {
+    background-color: var(--dark-secondary);
+    border-color: var(--dark-secondary);
+}
+
+.btn-danger {
+    background-color: var(--dark-danger);
+    border-color: var(--dark-danger);
+}
+
+.btn-outline-warning {
+    color: var(--dark-warning);
+    border-color: var(--dark-warning);
+}
+
+.btn-outline-warning:hover {
+    background-color: var(--dark-warning);
+    color: var(--dark-bg);
+}
+
+.btn-outline-primary {
+    color: var(--dark-primary);
+    border-color: var(--dark-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--dark-primary);
+    color: var(--dark-text);
+}
+
+.btn-outline-danger {
+    color: var(--dark-danger);
+    border-color: var(--dark-danger);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--dark-danger);
+    color: var(--dark-text);
+}
+
+table {
+    color: var(--dark-text);
+}
+
+table thead th {
+    background-color: var(--dark-secondary);
+    color: var(--dark-text);
+}
+
+table tbody tr {
+    background-color: var(--dark-card-bg);
+}
+
+table tbody tr:nth-child(odd) {
+    background-color: var(--dark-bg);
+}
+
+table tbody tr:hover {
+    background-color: var(--dark-hover);
+}
+
+.pagination button, .paginationBtns {
+    background-color: var(--dark-secondary);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+.pagination button:hover, .paginationBtns:hover {
+    background-color: var(--dark-primary);
+}
+
 .group {
-     
     display: flex;
     flex-direction: column; /* Stack elements vertically */
     gap: 10px; /* Add some space between elements */
@@ -16,22 +154,52 @@
     width: 100%; /* Make labels and selects take up the full width */
 }
 
-
-  .spinner {
+.spinner {
     width: 56px;
     height: 56px;
     border-radius: 50%;
     border: 9px solid;
-    border-color: #dbdcef;
-    border-right-color: #1800ed;
+    border-color: #333;
+    border-right-color: var(--dark-primary);
     animation: spinner-d3wgkg 1s infinite linear;
-  }
+}
 
-  @keyframes spinner-d3wgkg {
+@keyframes spinner-d3wgkg {
     to {
       transform: rotate(1turn);
     }
-  }
+}
+
+/* Dark mode for advanced search card */
+#advancedSearchForm label {
+    color: var(--dark-text);
+}
+
+#studentDetailsContainer .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--dark-card-bg);
+}
+
+#studentDetailsContainer .list-group-item span {
+    color: var(--dark-text);
+}
+
+#studentDetailsContainer .list-group-item strong {
+    color: var(--dark-primary);
+}
+
+.bg-success {
+    background-color: var(--dark-success) !important;
+}
+
+.bg-primary {
+    background-color: var(--dark-primary) !important;
+}
+
+.close-modal {
+    color: var(--dark-text);
+}
 
 </style>
 <body>
@@ -208,8 +376,123 @@
                      
                             </form>
                         </div>
-        
-                 
+                    </div>
+                    
+                    <!-- Advanced Search Card -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">بحث متقدم عن طالب</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="advancedSearchForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="studentCode" class="form-label">كود الطالب</label>
+                                                    <input type="text" class="form-control" id="studentCode" placeholder="أدخل كود الطالب">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-end">
+                                                <button type="submit" class="btn btn-primary">بحث</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Details Card (Hidden by default) -->
+                    <div class="row mt-3" id="studentDetailsContainer" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">بيانات الطالب</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>اسم الطالب:</span>
+                                                    <strong id="detailUsername"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>كود الطالب:</span>
+                                                    <strong id="detailCode"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>رقم هاتف الطالب:</span>
+                                                    <strong id="detailPhone"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>رقم هاتف ولي الأمر:</span>
+                                                    <strong id="detailParentPhone"></strong>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>السنتر:</span>
+                                                    <strong id="detailCenter"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>الصف:</span>
+                                                    <strong id="detailGrade"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>النوع:</span>
+                                                    <strong id="detailGradeType"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>المجموعة:</span>
+                                                    <strong id="detailGroupTime"></strong>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>المبلغ:</span>
+                                                    <strong id="detailBalance"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>المبلغ المتبقي:</span>
+                                                    <strong id="detailAmountRemaining"></strong>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>عدد مرات الغياب:</span>
+                                                    <strong id="detailAbsences"></strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>نوع الحضور:</span>
+                                                    <strong id="detailAttendingType"></strong>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 text-center">
+                                            <button type="button" class="btn btn-primary me-2" onclick="editAdvancedStudent()">
+                                                تعديل البيانات <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="deleteAdvancedStudent()">
+                                                حذف الطالب <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <table id="convetToexcel" style="display: none;">
                         
@@ -456,6 +739,95 @@
     });
 
 
+</script>
+
+<!-- Advanced Search JavaScript -->
+<script>
+  document.getElementById('advancedSearchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const studentCode = document.getElementById('studentCode').value.trim();
+    
+    if (!studentCode) {
+      alert('الرجاء إدخال كود الطالب');
+      return;
+    }
+    
+    // Show loading spinner
+    const spinner = document.getElementById('spinner');
+    if (spinner) spinner.classList.remove('d-none');
+    
+    fetch(`/teacher/advancedStudentSearch/${studentCode}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Student not found');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Hide spinner
+        if (spinner) spinner.classList.add('d-none');
+        
+        // Populate student details
+        document.getElementById('detailUsername').textContent = data.Username || 'غير متوفر';
+        document.getElementById('detailCode').textContent = data.Code || 'غير متوفر';
+        document.getElementById('detailPhone').textContent = data.phone || 'غير متوفر';
+        document.getElementById('detailParentPhone').textContent = data.parentPhone || 'غير متوفر';
+        document.getElementById('detailCenter').textContent = data.centerName || 'غير متوفر';
+        document.getElementById('detailGrade').textContent = data.Grade || 'غير متوفر';
+        document.getElementById('detailGradeType').textContent = data.gradeType || 'غير متوفر';
+        document.getElementById('detailGroupTime').textContent = data.groupInfo ? data.groupInfo.displayText : data.groupTime || 'غير متوفر';
+        document.getElementById('detailBalance').textContent = data.balance || '0';
+        document.getElementById('detailAmountRemaining').textContent = data.amountRemaining || '0';
+        document.getElementById('detailAbsences').textContent = data.absences || '0';
+        document.getElementById('detailAttendingType').textContent = data.attendingType || 'غير متوفر';
+        
+        // Store student ID for edit/delete operations
+        window.advancedStudentId = data._id;
+        
+        // Show the student details container
+        document.getElementById('studentDetailsContainer').style.display = 'block';
+      })
+      .catch(error => {
+        // Hide spinner
+        if (spinner) spinner.classList.add('d-none');
+        
+        alert('لم يتم العثور على الطالب. الرجاء التحقق من الكود المدخل.');
+        console.error('Error:', error);
+        
+        // Hide the student details container if visible
+        document.getElementById('studentDetailsContainer').style.display = 'none';
+      });
+  });
+  
+  // Function to edit the student from advanced search
+  function editAdvancedStudent() {
+    if (!window.advancedStudentId) {
+      alert('لم يتم العثور على بيانات الطالب');
+      return;
+    }
+    
+    // Use the existing modal to edit student
+    populateModal(window.advancedStudentId);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('exampleModal'));
+    modal.show();
+  }
+  
+  // Function to delete the student from advanced search
+  function deleteAdvancedStudent() {
+    if (!window.advancedStudentId) {
+      alert('لم يتم العثور على بيانات الطالب');
+      return;
+    }
+    
+    // Use the existing delete functionality
+    getIdToDelete(window.advancedStudentId);
+    
+    // Show the delete confirmation modal
+    const modal = new bootstrap.Modal(document.getElementById('exampleModal2'));
+    modal.show();
+  }
 </script>
 
 </body>

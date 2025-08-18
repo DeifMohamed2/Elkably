@@ -232,18 +232,62 @@ const getSingleUserAllData = async (req, res) => {
   try {
     const studentID = req.params.studentID;
     console.log(studentID);
-    await User.findOne(
-      { _id: studentID },
-     
-    ).then((result) => {
-
-      res.status(200).send(result);
-    }).catch((error) => {
-      console.log(error);
-    });
+    
+    // Check if studentID is a MongoDB ObjectId or a student code
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(studentID);
+    
+    let query;
+    if (isObjectId) {
+      query = { _id: studentID };
+    } else {
+      // Handle as a code with flexible matching
+      const codeParam = String(studentID).trim();
+      const isOnlyNumbers = /^\d+$/.test(codeParam);
+      const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
+      
+      // Build query conditions to match various code formats
+      const orConditions = [{ cardId: codeParam }];
+      
+      if (isOnlyNumbers) {
+        orConditions.push({ Code: codeParam });
+        orConditions.push({ Code: +codeParam });
+        
+        // Add all possible letter prefixes for numeric codes
+        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+        prefixes.forEach(prefix => {
+          orConditions.push({ Code: prefix + codeParam });
+        });
+      } else {
+        orConditions.push({ Code: codeParam });
+        
+        if (letterPrefixMatch) {
+          const digits = letterPrefixMatch[2];
+          
+          orConditions.push({ Code: digits });
+          orConditions.push({ Code: +digits });
+          
+          const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+          prefixes.forEach(prefix => {
+            if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
+              orConditions.push({ Code: prefix + digits });
+            }
+          });
+        }
+      }
+      
+      query = { $or: orConditions };
+    }
+    
+    const result = await User.findOne(query);
+    
+    if (!result) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    res.status(200).send(result);
   } catch (error) {
     console.log(error);
-    
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -613,55 +657,106 @@ const addCardGet = async (req, res) => {
   // }).catch(err => {
   //   console.error('Error deleting users:', err);
   // });
-
-  // delete groups 
-  // await Group.deleteMany({
-    
-  // CenterName: { $in: ['GTA', 'tagmo3', 'Online'] },
-  //   Grade: { $in: ['EST', 'SAT', 'ACT', 'EST2'] },
-  //   gradeType: { $in: ['adv', 'normal'] }
-  // }).then((result) => {
-  //   console.log(`${result.deletedCount} groups deleted.`);
-  // }).catch(err => {
-  //   console.error('Error deleting groups:', err);
-  // });
-  // await User.updateMany(
-  //   { centerName: 'GTA', Grade: 'EST1', gradeType: 'adv', groupTime: 'group3' },
-  //   { groupTime: 'group2' }
-  // ).then((result) => {
-  //   console.log(`${result.nModified} users updated.`);
-  // });
-  console.log('Starting to update Online student codes');
-
-  // Add 'O' prefix to Online students' codes and remove 'G' if it exists
-  // await User.find({ centerName: 'Online' }).then(async (users) => {
-  //   for (const user of users) {
-  //     let newCode = user.Code;
+  
+  // Function to update Online student codes from O to K
+//   const updateOnlineStudentCodes = async () => {
+//     try {
+//       console.log('Starting to update Online student codes with non-standard format...');
       
-  //     // Remove 'G' from start or end if it exists
-  //     if (newCode.startsWith('G')) {
-  //       newCode = newCode.substring(1);
-  //     } else if (newCode.endsWith('G')) {
-  //       newCode = newCode.substring(0, newCode.length - 1);
-  //     }
+//       // Create regex pattern for K prefix followed by more than 4 digits or containing letters
+//       const nonStandardCodeRegex = new RegExp('^K(?=.*[a-zA-Z]|.{5,})');
       
-  //     // Add 'O' prefix if it doesn't already start with 'O'
-  //     if (!newCode.startsWith('O')) {
-  //       newCode = 'O' + newCode;
-  //     }
+//       // Find all Online students with non-standard codes
+//       const students = await User.find({ 
+//         centerName: 'Online',
+//         Code: { $regex: nonStandardCodeRegex }
+//       });
       
-  //     // Only update if code has changed
-  //     if (newCode !== user.Code) {
-  //       console.log('Updating code for user:', user.Username, 'from', user.Code, 'to', newCode);
-  //       await User.updateOne({ _id: user._id }, { Code: newCode });
-  //     }
-    
-  //   }
-  //   console.log('Updated Online student codes');
-  // }).catch(err => {
-  //   console.error('Error updating Online student codes:', err);
-  // });
+//       console.log(`Found ${students.length} Online students with non-standard K codes`);
+      
+//       let updatedCount = 0;
+//       let errors = 0;
+//       let notificationsSent = 0;
+      
+//       // Process each student
+//       for (const student of students) {
+//         try {
+//           // Generate a new random 4-digit code
+//           const randomNum = Math.floor(1000 + Math.random() * 9000); // Random 4-digit number
+//           const newCode = 'K' + randomNum.toString();
+          
+//           // Check if code already exists
+//           const existingStudent = await User.findOne({ Code: newCode });
+          
+//           // If code exists, regenerate until we find a unique one
+//           let finalCode = newCode;
+//           let attempts = 0;
+          
+//           while (existingStudent && attempts < 10) {
+//             const anotherRandomNum = Math.floor(1000 + Math.random() * 9000);
+//             finalCode = 'K' + anotherRandomNum.toString();
+//             attempts++;
+//             const anotherExistingStudent = await User.findOne({ Code: finalCode });
+//             if (!anotherExistingStudent) break;
+//           }
+          
+//           console.log(`Updating student ${student.Username}: ${student.Code} -> ${finalCode}`);
+          
+//           // Update the student's code
+//           await User.updateOne(
+//             { _id: student._id },
+//             { $set: { Code: finalCode } }
+//           );
+          
+//           // Send a WhatsApp notification to the student if they have a phone number
+//           if (student.phone) {
+//             try {
+//               const message = `مرحباً ${student.Username}،
+              
+// تم تغيير كود الطالب الخاص بك.
+// الكود الجديد: ${finalCode}
 
+// يرجى استخدام هذا الكود الجديد عند التعامل مع المنصة.
+// شكراً لتفهمك.`;
+              
+//               // Use the instanceID3 for Online center (consistent with sendQRCode function)
+//               await waziper.sendMessage(
+//                 '68555697EE266', // instanceID3 for Online center
+//                 `${student.phoneCountryCode || '20'}${student.phone}`,
+//                 message
+//               );
+              
+//               notificationsSent++;
+//             } catch (notifyError) {
+//               console.error(`Failed to notify student ${student.Username} about code change:`, notifyError);
+//             }
+//           }
+          
+//           updatedCount++;
+//         } catch (error) {
+//           console.error(`Error updating student ${student.Username} (${student._id}):`, error);
+//           errors++;
+//         }
+//       }
+      
+//       console.log(`
+// ====== Update Summary ======
+// Center: Online
+// Non-standard K codes fixed: ${updatedCount} out of ${students.length}
+// Notifications sent: ${notificationsSent}
+// Errors: ${errors}
+// ============================
+//       `);
+      
+//       return { total: students.length, updated: updatedCount, notificationsSent, errors };
+//     } catch (error) {
+//       console.error('Error updating Online student codes:', error);
+//       return { total: 0, updated: 0, notificationsSent: 0, errors: 1 };
+//     }
+//   };
+
+//   // Uncomment the line below to run the code update when the page loads
+// updateOnlineStudentCodes();
   res.render('teacher/addCard', { title: 'addCard', path: req.path });
 }
 
@@ -2118,6 +2213,110 @@ const getStudentData = async (req, res) => {
   }
 };
 
+// Advanced search for a student by code with detailed information
+const advancedStudentSearch = async (req, res) => {
+  const { code } = req.params;
+  
+  try {
+    // Create a flexible search pattern to match different code formats
+    const codeParam = String(code).trim();
+    const isOnlyNumbers = /^\d+$/.test(codeParam);
+    
+    // Match codes with letter prefixes (G, O, K, etc.)
+    const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
+
+    // Build query conditions to match various code formats
+    const orConditions = [{ cardId: codeParam }];
+
+    if (isOnlyNumbers) {
+      // Match numeric code stored as string or number
+      orConditions.push({ Code: codeParam });
+      orConditions.push({ Code: +codeParam });
+      
+      // Add all possible letter prefixes for numeric codes
+      const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+      prefixes.forEach(prefix => {
+        orConditions.push({ Code: prefix + codeParam });
+      });
+    } else {
+      // Match the provided code as-is
+      orConditions.push({ Code: codeParam });
+      
+      // If code starts with a letter followed by digits, also try with other prefixes and without prefix
+      if (letterPrefixMatch) {
+        const digits = letterPrefixMatch[2];
+        
+        // Try without any prefix
+        orConditions.push({ Code: digits });
+        orConditions.push({ Code: +digits });
+        
+        // Try with all other possible prefixes
+        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+        prefixes.forEach(prefix => {
+          // Don't add the same prefix that's already in the code
+          if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
+            orConditions.push({ Code: prefix + digits });
+          }
+        });
+      }
+    }
+
+    // Find the student with any of the possible code formats
+    const student = await User.findOne({ $or: orConditions });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Find the student's group information
+    let groupInfo = null;
+    if (student.centerName && student.Grade && student.gradeType && student.groupTime) {
+      const group = await Group.findOne({
+        CenterName: student.centerName,
+        Grade: student.Grade,
+        gradeType: student.gradeType,
+        GroupTime: student.groupTime
+      });
+      
+      if (group) {
+        groupInfo = {
+          id: group._id,
+          displayText: group.displayText || group.GroupTime,
+          studentCount: group.students ? group.students.length : 0
+        };
+      }
+    }
+
+    // Build a comprehensive response with all student details
+    const studentData = {
+      _id: student._id,
+      Username: student.Username,
+      Code: student.Code,
+      phone: student.phone,
+      parentPhone: student.parentPhone,
+      centerName: student.centerName,
+      Grade: student.Grade,
+      gradeType: student.gradeType,
+      groupTime: student.groupTime,
+      balance: student.balance,
+      amountRemaining: student.amountRemaining,
+      absences: student.absences,
+      attendingType: student.attendingType,
+      GradeLevel: student.GradeLevel,
+      bookTaken: student.bookTaken,
+      schoolName: student.schoolName,
+      createdAt: student.createdAt,
+      updatedAt: student.updatedAt,
+      groupInfo
+    };
+
+    res.status(200).json(studentData);
+  } catch (error) {
+    console.error('Error in advanced student search:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 
 const fs = require('fs');
 const path = require('path');
@@ -2588,23 +2787,40 @@ const getDataToTransferring = async (req, res) => {
   try {
     const codeParam = String(Code).trim();
     const isOnlyNumbers = /^\d+$/.test(codeParam);
-    const gPrefixedMatch = codeParam.match(/^[Gg](\d+)$/);
+    const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
 
     const orConditions = [{ cardId: codeParam }];
 
     if (isOnlyNumbers) {
-      // Match numeric code stored as string or number, and optional G/g prefix variants
+      // Match numeric code stored as string or number
       orConditions.push({ Code: codeParam });
       orConditions.push({ Code: +codeParam });
-      orConditions.push({ Code: 'G' + codeParam });
-      orConditions.push({ Code: 'g' + codeParam });
+      
+      // Add all possible letter prefixes for numeric codes
+      const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+      prefixes.forEach(prefix => {
+        orConditions.push({ Code: prefix + codeParam });
+      });
     } else {
       // Match the provided code as-is
       orConditions.push({ Code: codeParam });
-      // If code starts with G/g followed by digits, also try without prefix (string and number)
-      if (gPrefixedMatch) {
-        orConditions.push({ Code: gPrefixedMatch[1] });
-        orConditions.push({ Code: +gPrefixedMatch[1] });
+      
+      // If code starts with a letter followed by digits, also try with other prefixes and without prefix
+      if (letterPrefixMatch) {
+        const digits = letterPrefixMatch[2];
+        
+        // Try without any prefix
+        orConditions.push({ Code: digits });
+        orConditions.push({ Code: +digits });
+        
+        // Try with all other possible prefixes
+        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+        prefixes.forEach(prefix => {
+          // Don't add the same prefix that's already in the code
+          if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
+            orConditions.push({ Code: prefix + digits });
+          }
+        });
       }
     }
 
@@ -2635,23 +2851,40 @@ const transferStudent = async (req, res) => {
   try {
     const codeParam = String(Code).trim();
     const isOnlyNumbers = /^\d+$/.test(codeParam);
-    const gPrefixedMatch = codeParam.match(/^[Gg](\d+)$/);
+    const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
 
     const orConditions = [{ cardId: codeParam }];
 
     if (isOnlyNumbers) {
-      // Match numeric code stored as string or number, and optional G/g prefix variants
+      // Match numeric code stored as string or number
       orConditions.push({ Code: codeParam });
       orConditions.push({ Code: +codeParam });
-      orConditions.push({ Code: 'G' + codeParam });
-      orConditions.push({ Code: 'g' + codeParam });
+      
+      // Add all possible letter prefixes for numeric codes
+      const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+      prefixes.forEach(prefix => {
+        orConditions.push({ Code: prefix + codeParam });
+      });
     } else {
       // Match the provided code as-is
       orConditions.push({ Code: codeParam });
-      // If code starts with G/g followed by digits, also try without prefix (string and number)
-      if (gPrefixedMatch) {
-        orConditions.push({ Code: gPrefixedMatch[1] });
-        orConditions.push({ Code: +gPrefixedMatch[1] });
+      
+      // If code starts with a letter followed by digits, also try with other prefixes and without prefix
+      if (letterPrefixMatch) {
+        const digits = letterPrefixMatch[2];
+        
+        // Try without any prefix
+        orConditions.push({ Code: digits });
+        orConditions.push({ Code: +digits });
+        
+        // Try with all other possible prefixes
+        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
+        prefixes.forEach(prefix => {
+          // Don't add the same prefix that's already in the code
+          if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
+            orConditions.push({ Code: prefix + digits });
+          }
+        });
       }
     }
 
@@ -3599,6 +3832,7 @@ module.exports = {
   // My Student Data
   getStudentData,
   convertAttendaceToExcel,
+  advancedStudentSearch,
   
 
   // WhatsApp

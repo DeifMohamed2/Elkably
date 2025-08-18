@@ -64,6 +64,8 @@ router.get("/logOut", authMiddleware,teacherController.logOut);
 
 router.get("/studentsRequests/:studentID", authMiddleware,teacherController.getSingleUserAllData);
 
+router.get("/advancedStudentSearch/:code", authMiddleware,teacherController.advancedStudentSearch);
+
 router.delete("/studentsRequests/delete/:studentID", authMiddleware,teacherController.DeleteStudent);
 
 router.post("/converStudentRequestsToExcel", authMiddleware,teacherController.converStudentRequestsToExcel);

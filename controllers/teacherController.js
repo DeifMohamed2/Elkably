@@ -2583,12 +2583,32 @@ const convertGroup_get = (req, res) => {
 }
 
 const getDataToTransferring = async (req, res) => {
-  const {Code} = req.params;
+  const { Code } = req.params;
 
   try {
-    const student = await User.findOne({
-      $or: [{ cardId: Code }, { Code: +Code }],
-    });
+    const codeParam = String(Code).trim();
+    const isOnlyNumbers = /^\d+$/.test(codeParam);
+    const gPrefixedMatch = codeParam.match(/^[Gg](\d+)$/);
+
+    const orConditions = [{ cardId: codeParam }];
+
+    if (isOnlyNumbers) {
+      // Match numeric code stored as string or number, and optional G/g prefix variants
+      orConditions.push({ Code: codeParam });
+      orConditions.push({ Code: +codeParam });
+      orConditions.push({ Code: 'G' + codeParam });
+      orConditions.push({ Code: 'g' + codeParam });
+    } else {
+      // Match the provided code as-is
+      orConditions.push({ Code: codeParam });
+      // If code starts with G/g followed by digits, also try without prefix (string and number)
+      if (gPrefixedMatch) {
+        orConditions.push({ Code: gPrefixedMatch[1] });
+        orConditions.push({ Code: +gPrefixedMatch[1] });
+      }
+    }
+
+    const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -2610,12 +2630,32 @@ const getDataToTransferring = async (req, res) => {
 
 const transferStudent = async (req, res) => {
   const {  centerName, Grade, gradeType, groupTime } = req.body;
-  const {Code} = req.params;
+  const { Code } = req.params;
   console.log(req.body)
   try {
-    const student = await User.findOne({
-      $or: [{ cardId: Code }, { Code: +Code }],
-    });
+    const codeParam = String(Code).trim();
+    const isOnlyNumbers = /^\d+$/.test(codeParam);
+    const gPrefixedMatch = codeParam.match(/^[Gg](\d+)$/);
+
+    const orConditions = [{ cardId: codeParam }];
+
+    if (isOnlyNumbers) {
+      // Match numeric code stored as string or number, and optional G/g prefix variants
+      orConditions.push({ Code: codeParam });
+      orConditions.push({ Code: +codeParam });
+      orConditions.push({ Code: 'G' + codeParam });
+      orConditions.push({ Code: 'g' + codeParam });
+    } else {
+      // Match the provided code as-is
+      orConditions.push({ Code: codeParam });
+      // If code starts with G/g followed by digits, also try without prefix (string and number)
+      if (gPrefixedMatch) {
+        orConditions.push({ Code: gPrefixedMatch[1] });
+        orConditions.push({ Code: +gPrefixedMatch[1] });
+      }
+    }
+
+    const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });

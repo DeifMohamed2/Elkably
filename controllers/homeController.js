@@ -1,21 +1,53 @@
 const User = require('../models/User');
 const Group = require('../models/Group');
-const waziper = require('../utils/waziper');
+const wasender = require('../utils/wasender');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const qrcode = require('qrcode'); 
 
 
 const jwtSecret = process.env.JWTSECRET;
-// Get instance IDs from environment variables and provide defaults if not found
-const instanceID1 = '6855564C3C835';
-const instanceID2 = '68555884791C6';
-const instanceID3 = '68555697EE266';
-
-console.log('WhatsApp Instance IDs loaded:');
-console.log('instanceID1 (GTA):', instanceID1);
-console.log('instanceID2 (tagmo3):', instanceID2);
-console.log('instanceID3 (Online):', instanceID3);
+// Helper function to find the appropriate Wasender session based on center name
+async function findWasenderSession(centerName) {
+  try {
+    // Get all sessions to find the one with matching phone number
+    const sessionsResponse = await wasender.getAllSessions();
+    if (!sessionsResponse.success) {
+      throw new Error(`Failed to get sessions: ${sessionsResponse.message}`);
+    }
+    
+    const sessions = sessionsResponse.data;
+    let targetSession = null;
+    
+    // Find session by center name mapping to admin phone numbers
+    if (centerName === 'GTA') {
+      targetSession = sessions.find(s => s.phone_number === '+201065057897' || s.phone_number === '01065057897');
+    } else if (centerName === 'tagmo3') {
+      targetSession = sessions.find(s => s.phone_number === '+201055640148' || s.phone_number === '01055640148');
+    } else if (centerName === 'Online') {
+      targetSession = sessions.find(s => s.phone_number === '+201147929010' || s.phone_number === '01147929010');
+    }
+    
+    // If no specific match, try to find any connected session
+    if (!targetSession) {
+      targetSession = sessions.find(s => s.status === 'connected');
+    }
+    
+    if (!targetSession) {
+      throw new Error('No connected WhatsApp session found');
+    }
+    
+    if (!targetSession.api_key) {
+      throw new Error('Session API key not available');
+    }
+    
+    console.log(`Using session: ${targetSession.name} (${targetSession.phone_number}) for center: ${centerName}`);
+    return targetSession;
+  } catch (err) {
+    console.error('Error finding Wasender session:', err.message);
+    throw err;
+  }
+}
 
 
 
@@ -23,38 +55,27 @@ async function sendQRCode(chatId, message, studentCode, centerName) {
   try {
     console.log('Sending QR code for center:', centerName);
 
-    // Each center has its own dedicated WhatsApp instance for sending messages
-    // - tagmo3 center uses instanceID2
-    // - GTA center uses instanceID1
-    // - All other centers (including Online, etc.) use instanceID3
-    let instanceId;
-    if (centerName === 'tagmo3') {
-      instanceId = instanceID2;
-    } else if (centerName === 'GTA') {
-      instanceId = instanceID1;
-    } else {
-      instanceId = instanceID3;
-    }
+    // Find the appropriate session for this center
+    const targetSession = await findWasenderSession(centerName);
     
-    console.log('Using WhatsApp instance ID:', instanceId);
-    
-    // Format phone number for Waziper API (remove @c.us suffix)
-    const phoneNumber = chatId.replace('@c.us', '');
+    // Format phone number for Wasender API (remove @c.us suffix and add @s.whatsapp.net)
+    const phoneNumber = chatId.replace('@c.us', '') + '@s.whatsapp.net';
     console.log('Sending to phone number:', phoneNumber);
     
-
-    // Then create a publicly accessible URL for the QR code
-    // For this example, we'll use a placeholder URL that generates QR codes
+    // Create a publicly accessible URL for the QR code
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(studentCode)}`;
     
-    // Send the QR code as a media message
-    const mediaResponse = await waziper.sendMediaMessage(
-      instanceId,
+    // Send the QR code as an image message
+    const mediaResponse = await wasender.sendImageMessage(
+      targetSession.api_key,
       phoneNumber,
-      message,
       qrCodeUrl,
-      'qrcode.png'
+      message
     );
+
+    if (!mediaResponse.success) {
+      throw new Error(`Failed to send QR code: ${mediaResponse.message}`);
+    }
 
     console.log('QR code sent successfully:', mediaResponse.data);
     return { success: true };
@@ -433,22 +454,25 @@ const send_verification_code = async (req, res) => {
     // Get country code from request or use default (20 for Egypt)
     const countryCode = req.body.phoneCountryCode || '20';
     
-    // Format phone number for Waziper API
-    const phoneNumber = `${countryCode}${phone}`;
+    // Format phone number for Wasender API
+    const phoneNumber = `${countryCode}${phone}@s.whatsapp.net`;
 
     try {
-      console.log(`Using Waziper API to send message to ${phoneNumber} with country code ${countryCode}`);
+      console.log(`Using Wasender API to send message to ${phoneNumber} with country code ${countryCode}`);
       
-      // Use instanceID1 instead of hardcoded ID
-      const instanceId = instanceID1;
-      console.log(`Using WhatsApp instance ID: ${instanceId}`);
+      // Use GTA center for verification codes
+      const targetSession = await findWasenderSession('GTA');
       
-      // Send the message via the Waziper API
-      const response = await waziper.sendTextMessage(
-        instanceId,
+      // Send the message via the Wasender API
+      const response = await wasender.sendTextMessage(
+        targetSession.api_key,
         phoneNumber,
         message
       );
+
+      if (!response.success) {
+        throw new Error(`Failed to send message: ${response.message}`);
+      }
 
       console.log('Verification code sent successfully:', response.data);
       
@@ -459,7 +483,7 @@ const send_verification_code = async (req, res) => {
       // Send a successful response
       res.status(201).json({ success: true, data: response.data });
     } catch (err) {
-      // Handle any error that occurs during the Waziper API call
+      // Handle any error that occurs during the Wasender API call
       console.error('Error sending verification code:', err);
       console.error('Error details:', err.response?.data || err.message);
       res.status(500).json({ success: false, error: err.message });
@@ -500,16 +524,20 @@ const forgetPassword_post = async (req, res) => {
       });
       const link = `http://localhost:3000/reset-password/${user._id}/${token}`;
 
-      // Send reset password link via WhatsApp using Waziper API
+      // Send reset password link via WhatsApp using Wasender API
       try {
-        // Format phone number for Waziper API
-        const phoneNumber = `2${phone}`;
+        // Format phone number for Wasender API
+        const phoneNumber = `2${phone}@s.whatsapp.net`;
         const message = `رابط إعادة تعيين كلمة المرور الخاص بك: ${link}`;
         
-        // Determine which instance to use (using default instance for this example)
-        const instanceId = instanceID1;
+        // Use GTA center for password reset
+        const targetSession = await findWasenderSession('GTA');
         
-        await waziper.sendTextMessage(instanceId, phoneNumber, message);
+        const response = await wasender.sendTextMessage(targetSession.api_key, phoneNumber, message);
+        
+        if (!response.success) {
+          throw new Error(`Failed to send message: ${response.message}`);
+        }
         
         res.render('forgetPassword', {
           title: 'Forget Password',

@@ -330,10 +330,10 @@ class WasenderClient {
     }
   }
 
-  async sendImageMessage(sessionApiKey, toJid, imageUrl, caption = '') {
+  async sendImageMessage(sessionApiKey, toJid, imageUrl, text = '') {
     try {
       const sessionClient = this.createSessionClient(sessionApiKey);
-      const r = await sessionClient.post('/send-message', { to: toJid, imageUrl, caption });
+      const r = await sessionClient.post('/send-message', { to: toJid, imageUrl, text });
       const body = r.data;
       
       if (!body.success) {
@@ -347,10 +347,10 @@ class WasenderClient {
     }
   }
 
-  async sendVideoMessage(sessionApiKey, toJid, videoUrl, caption = '') {
+  async sendVideoMessage(sessionApiKey, toJid, videoUrl, text = '') {
     try {
       const sessionClient = this.createSessionClient(sessionApiKey);
-      const r = await sessionClient.post('/send-message', { to: toJid, videoUrl, caption });
+      const r = await sessionClient.post('/send-message', { to: toJid, videoUrl, text });
       const body = r.data;
       
       if (!body.success) {
@@ -381,10 +381,10 @@ class WasenderClient {
     }
   }
 
-  async sendAudioMessage(sessionApiKey, toJid, audioUrl, caption = '') {
+  async sendAudioMessage(sessionApiKey, toJid, audioUrl, text = '') {
     try {
       const sessionClient = this.createSessionClient(sessionApiKey);
-      const r = await sessionClient.post('/send-message', { to: toJid, audioUrl, caption });
+      const r = await sessionClient.post('/send-message', { to: toJid, audioUrl, text });
       const body = r.data;
       
       if (!body.success) {

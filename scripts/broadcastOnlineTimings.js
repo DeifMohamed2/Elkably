@@ -1,10 +1,43 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const waziper = require('../utils/waziper');
+const wasender = require('../utils/wasender');
 
-// WhatsApp instance used for Online center
-const ONLINE_INSTANCE_ID = process.env.WAZIPER_ONLINE_INSTANCE_ID || '68555697EE266';
+// Helper function to find the appropriate Wasender session for Online center
+async function findOnlineWasenderSession() {
+  try {
+    // Get all sessions to find the one with matching phone number
+    const sessionsResponse = await wasender.getAllSessions();
+    if (!sessionsResponse.success) {
+      throw new Error(`Failed to get sessions: ${sessionsResponse.message}`);
+    }
+    
+    const sessions = sessionsResponse.data;
+    let targetSession = null;
+    
+    // Find Online center session by admin phone number
+    targetSession = sessions.find(s => s.phone_number === '+201147929010' || s.phone_number === '01147929010');
+    
+    // If no specific match, try to find any connected session
+    if (!targetSession) {
+      targetSession = sessions.find(s => s.status === 'connected');
+    }
+    
+    if (!targetSession) {
+      throw new Error('No connected WhatsApp session found');
+    }
+    
+    if (!targetSession.api_key) {
+      throw new Error('Session API key not available');
+    }
+    
+    console.log(`Using session: ${targetSession.name} (${targetSession.phone_number}) for Online center`);
+    return targetSession;
+  } catch (err) {
+    console.error('Error finding Wasender session:', err.message);
+    throw err;
+  }
+}
 
 // CLI flags
 const args = process.argv.slice(2);
@@ -32,7 +65,7 @@ function shouldIncludeByOnlyFlag(groupName) {
 }
 
 function formatPhoneEgypt(countryCode, rawPhone) {
-  // Normalize and build E.164-like without plus for Waziper (e.g., 2011XXXXXXXXX)
+  // Normalize and build E.164-like without plus for Wasender (e.g., 2011XXXXXXXXX)
   const cc = (countryCode || '20').replace(/\D/g, '');
   let phone = String(rawPhone || '').replace(/\D/g, '');
   if (!phone) return null;
@@ -60,7 +93,25 @@ async function sendToNumber(number, message) {
     console.log('[DRY-RUN] Would send to', number, '\n', message);
     return;
   }
-  await waziper.sendTextMessage(ONLINE_INSTANCE_ID, number, message);
+  
+  try {
+    // Find the appropriate session for Online center
+    const targetSession = await findOnlineWasenderSession();
+    
+    // Format phone number for Wasender API
+    const formattedPhone = `${number}@s.whatsapp.net`;
+    
+    const response = await wasender.sendTextMessage(targetSession.api_key, formattedPhone, message);
+    
+    if (!response.success) {
+      throw new Error(`Failed to send message: ${response.message}`);
+    }
+    
+    console.log('Message sent successfully to:', number);
+  } catch (error) {
+    console.error('Error sending message to', number, ':', error.message);
+    throw error;
+  }
 }
 
 async function run() {

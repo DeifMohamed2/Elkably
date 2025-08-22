@@ -332,6 +332,7 @@
                                         <option value="msgWithoutPhoto">إرسال حالة الواجب</option>
                                         <option value="gradeMsg">إرسال درجات الامتحان</option>
                                         <option value="msgWithPhoto">إرسال رسائل بصورة</option>
+                                        <option value="sendMsg">ارسال رساله عامة</option>
                                     </select>
                                 </div>
                             </div>
@@ -515,6 +516,74 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Section for "ارسال رساله عامة" -->
+                    <div id="sendMsgSection" class="hidden">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-envelope me-2"></i> ارسال رساله عامة
+                            </div>
+                            <div class="card-body">
+                                <div class="alert">
+                                    <i class="fas fa-info-circle"></i>
+                                    قم برفع ملف إكسل يحتوي على بيانات الطلاب وأولياء الأمور
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-4">
+                                        <label for="phoneStudentColumnName">عمود أرقام الطلاب</label>
+                                        <input type="text" id="phoneStudentColumnName" class="form-control" placeholder="اسم العمود في ملف الإكسل">
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <label for="phoneParentColumnName">عمود أرقام أولياء الأمور</label>
+                                        <input type="text" id="phoneParentColumnName" class="form-control" placeholder="اسم العمود في ملف الإكسل">
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <label for="nameColumnGeneral">عمود أسماء الطلاب</label>
+                                        <input type="text" id="nameColumnGeneral" class="form-control" placeholder="اسم العمود في ملف الإكسل">
+                                    </div>
+                                    <div class="col-md-12 mb-4">
+                                        <label for="messageContent">نص الرسالة</label>
+                                        <textarea id="messageContent" class="form-control" rows="5" placeholder="أدخل نص الرسالة هنا..."></textarea>
+                                        <small class="text-muted">يمكنك استخدام {name} لإضافة اسم الطالب في الرسالة</small>
+                                    </div>
+                                    <div class="col-md-6 mb-4">
+                                        <label for="sendTarget">إرسال الرسالة إلى:</label>
+                                        <select id="sendTarget" name="sendTarget" class="form-control">
+                                            <option value="parents">أولياء الأمور فقط</option>
+                                            <option value="students">الطلاب فقط</option>
+                                            <option value="both">الطلاب وأولياء الأمور</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="upload-container">
+                                    <h1>رفع ملف الإكسل</h1>
+                                    <div class="file-input-wrapper">
+                                        <label for="fileGeneral" class="file-label" id="fileLabelGeneral">
+                                            <i class="fas fa-file-excel me-2"></i> اختر ملف الإكسل
+                                        </label>
+                                        <input type="file" id="fileGeneral" name="fileGeneral" accept=".xlsx, .xls" required onchange="updateFileNameGeneral()">
+                                    </div>
+                                    <button class="upload-btn" onclick="handleFileGeneral()">
+                                        <i class="fas fa-paper-plane me-2"></i> إرسال الرسائل
+                                    </button>
+
+                                    <div id="progressContainerGeneral" class="mt-3 d-none">
+                                        <div class="progress">
+                                            <div id="progressBarGeneral" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="text-center mt-2" id="progressTextGeneral">جاري الإرسال...</p>
+                                    </div>
+
+                                    <div class="output d-none" id="outputGeneral"></div>
+                                    <div class="message-counter d-none" id="numberOfSendGeneral">
+                                        <i class="fas fa-check-circle"></i> تم إرسال <span id="msgCountGeneral">0</span> رسالة
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </main>
             </div>
         </div>
@@ -530,6 +599,8 @@
         const msgWithPhotoSection = document.getElementById('msgWithPhotoSection');
         const gradeMsgSection = document.getElementById('gradeMsgSection');
 
+        const sendMsgSection = document.getElementById('sendMsgSection');
+
         // Event listener to show/hide sections based on selection
         optionSelect.addEventListener('change', function () {
             const selectedValue = optionSelect.value;
@@ -538,6 +609,7 @@
             msgWithoutPhotoSection.classList.add('hidden');
             msgWithPhotoSection.classList.add('hidden');
             gradeMsgSection.classList.add('hidden');
+            sendMsgSection.classList.add('hidden');
 
             // Show corresponding section
             if (selectedValue === 'msgWithoutPhoto') {
@@ -546,6 +618,8 @@
                 msgWithPhotoSection.classList.remove('hidden');
             } else if (selectedValue === 'gradeMsg') {
                 gradeMsgSection.classList.remove('hidden');
+            } else if (selectedValue === 'sendMsg') {
+                sendMsgSection.classList.remove('hidden');
             }
         });
 
@@ -735,8 +809,109 @@
             }
         }
     
+        // Function for general message file name update
+        function updateFileNameGeneral() {
+            const input = document.getElementById('fileGeneral');
+            const fileLabel = document.getElementById('fileLabelGeneral');
+            if (input.files.length > 0) {
+                fileLabel.innerHTML = `<i class="fas fa-file-alt"></i> ${input.files[0].name}`;
+            }
+        }
 
-        
+        // Function to handle general message file reading and sending
+        function handleFileGeneral() {
+            const input = document.getElementById('fileGeneral');
+            const fileLabel = document.getElementById('fileLabelGeneral');
+
+            if (!input.files.length) {
+                alert('الرجاء اختيار ملف!');
+                return;
+            }
+
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                console.log(json);
+
+                sendGeneralMessage(json);
+
+                // Update label to indicate that the file is uploaded
+                fileLabel.innerHTML = `<i class="fas fa-check-circle"></i> ${file.name} (تم التحميل)`;
+                fileLabel.style.color = "green";
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Function to send general messages
+        async function sendGeneralMessage(data) {
+            const output = document.getElementById('outputGeneral');
+            const progressContainer = document.getElementById('progressContainerGeneral');
+            const progressBar = document.getElementById('progressBarGeneral');
+            const progressText = document.getElementById('progressTextGeneral');
+            const numberOfSend = document.getElementById('numberOfSendGeneral');
+            const msgCount = document.getElementById('msgCountGeneral');
+
+            output.classList.remove('d-none');
+            progressContainer.classList.remove('d-none');
+            output.innerHTML = 'جاري إرسال البيانات...';
+
+            const phoneStudentColumnName = document.getElementById('phoneStudentColumnName').value;
+            const phoneParentColumnName = document.getElementById('phoneParentColumnName').value;
+            const nameColumnGeneral = document.getElementById('nameColumnGeneral').value;
+            const messageContent = document.getElementById('messageContent').value;
+            const sendTarget = document.getElementById('sendTarget').value;
+
+            if (!nameColumnGeneral || !messageContent || 
+                (sendTarget === 'parents' && !phoneParentColumnName) || 
+                (sendTarget === 'students' && !phoneStudentColumnName) || 
+                (sendTarget === 'both' && (!phoneParentColumnName || !phoneStudentColumnName))) {
+                alert('الرجاء إدخال جميع البيانات المطلوبة');
+                progressContainer.classList.add('d-none');
+                return;
+            }
+
+            const dataSend = {
+                phoneStudentColumnName,
+                phoneParentColumnName,
+                nameColumnName: nameColumnGeneral,
+                messageContent,
+                sendTarget,
+                dataToSend: data
+            };
+
+            try {
+                const response = await fetch('/teacher/sendGeneralMessages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataSend)
+                });
+
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    output.innerHTML = `<h2>تم الارسال بنجاح</h2>`;
+                    output.style.color = "green";
+                    numberOfSend.classList.remove('d-none');
+                } else {
+                    output.innerHTML = `<h2>حدث خطأ أثناء الارسال</h2>`;
+                    output.style.color = "red";
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                output.innerHTML = `<h2>حدث خطأ أثناء الارسال</h2>`;
+                output.style.color = "red";
+            }
+        }
     </script>
 
 
@@ -745,6 +920,7 @@
     <script>
         const numberOfSend = document.getElementById('numberOfSend');
         const numberOfSendMSG = document.getElementById('numberOfSendMSG');
+        const numberOfSendGeneral = document.getElementById('numberOfSendGeneral');
         const socket = io();
 
         socket.on('sendingMessages', (data) => {
@@ -753,7 +929,12 @@
 
             numberOfSendMSG.classList.remove('d-none');
             numberOfSendMSG.innerHTML = `تم ارسال ${data.nMessages} رساله`;
-                
+            
+            if (numberOfSendGeneral) {
+                numberOfSendGeneral.classList.remove('d-none');
+                numberOfSendGeneral.innerHTML = `تم ارسال ${data.nMessages} رساله`;
+                document.getElementById('msgCountGeneral').innerText = data.nMessages;
+            }
         });
     </script>
 

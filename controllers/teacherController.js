@@ -2671,6 +2671,80 @@ ${msg}
   }
 };
 
+const sendGeneralMessages = async (req, res) => {
+  const { 
+    phoneStudentColumnName, 
+    phoneParentColumnName, 
+    nameColumnName, 
+    messageContent, 
+    sendTarget, 
+    dataToSend 
+  } = req.body;
+
+  let n = 0;
+  const errorNumbers = [];
+  req.io.emit('sendingMessages', { nMessages: n });
+
+  try {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (const student of dataToSend) {
+      const studentName = student[nameColumnName];
+      // Replace {name} placeholder with actual student name
+      let personalizedMessage = messageContent.replace(/{name}/g, studentName);
+      
+      let theMessage = `
+السلام عليكم 
+مع حضرتك assistant mr kably EST/ACT math teacher 
+${personalizedMessage}
+      `;
+
+      // Send to parents if selected
+      if (sendTarget === 'parents' || sendTarget === 'both') {
+        const parentPhone = student[phoneParentColumnName];
+        if (parentPhone) {
+          try {
+            await sendWappiMessage(theMessage, parentPhone, req.userData.phone, true);
+            req.io.emit('sendingMessages', { nMessages: ++n });
+            console.log(`Message sent to parent of ${studentName}`);
+          } catch (err) {
+            console.error(`Error sending message to parent of ${studentName}:`, err);
+            errorNumbers.push(parentPhone);
+          }
+        }
+      }
+
+      // Send to students if selected
+      if (sendTarget === 'students' || sendTarget === 'both') {
+        const studentPhone = student[phoneStudentColumnName];
+        if (studentPhone) {
+          try {
+            await sendWappiMessage(theMessage, studentPhone, req.userData.phone, true);
+            req.io.emit('sendingMessages', { nMessages: ++n });
+            console.log(`Message sent to student ${studentName}`);
+          } catch (err) {
+            console.error(`Error sending message to student ${studentName}:`, err);
+            errorNumbers.push(studentPhone);
+          }
+        }
+      }
+
+      // Introduce a random delay between 1 and 5 seconds
+      const randomDelay = Math.floor(Math.random() * 4000) + 1000;
+      console.log(`Delaying for ${randomDelay / 1000} seconds before sending the next message.`);
+      await delay(randomDelay);
+    }
+
+    res.status(200).json({ 
+      message: errorNumbers.length > 0 ? 'Messages sent with some errors' : 'Messages sent successfully',
+      errors: errorNumbers.length > 0 ? errorNumbers : undefined
+    });
+  } catch (error) {
+    console.error('Error sending general messages:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 
 
 // =================================================== END Whats App =================================================== //
@@ -2702,7 +2776,7 @@ const getDataStudentInWhatsApp = async (req, res) => {
 }
 
 const submitData = async (req, res) => {
-  const { data, option, quizName, maxGrade, centerName, Grade, gradeType, groupTime } = req.body;
+  const { data, option, quizName, maxGrade, centerName, Grade, gradeType, groupTime, messageContent, sendTarget } = req.body;
   let n = 0;
   const errorNumbers = [];
   const studentsIds = [];
@@ -2768,28 +2842,56 @@ ${
 برجاء العلم ان الطالب ${student.studentName} لم يقم بحضور امتحان (${quizName}) بتاريخ ${new Date().toLocaleDateString()}
 `;
     }
+
+    if (option === 'sendMsg') {
+      // Replace {name} placeholder with actual student name
+      let message = messageContent.replace(/{name}/g, student.studentName);
+      return `
+السلام عليكم
+مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
+
+${message}
+      `;
+    }
   };
 
   try {
-
     for (const student of data) {
       const message = getMessage(student);
-      console.log(message, student.parentPhone);
-
-      try {
-         await sendWappiMessage(message, student['parentPhone'], req.userData.phone,)
-          .then(() => {
-            req.io.emit('sendingMessages', {
-              nMessages: ++n,
-            });
-            console.log(`Message sent successfully to ${student['studentName']}`);
-          })
-          .catch((error) => {
-            console.error(`Error sending message to ${student['studentName']}:`, error);
-          });
-      } catch (err) {
-        console.error(`Error sending message to ${student.studentName}:`, err);
-        errorNumbers.push(student.parentPhone);
+      
+      if (option === 'sendMsg') {
+        // Handle different send targets for general messages
+        if (sendTarget === 'parents' || sendTarget === 'both') {
+          try {
+            await sendWappiMessage(message, student.parentPhone, req.userData.phone);
+            req.io.emit('sendingMessages', { nMessages: ++n });
+            console.log(`Message sent to parent of ${student.studentName}`);
+          } catch (err) {
+            console.error(`Error sending message to parent of ${student.studentName}:`, err);
+            errorNumbers.push(student.parentPhone);
+          }
+        }
+        
+        if ((sendTarget === 'students' || sendTarget === 'both') && student.phone) {
+          try {
+            await sendWappiMessage(message, student.phone, req.userData.phone);
+            req.io.emit('sendingMessages', { nMessages: ++n });
+            console.log(`Message sent to student ${student.studentName}`);
+          } catch (err) {
+            console.error(`Error sending message to student ${student.studentName}:`, err);
+            errorNumbers.push(student.phone);
+          }
+        }
+      } else {
+        // Original behavior for other message types
+        try {
+          await sendWappiMessage(message, student.parentPhone, req.userData.phone);
+          req.io.emit('sendingMessages', { nMessages: ++n });
+          console.log(`Message sent successfully to ${student.studentName}`);
+        } catch (err) {
+          console.error(`Error sending message to ${student.studentName}:`, err);
+          errorNumbers.push(student.parentPhone);
+        }
       }
 
       const randomDelay = Math.floor(Math.random() * 4000) + 1000;
@@ -2797,19 +2899,21 @@ ${
       await delay(randomDelay);
     }
 
-    // Mark attendance
-    const group = await Group.findOne({ CenterName: centerName, Grade, GroupTime: groupTime, gradeType });
-    if (!group) return res.status(404).json({ message: 'Group not found' });
-
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
-    let attendance = await Attendance.findOne({ groupId: group._id, date: today, isSolving: false }) ||
-                     new Attendance({ groupId: group._id, date: today, isSolving: false });
-    
-    attendance.studentsPresent = studentsIds;
-    await attendance.save();
+    // Mark attendance (only for HWStatus option)
+    if (option === 'HWStatus' && studentsIds.length > 0) {
+      const group = await Group.findOne({ CenterName: centerName, Grade, GroupTime: groupTime, gradeType });
+      if (group) {
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+        let attendance = await Attendance.findOne({ groupId: group._id, date: today, isSolving: false }) ||
+                         new Attendance({ groupId: group._id, date: today, isSolving: false });
+        
+        attendance.studentsPresent = studentsIds;
+        await attendance.save();
+      }
+    }
 
     res.status(200).json({
-      message: errorNumbers.length > 0 ? 'Messages sent with some errors' : 'Messages sent successfully And Students Attendance Saved',
+      message: errorNumbers.length > 0 ? 'Messages sent with some errors' : 'Messages sent successfully',
       errors: errorNumbers.length > 0 ? errorNumbers : undefined,
     });
   } catch (error) {
@@ -3727,6 +3831,7 @@ module.exports = {
   whatsApp_get,
   sendGradeMessages,
   sendMessages,
+  sendGeneralMessages,
 
   // Connect WhatsApp
   connectWhatsapp_get,

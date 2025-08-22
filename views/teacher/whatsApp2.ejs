@@ -10,24 +10,31 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
         }
 
         .upload-container {
-            background-color: transparent;
-            border: 2px solid #e3b228;
-            border-radius: 10px;
+            background-color: rgba(30, 30, 30, 0.8);
+            border: 2px solid #25D366;
+            border-radius: 15px;
             padding: 30px;
             width: 100%;
             max-width: 600px;
             text-align: center;
-            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            margin: 20px auto;
         }
 
         h1 {
             margin-bottom: 20px;
             color: #ffffff;
-            font-size: 2rem;
+            font-size: 1.8rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .file-input-wrapper {
@@ -37,93 +44,218 @@
 
         .file-label {
             display: block;
-            background-color: transparent;
-            border: 2px dashed #e3b228;
-            border-radius: 5px;
-            padding: 15px;
-            color: #e3b228;
+            background-color: rgba(37, 211, 102, 0.1);
+            border: 2px dashed #25D366;
+            border-radius: 10px;
+            padding: 20px;
+            color: #25D366;
             cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
         }
 
         .file-label:hover {
-            background-color: #e3b228;
-            color: rgb(0, 0, 0);
+            background-color: rgba(37, 211, 102, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.2);
         }
 
-        #file , #fileMSG {
+        #file, #fileMSG {
             display: none;
         }
 
         .upload-btn {
             margin-top: 20px;
             padding: 15px 30px;
-            border: 2px solid #e3b228;
-            background-color: transparent;
-            color: #e3b228;
-            border-radius: 5px;
+            border: none;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: #ffffff;
+            border-radius: 50px;
             font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
         }
 
         .upload-btn:hover {
-            background-color: #e3b228;
-            color: rgb(0, 0, 0);
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #128C7E, #075E54);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(37, 211, 102, 0.4);
         }
 
         .output {
             margin-top: 20px;
-            text-align: left;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: rgba(30, 30, 30, 0.8);
+            border-left: 4px solid #25D366;
         }
 
         .hidden {
             display: none;
         }
-    input[type="radio"] {
-        width: 20px !important;
-        height: 20px !important;
-        cursor: pointer;
-        appearance: none; /* Remove default styling */
-        background-color: #ffffff; 
-        border: 2px solid #000000;
-        border-radius: 50%; /* Make it circular */
-        position: relative;
-    }
 
-    input[type="radio"]:checked::before {
-        content: "";
-        width: 10px; /* Size of the inner point */
-        height: 10px;
-        background-color: #e3b228; /* Yellow color */
-        border-radius: 50%;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
+        .form-control {
+            background-color: #2d2d2d;
+            border: 1px solid #25D366;
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
 
-    .search{
- 
-        width: 20% !important;
-    
+        .form-control:focus {
+            background-color: #2d2d2d;
+            border-color: #25D366;
+            color: #ffffff;
+            box-shadow: 0 0 0 0.25rem rgba(37, 211, 102, 0.25);
+            transform: translateY(-2px);
+        }
 
-    }
+        .form-control::placeholder {
+            color: #aaaaaa;
+        }
 
+        .card {
+            background-color: #1e1e1e;
+            border: 1px solid rgba(37, 211, 102, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border-color: rgba(37, 211, 102, 0.4);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #128C7E, #25D366);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        select.form-control, .Grade {
+            height: 50px;
+            background-color: #2d2d2d;
+            color: white;
+            border-color: #25D366;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        select.form-control:focus, .Grade:focus {
+            box-shadow: 0 0 0 0.25rem rgba(37, 211, 102, 0.25);
+        }
+
+        .search {
+            width: 20% !important;
+        }
+
+        input[type="radio"] {
+            width: 20px !important;
+            height: 20px !important;
+            cursor: pointer;
+            appearance: none;
+            background-color: #2d2d2d;
+            border: 2px solid #25D366;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        input[type="radio"]:checked::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background-color: #25D366;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .whatsapp-icon {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+
+        .whatsapp-icon i {
+            color: white;
+            font-size: 20px;
+        }
+
+        .message-counter {
+            background-color: rgba(37, 211, 102, 0.1);
+            border: 1px solid #25D366;
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-top: 15px;
+            display: inline-block;
+            font-weight: 600;
+            color: #25D366;
+        }
+
+        .message-counter i {
+            margin-right: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table th, table td {
+            padding: 12px 15px;
+            border: 1px solid rgba(37, 211, 102, 0.2);
+        }
+
+        table thead th {
+            background-color: rgba(37, 211, 102, 0.1);
+            color: #25D366;
+            font-weight: 600;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: rgba(30, 30, 30, 0.4);
+        }
+
+        table tbody tr:hover {
+            background-color: rgba(37, 211, 102, 0.05);
+        }
     </style>
 
     <div class="container-fluid">
         <div class="row">
+            <!-- Sidebar -->
             <div class="col-lg-2">
                 <%- include("./partials/nav.ejs") %>
             </div>
 
+            <!-- Main Content -->
             <div class="col-lg-10">
                 <main>
+                    <!-- Top Bar -->
                     <div class="row">
                         <div class="col-md-6"></div>
-
                         <div class="col-md-6">
                             <div class="left" style="margin-top: 0.2rem;">
                                 <%- include("./partials/top.ejs") %>
@@ -131,151 +263,230 @@
                         </div>
                     </div>
 
-                    <div class="row">
-                 
-
-                            <div class="col-md-2">
-                                <select name="centerName" class="Grade w-100" id="centerName" value="" required>
-                                  <option value=""> اختر السنتر </option>
-                                  <option value="GTA">GTA</option>
-                                  <option value="tagmo3">Tagmo3</option>
-                                </select>
-                            </div>
-
-                             <div class="col-md-2">
-                                 <select name="Grade" id="Grade" class="Grade w-100" value="" required>
-                                   <option value=""> اختر الصف </option>
-    
-                                 </select>
-                             </div>
-
-
-                            <div class="col-md-2">
-                             <select name="gradeType" class="Grade w-100" id="gradeType" value="" required>
-                               <option value=""> Type</option>
-                             </select>
-                            </div>
-                            
-                             <div class="col-md-2">
-                                   <select name="groupTime" class="Grade w-100" id="groupTime" value="" required>
-                                     <option value=""> Group Time </option>
-                                   </select>
-
-                             </div>
-                          
-                            <div class="col-md-2 mb-4">
-                                <select name="chapterGrade" id="optionSelect" class="Grade w-100 text-center" required>
-                                    <option value="">اختر نوع الارسال </option>
-                                    <option value="HWStatus">ارسال حاله الواجب</option>
-                                    <option value="gradeMsg">ارسال درجات الامتحان</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2 mb-4">
-                                <button class="upload-btn" id="getDataButton" style="padding: 10px !important;">Get Data</button>
-                            </div>
-                        <hr>
-
-            
-                            
-              
-                      <div class="col-md-12 mb-4 hidden" id="nMessagesBox" style="color: #e3b228;">
-                        <h2>يتم الان ارسال الرسائل برجاء عدم اعاده تحميل الصفحه</h2>
-                        <div id="numberOfSendMSG" style=" border: 1px solid #e3b228 ; padding: 10px; border-radius: 20px; width: 10%; text-align: center;"></div>
-                      </div>
-
-                        <!-- Section for "ارسال درجات" -->
-                        <div id="QuizStatusName" class="hidden">
-                            <div class="col-md-4 mb-4">
-                                <input type="text" id="quizName" value="" class="form-control" placeholder="اسم الامتحان">
-                            </div>
-
-                            <div class="col-md-4 mb-4">
-                                <input type="text" id="maxGrade" value="" class="form-control" placeholder="الدرجه من كام ">
-                            </div>
-
-                   
-                        </div>
-
-                    </div>
-
-                    <div class="row">
-                     <div class="student-table hidden" id="HWStatusTabel">
-                            <div class="col-md-12 mb-4">
-                                <input type="text" id="searchStudent" class="form-control search mx-auto" placeholder="By Code">
-                            </div>
-                            <h2 style="color: white;">Homework Status</h2>
-                            <table  style="color: white;">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Student Name</th>
-                                        <th>Student Code</th>
-                                        <th>Parent Phone</th>
-                                        <th>Yes</th>
-                                        <th>No</th>
-                                        <th>WithOut Steps</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="HWStatusTbody">
-                         
-                                    <!-- Add more rows as needed -->
-                                </tbody>
-                            </table>
-                    </div>
-                    <div class="student-table hidden" id="quizGradesTable">
-                            <div class="col-md-12 mb-4">
-                                <input type="text" id="searchStudent2" class="form-control search  mx-auto" placeholder="By Code">
-                            </div>
-                            <h2 style="color: white;">Quiz Grades</h2>
-                            <table class="table" style="color: white;">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th >Student Name</th>
-                                        <th>Student Code</th>
-                                        <th>Parent Phone</th>
-                                        <th>Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="quizGradesTbody">
-                          
-                                    <!-- Add more rows as needed -->
-                                </tbody>
-                            </table>
-                   
-                    </div>
-
-                    <div class="row"></div>
-                        <div class="col-md-2 mb-4">
-                            <button class="upload-btn" id="submitDataButton" style="padding: 10px !important;">Submit Data</button>
+                    <!-- Page Title -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h2 class="mb-4">
+                                <i class="fab fa-whatsapp me-2" style="color: #25D366;"></i>
+                                إدارة رسائل واتساب
+                            </h2>
                         </div>
                     </div>
 
-                </div>
+                    <!-- Group Info Card -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="whatsapp-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <span>معلومات المجموعة</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="centerName">اختر السنتر</label>
+                                    <select name="centerName" class="form-control" id="centerName" required>
+                                        <option value=""> اختر السنتر </option>
+                                        <option value="GTA">GTA</option>
+                                        <option value="tagmo3">Tagmo3</option>
+                                        <option value="Online">Online</option>
+                                    </select>
+                                </div>
 
+                                <div class="col-md-3 mb-3">
+                                    <label for="Grade">اختر الصف</label>
+                                    <select name="Grade" id="Grade" class="form-control" required>
+                                        <option value=""> اختر الصف </option>
+                                    </select>
+                                </div>
 
+                                <div class="col-md-3 mb-3">
+                                    <label for="gradeType">نوع المجموعة</label>
+                                    <select name="gradeType" class="form-control" id="gradeType" required>
+                                        <option value=""> Type</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="groupTime">وقت المجموعة</label>
+                                    <select name="groupTime" class="form-control" id="groupTime" required>
+                                        <option value=""> Group Time </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Message Type Card -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="whatsapp-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <span>نوع الإرسال</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <select name="chapterGrade" id="optionSelect" class="form-control text-center" required>
+                                        <option value="">اختر نوع الارسال </option>
+                                        <option value="HWStatus">ارسال حاله الواجب</option>
+                                        <option value="gradeMsg">ارسال درجات الامتحان</option>
+                                        <option value="sendMsg">ارسال رساله عامة</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <button class="upload-btn w-100" id="getDataButton">
+                                        <i class="fas fa-search me-2"></i> عرض البيانات
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message Status Alert -->
+                    <div class="alert alert-info hidden" id="nMessagesBox">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        <span>يتم الان ارسال الرسائل برجاء عدم اعاده تحميل الصفحه</span>
+                        <div id="numberOfSendMSG" class="message-counter mt-3 mx-auto" style="width: fit-content;"></div>
+                    </div>
+
+                    <!-- Quiz Info Section -->
+                    <div id="QuizStatusName" class="hidden card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="whatsapp-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <span>معلومات الامتحان</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="quizName">اسم الامتحان</label>
+                                    <input type="text" id="quizName" value="" class="form-control" placeholder="مثال: امتحان منتصف الفصل">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="maxGrade">الدرجة النهائية</label>
+                                    <input type="text" id="maxGrade" value="" class="form-control" placeholder="مثال: 100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- General Message Section -->
+                    <div id="sendMsgSection" class="hidden card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="whatsapp-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <span>إرسال رسالة عامة</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12 mb-4">
+                                    <label for="messageContent">نص الرسالة</label>
+                                    <textarea id="messageContent" class="form-control" rows="5" placeholder="أدخل نص الرسالة هنا..."></textarea>
+                                    <small class="text-muted">يمكنك استخدام {name} لإضافة اسم الطالب في الرسالة</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sendTarget">إرسال الرسالة إلى:</label>
+                                    <select id="sendTarget" name="sendTarget" class="form-control">
+                                        <option value="parents">أولياء الأمور فقط</option>
+                                        <option value="students">الطلاب فقط</option>
+                                        <option value="both">الطلاب وأولياء الأمور</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Homework Status Table -->
+                    <div class="card mb-4 hidden" id="HWStatusTabel">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="whatsapp-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <span>حالة الواجب</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" id="searchStudent" class="form-control" placeholder="بحث بكود الطالب...">
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>اسم الطالب</th>
+                                            <th>كود الطالب</th>
+                                            <th>رقم ولي الأمر</th>
+                                            <th>نعم</th>
+                                            <th>لا</th>
+                                            <th>بدون خطوات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="HWStatusTbody">
+                                        <!-- Data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Grades Table -->
+                    <div class="card mb-4 hidden" id="quizGradesTable">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="whatsapp-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <span>درجات الامتحان</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" id="searchStudent2" class="form-control" placeholder="بحث بكود الطالب...">
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>اسم الطالب</th>
+                                            <th>كود الطالب</th>
+                                            <th>رقم ولي الأمر</th>
+                                            <th>الدرجة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="quizGradesTbody">
+                                        <!-- Data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center mb-5">
+                        <button class="upload-btn" id="submitDataButton">
+                            <i class="fas fa-paper-plane me-2"></i> إرسال الرسائل
+                        </button>
+                    </div>
                 </main>
             </div>
-
-
-       
         </div>
-
-
-      
-
     </div>
     
-
     <script src="../assest/bootstrap.bundle.min.js"></script>
     <script src="../assest/bootstrap.min.js"></script>
 
-  <%- include("../partials/group.ejs") %>
+    <%- include("../partials/group.ejs") %>
 
-
-
-  <script>
+    <script>
         const centerName = document.getElementById('centerName');
         const Grade = document.getElementById('Grade');
         const gradeType = document.getElementById('gradeType');
@@ -283,13 +494,13 @@
         const optionSelect = document.getElementById('optionSelect');
         const getDataButton = document.getElementById('getDataButton');
 
-        const getData =async () => {
+        const getData = async () => {
        
-          // Validate inputs
-          if (!centerName.value || !Grade.value || !gradeType.value || !groupTime.value || !optionSelect.value) {
-            alert('Please fill in all the required fields.');
-            return;
-          }
+            // Validate inputs
+            if (!centerName.value || !Grade.value || !gradeType.value || !groupTime.value || !optionSelect.value) {
+                alert('Please fill in all the required fields.');
+                return;
+            }
 
             // Disable all buttons
             centerName.disabled = true;
@@ -300,11 +511,16 @@
             getDataButton.disabled = true;
 
             // Get data
-          await fetch(`/teacher/whatsApp2/getDataStudentInWhatsApp?centerName=${centerName.value}&Grade=${Grade.value}&gradeType=${gradeType.value}&groupTime=${groupTime.value}&optionSelect=${optionSelect.value}`)
+            await fetch(`/teacher/whatsApp2/getDataStudentInWhatsApp?centerName=${centerName.value}&Grade=${Grade.value}&gradeType=${gradeType.value}&groupTime=${groupTime.value}&optionSelect=${optionSelect.value}`)
                 .then(res => res.json())
                 .then(data => {
                     console.log(data);
                     
+                    // Hide all sections first
+                    document.getElementById('HWStatusTabel').classList.add('hidden');
+                    document.getElementById('quizGradesTable').classList.add('hidden');
+                    document.getElementById('QuizStatusName').classList.add('hidden');
+                    document.getElementById('sendMsgSection').classList.add('hidden');
 
                     // Fill the table
                     if (optionSelect.value === 'HWStatus') {
@@ -338,178 +554,196 @@
                                     <td>${student.Username}</td>
                                     <td>${student.Code}</td>
                                     <td>${student.parentPhone}</td>
-                                    <td><input type="text" name="quizGrade${index + 1}" class="form-control mx-auto" value="" dir="ltr"></
+                                    <td><input type="text" name="quizGrade${index + 1}" class="form-control mx-auto" value="" dir="ltr"></td>
                                 </tr>
                             `;
                         });
-
+                    }
+                    else if (optionSelect.value === 'sendMsg') {
+                        // Show the general message section
+                        document.getElementById('sendMsgSection').classList.remove('hidden');
                         
+                        // Store student data in a global variable for later use
+                        window.studentsData = data.students;
                     }
                 });
-
         }
 
         getDataButton.addEventListener('click', getData);
+    </script>
 
+    <script>
+        const submitDataButton = document.getElementById('submitDataButton');
+        
+        const submitData = async () => {
+            submitDataButton.disabled = true;
+            submitDataButton.textContent = 'Submitting...';
+            document.getElementById('nMessagesBox').classList.remove('hidden');
 
+            // Collect data from the table
+            const data = [];
+            let isValid = true;
 
+            if (optionSelect.value === 'HWStatus') {
+                const rows = document.querySelectorAll('#HWStatusTbody tr');
+                rows.forEach((row, index) => {
+                    const studentName = row.cells[1].innerText;
+                    const studentCode = row.cells[2].innerText;
+                    const parentPhone = row.cells[3].innerText;
+                    const studentId = row.cells[7].innerText;
+                    const hwStatusInput = row.querySelector(
+                        `input[name="hwStatus${index + 1}"]:checked`
+                    );
+                    const solvStatusInput = row.querySelector(
+                        `input[name="solvStatus${index + 1}"]:checked`
+                    );
+                    const hwStatus = hwStatusInput ? hwStatusInput.value : 'none'; // Default to "no" if not checked
+                    const solvStatus = solvStatusInput ? solvStatusInput.value : 'false'; // Default to "false" if not checked
+                    data.push({
+                        studentId,
+                        studentName,
+                        studentCode,
+                        parentPhone,
+                        hwStatus,
+                        solvStatus,
+                    });
+                });
+            } else if (optionSelect.value === 'gradeMsg') {
+                const quizName = document.getElementById('quizName').value;
+                const maxGrade = document.getElementById('maxGrade').value;
 
-  </script>
+                if (!quizName || !maxGrade) {
+                    isValid = false;
+                    alert('Please enter quiz name and max grade.');
+                    return;
+                }
 
-<script>
-  const submitDataButton = document.getElementById('submitDataButton');
-  
- const submitData = async () => {
-  submitDataButton.disabled = true;
-  submitDataButton.textContent = 'Submitting...';
-  document.getElementById('nMessagesBox').classList.remove('hidden');
-
-  // Collect data from the table
-  const data = [];
-  let isValid = true;
-
-  if (optionSelect.value === 'HWStatus') {
-    const rows = document.querySelectorAll('#HWStatusTbody tr');
-    rows.forEach((row, index) => {
-      const studentName = row.cells[1].innerText;
-      const studentCode = row.cells[2].innerText;
-      const parentPhone = row.cells[3].innerText;
-      const studentId = row.cells[7].innerText;
-      const hwStatusInput = row.querySelector(
-        `input[name="hwStatus${index + 1}"]:checked`
-      );
-      const solvStatusInput = row.querySelector(
-        `input[name="solvStatus${index + 1}"]:checked`
-      );
-      const hwStatus = hwStatusInput ? hwStatusInput.value : 'none'; // Default to "no" if not checked
-      const solvStatus = solvStatusInput ? solvStatusInput.value : 'false'; // Default to "false" if not checked
-      data.push({
-        studentId,
-        studentName,
-        studentCode,
-        parentPhone,
-        hwStatus,
-        solvStatus,
-      });
-    });
-  } else if (optionSelect.value === 'gradeMsg') {
-    const quizName = document.getElementById('quizName').value;
-    const maxGrade = document.getElementById('maxGrade').value;
-
-    if (!quizName || !maxGrade) {
-      isValid = false;
-      alert('Please enter quiz name and max grade.');
-      return;
-    }
-
-    const rows = document.querySelectorAll('#quizGradesTbody tr');
-    rows.forEach((row, index) => {
-      const studentName = row.cells[1].innerText;
-      const studentCode = row.cells[2].innerText;
-      const parentPhone = row.cells[3].innerText;
-      const gradeInput = row.querySelector(
-        `input[name="quizGrade${index + 1}"]`
-      );
-      const grade = gradeInput ? gradeInput.value : '0'; // Default to "0" if empty
-      data.push({
-        studentName,
-        studentCode,
-        parentPhone,
-        grade,
-      });
-    });
-  }
-
-  if (!isValid) return;
-
-  // Send data to the server
-  const response = await fetch('/teacher/whatsApp2/submitData', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      data,
-      centerName: centerName.value,
-      Grade: Grade.value,
-      gradeType: gradeType.value,
-      groupTime: groupTime.value,
-      option: optionSelect.value,
-      quizName: document.getElementById('quizName').value || '',
-      maxGrade: document.getElementById('maxGrade').value || '',
-    }),
-  });
-
-  const result = await response.json();
-  if (response.ok) {
-    if (result.errors && result.errors.length > 0) {
-      alert(
-        `Messages sent, but errors occurred with these numbers: ${result.errors.join(
-          ', '
-        )}`
-      );
-    } else {
-      alert('Data submitted successfully!');
-    }
-    window.location.reload();
-  } else {
-    alert('Failed to submit data!');
-  }
-};
-
-  submitDataButton.addEventListener('click', submitData);
-</script>
-
-<script>
-    const searchStudentInput = document.getElementById('searchStudent');
-    searchStudentInput.addEventListener('input', () => {
-        const filter = searchStudentInput.value.toUpperCase();
-        const rows = document.querySelectorAll('#HWStatusTbody tr');
-        rows.forEach(row => {
-            const studentCode = row.cells[2].innerText.toUpperCase();
-            if (studentCode.indexOf(filter) > -1) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+                const rows = document.querySelectorAll('#quizGradesTbody tr');
+                rows.forEach((row, index) => {
+                    const studentName = row.cells[1].innerText;
+                    const studentCode = row.cells[2].innerText;
+                    const parentPhone = row.cells[3].innerText;
+                    const gradeInput = row.querySelector(
+                        `input[name="quizGrade${index + 1}"]`
+                    );
+                    const grade = gradeInput ? gradeInput.value : '0'; // Default to "0" if empty
+                    data.push({
+                        studentName,
+                        studentCode,
+                        parentPhone,
+                        grade,
+                    });
+                });
+            } else if (optionSelect.value === 'sendMsg') {
+                const messageContent = document.getElementById('messageContent').value;
+                const sendTarget = document.getElementById('sendTarget').value;
+                
+                if (!messageContent) {
+                    isValid = false;
+                    alert('الرجاء إدخال نص الرسالة');
+                    return;
+                }
+                
+                // Use the stored student data
+                if (window.studentsData && window.studentsData.length > 0) {
+                    window.studentsData.forEach(student => {
+                        data.push({
+                            studentName: student.Username,
+                            studentCode: student.Code,
+                            parentPhone: student.parentPhone,
+                            phone: student.phone || '',
+                            sendTarget: sendTarget
+                        });
+                    });
+                } else {
+                    isValid = false;
+                    alert('لا توجد بيانات للطلاب');
+                    return;
+                }
             }
-        });
-    });
 
-    const searchStudentInput2 = document.getElementById('searchStudent2');
-    searchStudentInput2.addEventListener('input', () => {
-        const filter = searchStudentInput2.value.toUpperCase();
-        const rows = document.querySelectorAll('#quizGradesTbody tr');
-        rows.forEach(row => {
-            const studentCode = row.cells[2].innerText.toUpperCase();
-            if (studentCode.indexOf(filter) > -1) {
-                row.style.display = '';
+            if (!isValid) return;
+
+            // Send data to the server
+            const response = await fetch('/teacher/whatsApp2/submitData', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data,
+                    centerName: centerName.value,
+                    Grade: Grade.value,
+                    gradeType: gradeType.value,
+                    groupTime: groupTime.value,
+                    option: optionSelect.value,
+                    quizName: document.getElementById('quizName')?.value || '',
+                    maxGrade: document.getElementById('maxGrade')?.value || '',
+                    messageContent: document.getElementById('messageContent')?.value || '',
+                    sendTarget: document.getElementById('sendTarget')?.value || 'parents',
+                }),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                if (result.errors && result.errors.length > 0) {
+                    alert(
+                        `Messages sent, but errors occurred with these numbers: ${result.errors.join(
+                            ', '
+                        )}`
+                    );
+                } else {
+                    alert('Data submitted successfully!');
+                }
+                window.location.reload();
             } else {
-                row.style.display = 'none';
+                alert('Failed to submit data!');
             }
+        };
+
+        submitDataButton.addEventListener('click', submitData);
+    </script>
+
+    <script>
+        const searchStudentInput = document.getElementById('searchStudent');
+        searchStudentInput.addEventListener('input', () => {
+            const filter = searchStudentInput.value.toUpperCase();
+            const rows = document.querySelectorAll('#HWStatusTbody tr');
+            rows.forEach(row => {
+                const studentCode = row.cells[2].innerText.toUpperCase();
+                if (studentCode.indexOf(filter) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         });
-    });
 
-
-</script>
+        const searchStudentInput2 = document.getElementById('searchStudent2');
+        searchStudentInput2.addEventListener('input', () => {
+            const filter = searchStudentInput2.value.toUpperCase();
+            const rows = document.querySelectorAll('#quizGradesTbody tr');
+            rows.forEach(row => {
+                const studentCode = row.cells[2].innerText.toUpperCase();
+                if (studentCode.indexOf(filter) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      const numberOfSendMSG = document.getElementById('numberOfSendMSG');
-      const socket = io();
+        const numberOfSendMSG = document.getElementById('numberOfSendMSG');
+        const socket = io();
 
-      socket.on('sendingMessages', (data) => {
-        numberOfSendMSG.classList.remove('d-none');
-        numberOfSendMSG.innerHTML = `تم ارسال ${data.nMessages} رساله`;
-
-
-      });
+        socket.on('sendingMessages', (data) => {
+            numberOfSendMSG.classList.remove('d-none');
+            numberOfSendMSG.innerHTML = `تم ارسال ${data.nMessages} رساله`;
+        });
     </script>
-
-
-
-
-
- 
 </body>
 
 </html>

@@ -620,10 +620,17 @@ const convertToExcelAllUserData = async (req, res) => {
 
 async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
   try {
+    // Skip if phone number is missing or invalid
+    if (!phone || phone.trim() === '') {
+      console.warn('Skipping message - No phone number provided');
+      return { success: false, message: 'No phone number provided' };
+    }
+    
     // Get all sessions to find the one with matching phone number
     const sessionsResponse = await wasender.getAllSessions();
     if (!sessionsResponse.success) {
-      throw new Error(`Failed to get sessions: ${sessionsResponse.message}`);
+      console.error(`Failed to get sessions: ${sessionsResponse.message}`);
+      return { success: false, message: `Failed to get sessions: ${sessionsResponse.message}` };
     }
     
     const sessions = sessionsResponse.data;
@@ -644,17 +651,19 @@ async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, 
     }
     
     if (!targetSession) {
-      throw new Error('No connected WhatsApp session found');
+      console.error('No connected WhatsApp session found');
+      return { success: false, message: 'No connected WhatsApp session found' };
     }
     
     if (!targetSession.api_key) {
-      throw new Error('Session API key not available');
+      console.error('Session API key not available');
+      return { success: false, message: 'Session API key not available' };
     }
     
     console.log(`Using session: ${targetSession.name} (${targetSession.phone_number})`);
     
     // Format the phone number properly
-    let countryCodeWithout0 = countryCode.replace('0', ''); // Remove leading zeros
+    let countryCodeWithout0 = countryCode ? countryCode.replace('0', '') : '20'; // Remove leading zeros, default to 20
     console.log('Country code:', countryCodeWithout0);
     
     // Format phone number for Wasender API
@@ -677,13 +686,14 @@ async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, 
     const response = await wasender.sendTextMessage(targetSession.api_key, formattedPhone, message);
     
     if (!response.success) {
-      throw new Error(`Failed to send message: ${response.message}`);
+      console.error(`Failed to send message: ${response.message}`);
+      return { success: false, message: `Failed to send message: ${response.message}` };
     }
     
-    return response.data;
+    return { success: true, data: response.data };
   } catch (err) {
     console.error('Error sending WhatsApp message:', err.message);
-    throw err;
+    return { success: false, message: err.message };
   }
 }
 
@@ -1062,7 +1072,16 @@ if(attendWithOutHW){
 
       // Send the message via the waapi (already present)
 
-    await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone,false,student['parentPhoneCountryCode']);
+    try {
+      const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode']);
+      if (!sendResult.success) {
+        console.warn(`Warning: Failed to send WhatsApp message to ${student.Username}'s parent: ${sendResult.message}`);
+        // Continue execution even if message sending fails
+      }
+    } catch (msgErr) {
+      console.warn(`Warning: Error sending WhatsApp message to ${student.Username}'s parent: ${msgErr.message}`);
+      // Continue execution even if message sending fails
+    }
 
 
       return res.status(200).json({
@@ -1158,7 +1177,16 @@ Elkably Team
 }
 
       // Send the message via the waapi (already present)
-      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone,false,student['parentPhoneCountryCode']);
+      try {
+        const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode']);
+        if (!sendResult.success) {
+          console.warn(`Warning: Failed to send WhatsApp message to ${student.Username}'s parent: ${sendResult.message}`);
+          // Continue execution even if message sending fails
+        }
+      } catch (msgErr) {
+        console.warn(`Warning: Error sending WhatsApp message to ${student.Username}'s parent: ${msgErr.message}`);
+        // Continue execution even if message sending fails
+      }
 
       await student.save();
       return res.status(200).json({
@@ -1690,7 +1718,16 @@ const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Usern
  
 
       // Send the message via the waapi (already present)
-      await sendWappiMessage(messageWappi, student.parentPhone,req.userData.phone,false,student['parentPhoneCountryCode']);
+      try {
+        const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode']);
+        if (!sendResult.success) {
+          console.warn(`Warning: Failed to send WhatsApp message to ${student.Username}'s parent: ${sendResult.message}`);
+          // Continue execution even if message sending fails
+        }
+      } catch (msgErr) {
+        console.warn(`Warning: Error sending WhatsApp message to ${student.Username}'s parent: ${msgErr.message}`);
+        // Continue execution even if message sending fails
+      }
 
  
 
@@ -3645,23 +3682,37 @@ const sendRegistrationMessage = async (req, res) => {
 برجاء التوجه لأقرب سنتر سواء التجمع و المعادي لحجز الاماكن`;
         } 
         // Send message to parent
-        await sendWappiMessage(
-          message, 
-          student.parentPhone, 
-          senderPhone, 
-          false, 
-          student.parentPhoneCountryCode
-        );
-        
-        // Send message to student if phone exists
-        if (student.phone) {
-          await sendWappiMessage(
+        try {
+          const sendResult = await sendWappiMessage(
             message, 
-            student.phone, 
+            student.parentPhone, 
             senderPhone, 
             false, 
-            student.phoneCountryCode
+            student.parentPhoneCountryCode
           );
+          if (!sendResult.success) {
+            console.warn(`Warning: Failed to send WhatsApp message to parent: ${sendResult.message}`);
+          }
+        } catch (msgErr) {
+          console.warn(`Warning: Error sending WhatsApp message to parent: ${msgErr.message}`);
+        }
+        
+                // Send message to student if phone exists
+        if (student.phone) {
+          try {
+            const sendResult = await sendWappiMessage(
+              message, 
+              student.phone,
+              senderPhone, 
+              false, 
+              student.phoneCountryCode
+            );
+            if (!sendResult.success) {
+              console.warn(`Warning: Failed to send WhatsApp message to student: ${sendResult.message}`);
+            }
+          } catch (msgErr) {
+            console.warn(`Warning: Error sending WhatsApp message to student: ${msgErr.message}`);
+          }
         }
         
         successCount++;

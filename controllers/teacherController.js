@@ -621,7 +621,8 @@ const convertToExcelAllUserData = async (req, res) => {
 async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
   try {
     // Skip if phone number is missing or invalid
-    if (!phone || phone.trim() === '') {
+    const phoneAsString = (typeof phone === 'string' ? phone : String(phone || '')).trim();
+    if (!phoneAsString) {
       console.warn('Skipping message - No phone number provided');
       return { success: false, message: 'No phone number provided' };
     }
@@ -663,19 +664,18 @@ async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, 
     console.log(`Using session: ${targetSession.name} (${targetSession.phone_number})`);
     
     // Format the phone number properly
-    let countryCodeWithout0 = countryCode ? countryCode.replace('0', '') : '20'; // Remove leading zeros, default to 20
+    let countryCodeWithout0 = countryCode ? String(countryCode).replace(/^0+/, '') : '20'; // Remove leading zeros, default to 20
     console.log('Country code:', countryCodeWithout0);
-    
-    // Format phone number for Wasender API
-    let phoneNumber = isExcel ? `${countryCode}${phone}` : `${countryCodeWithout0}${phone}`;
-    
-    // Remove any non-numeric characters
-    phoneNumber = phoneNumber.replace(/\D/g, '');
-    
-    // Add country code if not present
-    if (!phoneNumber.startsWith('2')) {
-      phoneNumber = `2${phoneNumber}`;
-    }
+
+    // Clean phone input to digits only
+    let cleanedPhone = phoneAsString.replace(/\D/g, '');
+    // Remove leading zero from national number (e.g., 010... -> 10...)
+    if (cleanedPhone.startsWith('0')) cleanedPhone = cleanedPhone.slice(1);
+
+    // Build full international number (without +)
+    let phoneNumber = `${countryCodeWithout0}${cleanedPhone}`.replace(/\D/g, '');
+    // Ensure leading country indicator '2' for Egypt if missing
+    if (!phoneNumber.startsWith('2')) phoneNumber = `2${phoneNumber}`;
     
     // Format for WhatsApp (add @s.whatsapp.net suffix)
     const formattedPhone = `${phoneNumber}@s.whatsapp.net`;

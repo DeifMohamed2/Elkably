@@ -2975,14 +2975,35 @@ const getDataToTransferring = async (req, res) => {
 
   try {
     const codeParam = String(Code).trim();
-    // Restrict to G-prefixed codes only (accept lowercase g)
-    const gMatch = codeParam.match(/^([gG])(\d+)$/);
-    if (!gMatch) {
-      return res.status(400).json({ message: 'Invalid code format. Only G-prefixed codes are allowed (e.g., G1234).' });
-    }
-    const normalizedGCode = `G${gMatch[2]}`;
+    
+    // Build search conditions
+    const orConditions = [
+      { cardId: codeParam }  // Search by card ID first
+    ];
 
-    const student = await User.findOne({ Code: normalizedGCode });
+    // If it's only numbers (like "1234")
+    if (/^\d+$/.test(codeParam)) {
+      orConditions.push({ Code: codeParam });  // Search for "1234"
+      orConditions.push({ Code: +codeParam }); // Search for 1234 (as number)
+    } 
+    // If it has a letter prefix (like "G1234" or "g1234")
+    else if (/^[A-Za-z]\d+$/.test(codeParam)) {
+      const letter = codeParam.charAt(0);
+      const digits = codeParam.slice(1);
+      
+      // Search for the exact code as entered (case insensitive)
+      orConditions.push({ Code: { $regex: new RegExp(`^${letter}${digits}$`, 'i') } });
+      
+      // Also search for the digits only (in case there's a student with just "1234")
+      orConditions.push({ Code: digits });
+      orConditions.push({ Code: +digits });
+    }
+    // For any other format, search as-is
+    else {
+      orConditions.push({ Code: codeParam });
+    }
+
+    const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -2994,7 +3015,7 @@ const getDataToTransferring = async (req, res) => {
       return res.status(404).json({ message: 'No groups found for this student' });
     }
 
-    res.status(200).json(  student  );
+    res.status(200).json(student);
   }
   catch (error) {
     console.error('Error fetching groups:', error);
@@ -3008,14 +3029,35 @@ const transferStudent = async (req, res) => {
   console.log(req.body)
   try {
     const codeParam = String(Code).trim();
-    // Restrict to G-prefixed codes only (accept lowercase g)
-    const gMatch = codeParam.match(/^([gG])(\d+)$/);
-    if (!gMatch) {
-      return res.status(400).json({ message: 'Invalid code format. Only G-prefixed codes are allowed (e.g., G1234).' });
-    }
-    const normalizedGCode = `G${gMatch[2]}`;
+    
+    // Build search conditions
+    const orConditions = [
+      { cardId: codeParam }  // Search by card ID first
+    ];
 
-    const student = await User.findOne({ Code: normalizedGCode });
+    // If it's only numbers (like "1234")
+    if (/^\d+$/.test(codeParam)) {
+      orConditions.push({ Code: codeParam });  // Search for "1234"
+      orConditions.push({ Code: +codeParam }); // Search for 1234 (as number)
+    } 
+    // If it has a letter prefix (like "G1234" or "g1234")
+    else if (/^[A-Za-z]\d+$/.test(codeParam)) {
+      const letter = codeParam.charAt(0);
+      const digits = codeParam.slice(1);
+      
+      // Search for the exact code as entered (case insensitive)
+      orConditions.push({ Code: { $regex: new RegExp(`^${letter}${digits}$`, 'i') } });
+      
+      // Also search for the digits only (in case there's a student with just "1234")
+      orConditions.push({ Code: digits });
+      orConditions.push({ Code: +digits });
+    }
+    // For any other format, search as-is
+    else {
+      orConditions.push({ Code: codeParam });
+    }
+
+    const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });

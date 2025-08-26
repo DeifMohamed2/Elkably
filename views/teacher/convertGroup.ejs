@@ -53,7 +53,6 @@
             height: 56px;
             border-radius: 50%;
             background: conic-gradient(#0000 10%,#474bff);
-            mask: radial-gradient(farthest-side,#0000 calc(100% - 9px),#000 0);
             -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 9px),#000 0);
             animation: spinner-zp9dbg 1s infinite linear;
         }
@@ -242,19 +241,7 @@
     getDataToTransferring.addEventListener('click', async () => {
         spinner.classList.remove('d-none');
         Message.classList.add('d-none');
-        // Enforce G-prefixed codes only (accept g/G)
-        const rawCode = (studentCode.value || '').trim();
-        const match = rawCode.match(/^([gG])(\d+)$/);
-        if (!match) {
-            spinner.classList.add('d-none');
-            StudentData.classList.add('d-none');
-            transferTo.classList.add('d-none');
-            document.getElementById('Message').textContent = 'من فضلك اكتب كود يبدأ بـ G متبوعًا بأرقام فقط (مثال: G1234)';
-            document.getElementById('Message').classList.remove('d-none');
-            return;
-        }
-        const normalizedCode = `G${match[2]}`;
-        const response = await fetch(`/teacher/getDataToTransferring/${normalizedCode}`);
+        const response = await fetch(`/teacher/getDataToTransferring/${studentCode.value}`);
         const data = await response.json();
         console.log(data);
         if(response.ok){
@@ -284,18 +271,8 @@
         spinner.classList.remove('d-none');
          Message.classList.add('d-none');
         e.preventDefault();
-        // Enforce G-prefixed codes only (accept g/G)
-        const rawCode = (studentCode.value || '').trim();
-        const match = rawCode.match(/^([gG])(\d+)$/);
-        if (!match) {
-            spinner.classList.add('d-none');
-            document.getElementById('Message').textContent = 'من فضلك اكتب كود يبدأ بـ G متبوعًا بأرقام فقط (مثال: G1234)';
-            document.getElementById('Message').classList.remove('d-none');
-            return;
-        }
-        const normalizedCode = `G${match[2]}`;
         const formData = new FormData(transferForm);
-        const response = await fetch(`/teacher/transferStudent/${normalizedCode}`, {
+        const response = await fetch(`/teacher/transferStudent/${studentCode.value}`, {
             method: 'PUT',
             body: formData
         });

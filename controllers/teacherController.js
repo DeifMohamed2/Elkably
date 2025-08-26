@@ -2975,45 +2975,14 @@ const getDataToTransferring = async (req, res) => {
 
   try {
     const codeParam = String(Code).trim();
-    const isOnlyNumbers = /^\d+$/.test(codeParam);
-    const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
-
-    const orConditions = [{ cardId: codeParam }];
-
-    if (isOnlyNumbers) {
-      // Match numeric code stored as string or number
-      orConditions.push({ Code: codeParam });
-      orConditions.push({ Code: +codeParam });
-      
-      // Add all possible letter prefixes for numeric codes
-      const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-      prefixes.forEach(prefix => {
-        orConditions.push({ Code: prefix + codeParam });
-      });
-    } else {
-      // Match the provided code as-is
-      orConditions.push({ Code: codeParam });
-      
-      // If code starts with a letter followed by digits, also try with other prefixes and without prefix
-      if (letterPrefixMatch) {
-        const digits = letterPrefixMatch[2];
-        
-        // Try without any prefix
-        orConditions.push({ Code: digits });
-        orConditions.push({ Code: +digits });
-        
-        // Try with all other possible prefixes
-        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-        prefixes.forEach(prefix => {
-          // Don't add the same prefix that's already in the code
-          if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
-            orConditions.push({ Code: prefix + digits });
-          }
-        });
-      }
+    // Restrict to G-prefixed codes only (accept lowercase g)
+    const gMatch = codeParam.match(/^([gG])(\d+)$/);
+    if (!gMatch) {
+      return res.status(400).json({ message: 'Invalid code format. Only G-prefixed codes are allowed (e.g., G1234).' });
     }
+    const normalizedGCode = `G${gMatch[2]}`;
 
-    const student = await User.findOne({ $or: orConditions });
+    const student = await User.findOne({ Code: normalizedGCode });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -3039,45 +3008,14 @@ const transferStudent = async (req, res) => {
   console.log(req.body)
   try {
     const codeParam = String(Code).trim();
-    const isOnlyNumbers = /^\d+$/.test(codeParam);
-    const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
-
-    const orConditions = [{ cardId: codeParam }];
-
-    if (isOnlyNumbers) {
-      // Match numeric code stored as string or number
-      orConditions.push({ Code: codeParam });
-      orConditions.push({ Code: +codeParam });
-      
-      // Add all possible letter prefixes for numeric codes
-      const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-      prefixes.forEach(prefix => {
-        orConditions.push({ Code: prefix + codeParam });
-      });
-    } else {
-      // Match the provided code as-is
-      orConditions.push({ Code: codeParam });
-      
-      // If code starts with a letter followed by digits, also try with other prefixes and without prefix
-      if (letterPrefixMatch) {
-        const digits = letterPrefixMatch[2];
-        
-        // Try without any prefix
-        orConditions.push({ Code: digits });
-        orConditions.push({ Code: +digits });
-        
-        // Try with all other possible prefixes
-        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-        prefixes.forEach(prefix => {
-          // Don't add the same prefix that's already in the code
-          if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
-            orConditions.push({ Code: prefix + digits });
-          }
-        });
-      }
+    // Restrict to G-prefixed codes only (accept lowercase g)
+    const gMatch = codeParam.match(/^([gG])(\d+)$/);
+    if (!gMatch) {
+      return res.status(400).json({ message: 'Invalid code format. Only G-prefixed codes are allowed (e.g., G1234).' });
     }
+    const normalizedGCode = `G${gMatch[2]}`;
 
-    const student = await User.findOne({ $or: orConditions });
+    const student = await User.findOne({ Code: normalizedGCode });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });

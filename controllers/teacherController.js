@@ -888,30 +888,23 @@ if(attendWithOutHW){
 }else{
   HWmessage = '*لقد قام الطالب بحل الواجب بالخطوات*';
 }
-    // Check if attendId contains only numbers
-    const isOnlyNumbers = /^\d+$/.test(attendId);
-    
-    let studentQuery;
-    if (isOnlyNumbers) {
-      // If it's only numbers, search by cardId or Code with prefix
-      studentQuery = {
-        $or: [
-          { cardId: attendId }, 
-          { Code: attendId },
-          { Code: "G" + attendId }
-        ]
-      };
+    // Flexible matching for attendId (numeric codes, letter+digits like G1234/g1234, or cardId)
+    const codeParam = String(attendId).trim();
+    const orConditions = [{ cardId: codeParam }];
+    if (/^\d+$/.test(codeParam)) {
+      orConditions.push({ Code: codeParam });
+      orConditions.push({ Code: +codeParam });
+    } else if (/^[A-Za-z]\d+$/.test(codeParam)) {
+      const letter = codeParam.charAt(0);
+      const digits = codeParam.slice(1);
+      orConditions.push({ Code: { $regex: new RegExp(`^${letter}${digits}$`, 'i') } });
+      orConditions.push({ Code: digits });
+      orConditions.push({ Code: +digits });
     } else {
-      // If it contains text (like "G123"), search by cardId and Code directly
-      studentQuery = {
-        $or: [
-          { cardId: attendId }, 
-          { Code: attendId }
-        ]
-      };
+      orConditions.push({ Code: codeParam });
     }
 
-    const student = await User.findOne(studentQuery);
+    const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
       return res.status(404).json({ message: 'Student Not found' });

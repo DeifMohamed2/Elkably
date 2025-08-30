@@ -72,6 +72,10 @@ const studentsRequests_get = async (req, res) => {
         amountRemaining: 1,
         createdAt: 1,
         updatedAt: 1,
+        blocked: 1,
+        blockReason: 1,
+        blockedAt: 1,
+        blockedBy: 1,
       })
         .sort({ subscribe: 1, createdAt: 1 })
         .skip((page - 1) * perPage)
@@ -107,32 +111,47 @@ const studentsRequests_get = async (req, res) => {
 const searchForUser = async (req, res) => {
   const { searchBy, searchInput } = req.body;
   try {
-    await User.find(
-      { [`${searchBy}`]: searchInput },
-      {
-        Username: 1,
-        Code: 1,
-        createdAt: 1,
-        updatedAt: 1,
-        subscribe: 1,
-        balance :1,
-        amountRemaining :1,
-      }
-    ).then((result) => {
-      res.render('teacher/studentsRequests', {
-        title: 'StudentsRequests',
-        path: req.path,
-        modalData: null,
-        modalDelete: null,
-        studentsRequests: result,
-        studentPlace: query.place || 'All',
-        Grade: query.Grade,
-        isSearching: true,
-        nextPage: null,
-        previousPage: null, // Calculate previous page
-      });
+    // Build the search query with exact matching
+    let searchQuery = {};
+    
+    if (searchBy === 'Code') {
+      // For Code searches, use exact matching - no regex, no prefix variations
+      searchQuery[searchBy] = searchInput.trim();
+    } else {
+      // For other fields, use exact matching as well
+      searchQuery[searchBy] = searchInput.trim();
+    }
+
+    const result = await User.find(searchQuery, {
+      Username: 1,
+      Code: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      subscribe: 1,
+      balance: 1,
+      amountRemaining: 1,
+      blocked: 1,
+      blockReason: 1,
+      blockedAt: 1,
+      blockedBy: 1,
     });
-  } catch (error) {}
+
+    res.render('teacher/studentsRequests', {
+      title: 'StudentsRequests',
+      path: req.path,
+      modalData: null,
+      modalDelete: null,
+      studentsRequests: result,
+      studentPlace: query?.place || 'All',
+      Grade: query?.Grade,
+      isSearching: true,
+      nextPage: null,
+      previousPage: null,
+    });
+  } catch (error) {
+    console.error('Error in searchForUser:', error);
+    res.status(500).send('Internal Server Error');
+  }
 };
 
 const converStudentRequestsToExcel = async (req, res) => {
@@ -241,40 +260,14 @@ const getSingleUserAllData = async (req, res) => {
     if (isObjectId) {
       query = { _id: studentID };
     } else {
-      // Handle as a code with flexible matching
+      // Handle as a code with exact matching - no flexible matching
       const codeParam = String(studentID).trim();
-      const isOnlyNumbers = /^\d+$/.test(codeParam);
-      const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
       
-      // Build query conditions to match various code formats
-      const orConditions = [{ cardId: codeParam }];
-      
-      if (isOnlyNumbers) {
-        orConditions.push({ Code: codeParam });
-        orConditions.push({ Code: +codeParam });
-        
-        // Add all possible letter prefixes for numeric codes
-        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-        prefixes.forEach(prefix => {
-          orConditions.push({ Code: prefix + codeParam });
-        });
-      } else {
-        orConditions.push({ Code: codeParam });
-        
-        if (letterPrefixMatch) {
-          const digits = letterPrefixMatch[2];
-          
-          orConditions.push({ Code: digits });
-          orConditions.push({ Code: +digits });
-          
-          const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-          prefixes.forEach(prefix => {
-            if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
-              orConditions.push({ Code: prefix + digits });
-            }
-          });
-        }
-      }
+      // Build query conditions for exact matching only
+      const orConditions = [
+        { cardId: codeParam },  // Search by card ID
+        { Code: codeParam }     // Search by exact code match
+      ];
       
       query = { $or: orConditions };
     }
@@ -285,7 +278,16 @@ const getSingleUserAllData = async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
     
-    res.status(200).send(result);
+    // Include blocking information in the response
+    const studentData = {
+      ...result.toObject(),
+      blocked: result.blocked || false,
+      blockReason: result.blockReason,
+      blockedAt: result.blockedAt,
+      blockedBy: result.blockedBy
+    };
+    
+    res.status(200).send(studentData);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: 'Server error' });
@@ -380,24 +382,184 @@ const updateUserData = async (req, res) => {
   }
 };
 
+// Block student function
+const blockStudent = async (req, res) => {
+  try {
+    const { studentID } = req.params;
+    const { reason } = req.body;
 
-// const confirmDeleteStudent = async (req, res) => {
-//   try {
-//     const studentID = req.params.studentID;
-//     res.render('teacher/studentsRequests', {
-//       title: 'StudentsRequests',
-//       path: req.path,
-//       modalData: null,
-//       modalDelete: studentID,
-//       studentsRequests: null,
-//       studentPlace: query.place || 'All',
-//       Grade: query.Grade,
-//       isSearching: false,
-//       nextPage: null,
-//       previousPage: null, // Calculate previous page
-//     });
-//   } catch (error) {}
-// };
+    if (!studentID) {
+      return res.status(400).json({ error: 'Student ID is required.' });
+    }
+
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ error: 'Block reason is required.' });
+    }
+
+    const student = await User.findById(studentID);
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found.' });
+    }
+
+    if (student.blocked) {
+      return res.status(400).json({ error: 'Student is already blocked.' });
+    }
+
+    // Update student with blocking information
+    const blockRecord = {
+      action: 'blocked',
+      reason: reason.trim(),
+      blockedAt: new Date(),
+      blockedBy: req.userData?.Username || 'Admin',
+      timestamp: new Date()
+    };
+
+    const updatedStudent = await User.findByIdAndUpdate(
+      studentID,
+      {
+        blocked: true,
+        blockReason: reason.trim(),
+        blockedAt: new Date(),
+        blockedBy: req.userData?.Username || 'Admin',
+        $push: { blockHistory: blockRecord }
+      },
+      { new: true }
+    );
+
+    // Send WhatsApp message to parent about the blocking
+    if (student.parentPhone) {
+      const blockMessage = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأنه تم *إيقاف الطالب مؤقتاً* عن الحضور.\n
+السبب: *${reason.trim()}*\n
+
+Elkably Team`;
+
+      try {
+        const sendResult = await sendWappiMessage(
+          blockMessage, 
+          student.parentPhone, 
+          req.userData.phone, 
+          false, 
+          student.parentPhoneCountryCode
+        );
+        if (!sendResult.success) {
+          console.warn(`Warning: Failed to send blocking notification to ${student.Username}'s parent: ${sendResult.message}`);
+        }
+      } catch (msgErr) {
+        console.warn(`Warning: Error sending blocking notification to ${student.Username}'s parent: ${msgErr.message}`);
+      }
+    }
+
+    res.status(200).json({ 
+      message: 'Student blocked successfully.', 
+      student: updatedStudent 
+    });
+  } catch (error) {
+    console.error('Error blocking student:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+// Unblock student function
+const unblockStudent = async (req, res) => {
+  try {
+    const { studentID } = req.params;
+    const { reason } = req.body;
+
+    if (!studentID) {
+      return res.status(400).json({ error: 'Student ID is required.' });
+    }
+
+    const student = await User.findById(studentID);
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found.' });
+    }
+
+    if (!student.blocked) {
+      return res.status(400).json({ error: 'Student is not blocked.' });
+    }
+
+    // Update student with unblocking information
+    const unblockRecord = {
+      action: 'unblocked',
+      reason: reason ? reason.trim() : 'No reason provided',
+      unblockedAt: new Date(),
+      unblockedBy: req.userData?.Username || 'Admin',
+      timestamp: new Date()
+    };
+
+    const updatedStudent = await User.findByIdAndUpdate(
+      studentID,
+      {
+        blocked: false,
+        blockReason: null,
+        blockedAt: null,
+        blockedBy: null,
+        $push: { blockHistory: unblockRecord }
+      },
+      { new: true }
+    );
+
+    // Send WhatsApp message to parent about the unblocking
+    if (student.parentPhone) {
+      const unblockMessage = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
+نود إعلامكم بأنه تم *إعادة تفعيل الطالب* ويمكنه الحضور مرة أخرى.\n
+${reason ? `السبب: *${reason.trim()}*` : ''}\n
+تاريخ إعادة التفعيل: ${new Date().toLocaleDateString('ar-EG', {timeZone: 'Africa/Cairo'})}\n
+الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}\n\n
+*يمكن للطالب الآن الحضور بشكل طبيعي.*\n\n
+شكراً لتعاونكم.
+Elkably Team`;
+
+      try {
+        const sendResult = await sendWappiMessage(
+          unblockMessage, 
+          student.parentPhone, 
+          req.userData.phone, 
+          false, 
+          student.parentPhoneCountryCode
+        );
+        if (!sendResult.success) {
+          console.warn(`Warning: Failed to send unblocking notification to ${student.Username}'s parent: ${sendResult.message}`);
+        }
+      } catch (msgErr) {
+        console.warn(`Warning: Error sending unblocking notification to ${student.Username}'s parent: ${msgErr.message}`);
+      }
+    }
+
+    res.status(200).json({ 
+      message: 'Student unblocked successfully.', 
+      student: updatedStudent 
+    });
+  } catch (error) {
+    console.error('Error unblocking student:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+// Get student blocking history
+const getStudentBlockHistory = async (req, res) => {
+  try {
+    const { studentID } = req.params;
+
+    if (!studentID) {
+      return res.status(400).json({ error: 'Student ID is required.' });
+    }
+
+    const student = await User.findById(studentID).select('Username blockHistory');
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found.' });
+    }
+
+    res.status(200).json({ 
+      studentName: student.Username,
+      blockHistory: student.blockHistory || [] 
+    });
+  } catch (error) {
+    console.error('Error getting block history:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
 
 const DeleteStudent = async (req, res) => {
   try {
@@ -454,8 +616,18 @@ const convertToExcelAllUserData = async (req, res) => {
   const { studetCode } = req.params;
   console.log(studetCode);
   try {
-    await User.findOne({ Code: +studetCode })
-      .then(async (user) => {
+    // Use exact matching for student code
+    const codeParam = String(studetCode).trim();
+    const orConditions = [
+      { cardId: codeParam },  // Search by card ID
+      { Code: codeParam }     // Search by exact code match
+    ];
+    
+    const user = await User.findOne({ $or: orConditions });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
         // Create a new Excel workbook
         const workbook = new Excel.Workbook();
         const worksheet = workbook.addWorksheet('Users Data');
@@ -607,12 +779,9 @@ const convertToExcelAllUserData = async (req, res) => {
 
         // Send Excel file as response
         res.send(excelBuffer);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: 'Error generating Excel file' });
   }
 };
 
@@ -888,26 +1057,27 @@ if(attendWithOutHW){
 }else{
   HWmessage = '*لقد قام الطالب بحل الواجب بالخطوات*';
 }
-    // Flexible matching for attendId (numeric codes, letter+digits like G1234/g1234, or cardId)
+    // Exact matching for attendId - no flexible matching
     const codeParam = String(attendId).trim();
-    const orConditions = [{ cardId: codeParam }];
-    if (/^\d+$/.test(codeParam)) {
-      orConditions.push({ Code: codeParam });
-      orConditions.push({ Code: +codeParam });
-    } else if (/^[A-Za-z]\d+$/.test(codeParam)) {
-      const letter = codeParam.charAt(0);
-      const digits = codeParam.slice(1);
-      orConditions.push({ Code: { $regex: new RegExp(`^${letter}${digits}$`, 'i') } });
-      orConditions.push({ Code: digits });
-      orConditions.push({ Code: +digits });
-    } else {
-      orConditions.push({ Code: codeParam });
-    }
+    const orConditions = [
+      { cardId: codeParam },  // Search by card ID
+      { Code: codeParam }     // Search by exact code match
+    ];
 
     const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
       return res.status(404).json({ message: 'Student Not found' });
+    }
+
+    // Check if student is blocked
+    if (student.blocked) {
+      return res.status(403).json({ 
+        message: 'Student is blocked and cannot attend',
+        blockReason: student.blockReason,
+        blockedAt: student.blockedAt,
+        blockedBy: student.blockedBy
+      });
     }
 
       console.log(student._id);
@@ -2246,8 +2416,12 @@ const getStudentData = async (req, res) => {
   const { start, end } = req.query; // Extract start and end dates from query parameters
 
   try {
-    // Find student based on the provided code
-    const student = await User.findOne({ Code: studentCode });
+    // Find student based on the provided code with exact matching
+    const student = await User.findOne({ Code: studentCode.trim() });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -2296,50 +2470,16 @@ const advancedStudentSearch = async (req, res) => {
   const { code } = req.params;
   
   try {
-    // Create a flexible search pattern to match different code formats
+    // Use exact matching for the code - no flexible matching
     const codeParam = String(code).trim();
-    const isOnlyNumbers = /^\d+$/.test(codeParam);
     
-    // Match codes with letter prefixes (G, O, K, etc.)
-    const letterPrefixMatch = codeParam.match(/^([A-Za-z])(\d+)$/);
+    // Build query conditions for exact matching only
+    const orConditions = [
+      { cardId: codeParam },  // Search by card ID
+      { Code: codeParam }     // Search by exact code match
+    ];
 
-    // Build query conditions to match various code formats
-    const orConditions = [{ cardId: codeParam }];
-
-    if (isOnlyNumbers) {
-      // Match numeric code stored as string or number
-      orConditions.push({ Code: codeParam });
-      orConditions.push({ Code: +codeParam });
-      
-      // Add all possible letter prefixes for numeric codes
-      const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-      prefixes.forEach(prefix => {
-        orConditions.push({ Code: prefix + codeParam });
-      });
-    } else {
-      // Match the provided code as-is
-      orConditions.push({ Code: codeParam });
-      
-      // If code starts with a letter followed by digits, also try with other prefixes and without prefix
-      if (letterPrefixMatch) {
-        const digits = letterPrefixMatch[2];
-        
-        // Try without any prefix
-        orConditions.push({ Code: digits });
-        orConditions.push({ Code: +digits });
-        
-        // Try with all other possible prefixes
-        const prefixes = ['G', 'g', 'O', 'o', 'K', 'k'];
-        prefixes.forEach(prefix => {
-          // Don't add the same prefix that's already in the code
-          if (prefix.toLowerCase() !== letterPrefixMatch[1].toLowerCase()) {
-            orConditions.push({ Code: prefix + digits });
-          }
-        });
-      }
-    }
-
-    // Find the student with any of the possible code formats
+    // Find the student with exact code match
     const student = await User.findOne({ $or: orConditions });
 
     if (!student) {
@@ -2385,6 +2525,10 @@ const advancedStudentSearch = async (req, res) => {
       schoolName: student.schoolName,
       createdAt: student.createdAt,
       updatedAt: student.updatedAt,
+      blocked: student.blocked,
+      blockReason: student.blockReason,
+      blockedAt: student.blockedAt,
+      blockedBy: student.blockedBy,
       groupInfo
     };
 
@@ -2969,32 +3113,11 @@ const getDataToTransferring = async (req, res) => {
   try {
     const codeParam = String(Code).trim();
     
-    // Build search conditions
+    // Build search conditions for exact matching only
     const orConditions = [
-      { cardId: codeParam }  // Search by card ID first
+      { cardId: codeParam },  // Search by card ID
+      { Code: codeParam }     // Search by exact code match
     ];
-
-    // If it's only numbers (like "1234")
-    if (/^\d+$/.test(codeParam)) {
-      orConditions.push({ Code: codeParam });  // Search for "1234"
-      orConditions.push({ Code: +codeParam }); // Search for 1234 (as number)
-    } 
-    // If it has a letter prefix (like "G1234" or "g1234")
-    else if (/^[A-Za-z]\d+$/.test(codeParam)) {
-      const letter = codeParam.charAt(0);
-      const digits = codeParam.slice(1);
-      
-      // Search for the exact code as entered (case insensitive)
-      orConditions.push({ Code: { $regex: new RegExp(`^${letter}${digits}$`, 'i') } });
-      
-      // Also search for the digits only (in case there's a student with just "1234")
-      orConditions.push({ Code: digits });
-      orConditions.push({ Code: +digits });
-    }
-    // For any other format, search as-is
-    else {
-      orConditions.push({ Code: codeParam });
-    }
 
     const student = await User.findOne({ $or: orConditions });
 
@@ -3023,32 +3146,11 @@ const transferStudent = async (req, res) => {
   try {
     const codeParam = String(Code).trim();
     
-    // Build search conditions
+    // Build search conditions for exact matching only
     const orConditions = [
-      { cardId: codeParam }  // Search by card ID first
+      { cardId: codeParam },  // Search by card ID
+      { Code: codeParam }     // Search by exact code match
     ];
-
-    // If it's only numbers (like "1234")
-    if (/^\d+$/.test(codeParam)) {
-      orConditions.push({ Code: codeParam });  // Search for "1234"
-      orConditions.push({ Code: +codeParam }); // Search for 1234 (as number)
-    } 
-    // If it has a letter prefix (like "G1234" or "g1234")
-    else if (/^[A-Za-z]\d+$/.test(codeParam)) {
-      const letter = codeParam.charAt(0);
-      const digits = codeParam.slice(1);
-      
-      // Search for the exact code as entered (case insensitive)
-      orConditions.push({ Code: { $regex: new RegExp(`^${letter}${digits}$`, 'i') } });
-      
-      // Also search for the digits only (in case there's a student with just "1234")
-      orConditions.push({ Code: digits });
-      orConditions.push({ Code: +digits });
-    }
-    // For any other format, search as-is
-    else {
-      orConditions.push({ Code: codeParam });
-    }
 
     const student = await User.findOne({ $or: orConditions });
 
@@ -3067,17 +3169,16 @@ const transferStudent = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    // Remove the student from any previous group
+    // Check if the student is already in the target group
+    if (group.students.includes(student._id)) {
+      return res.status(400).json({ message: 'Student is already in the target group' });
+    }
+
+    // Remove the student from any previous group FIRST
     await Group.updateMany(
       { students: student._id },
       { $pull: { students: student._id } }
     );
-
-    // Check if the student is already in the group
-    if (group.students.includes(student._id)) {
-      return res.status(400).json({ message: 'Student is already in the group' });
-    }
-
 
     // Update the student's group info
     student.centerName = centerName;
@@ -3086,9 +3187,11 @@ const transferStudent = async (req, res) => {
     student.groupTime = groupTime;
     await student.save();
 
-    // Transfer the student to the new group
-    group.students.push(student._id);
-    await group.save();
+    // Add the student to the new group
+    await Group.findByIdAndUpdate(
+      group._id,
+      { $addToSet: { students: student._id } } // Use $addToSet to prevent duplicates
+    );
 
     res.status(200).json({ message: 'Student transferred successfully' });
   } catch (error) {
@@ -3825,6 +3928,9 @@ module.exports = {
   converStudentRequestsToExcel,
   getSingleUserAllData,
   updateUserData,
+  blockStudent,
+  unblockStudent,
+  getStudentBlockHistory,
 
   searchToGetOneUserAllData,
   convertToExcelAllUserData,

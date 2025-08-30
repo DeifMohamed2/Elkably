@@ -119,6 +119,32 @@ const userSchema = new Schema(
       type: Boolean,
       required: false,
     },
+
+    // Blocking fields
+    blocked: {
+      type: Boolean,
+      default: false,
+    },
+
+    blockReason: {
+      type: String,
+      default: null,
+    },
+
+    blockedAt: {
+      type: Date,
+      default: null,
+    },
+
+    blockedBy: {
+      type: String,
+      default: null,
+    },
+
+    blockHistory: {
+      type: Array,
+      default: [],
+    },
   },
   { timestamps: true }
 );

@@ -201,6 +201,325 @@ table tbody tr:hover {
     color: var(--dark-text);
 }
 
+/* Blocking styles */
+.badge {
+    font-size: 0.8em;
+    padding: 0.4em 0.6em;
+}
+
+.bg-danger {
+    background-color: var(--dark-danger) !important;
+}
+
+.bg-success {
+    background-color: var(--dark-success) !important;
+}
+
+.bg-warning {
+    background-color: var(--dark-warning) !important;
+}
+
+.bg-info {
+    background-color: var(--dark-info) !important;
+}
+
+.alert {
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: var(--dark-warning);
+    color: var(--dark-warning);
+}
+
+.alert-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-color: var(--dark-info);
+    color: var(--dark-info);
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: var(--dark-danger);
+    color: var(--dark-danger);
+}
+
+.table-responsive {
+    background-color: var(--dark-card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table {
+    color: var(--dark-text);
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: var(--dark-secondary);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+.table tbody td {
+    border-color: var(--dark-border);
+}
+
+.text-danger {
+    color: var(--dark-danger) !important;
+}
+
+.text-success {
+    color: var(--dark-success) !important;
+}
+
+/* Table button styles */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.2rem;
+}
+
+.enter {
+    text-align: center;
+}
+
+.enter button {
+    margin: 2px;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+    }
+    
+    .enter button {
+        margin: 1px;
+    }
+}
+
+/* Enhanced Modal Styles */
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
+}
+
+.modal-header {
+    border-bottom: 2px solid var(--dark-border);
+    padding: 1.5rem;
+}
+
+.modal-header .modal-title {
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border-top: 2px solid var(--dark-border);
+    padding: 1.5rem;
+}
+
+/* Student Info Card */
+.student-info-card {
+    background: linear-gradient(135deg, var(--dark-card-bg) 0%, var(--dark-bg) 100%);
+    border: 2px solid var(--dark-border);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.student-name {
+    color: var(--dark-primary);
+    font-weight: 700;
+    font-size: 1.8rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--dark-primary) 50%, transparent 100%);
+    margin: 1rem 0;
+    border-radius: 1px;
+}
+
+/* Reason Section */
+.reason-section {
+    background: var(--dark-card-bg);
+    border: 2px solid var(--dark-border);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.reason-section label {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    display: block;
+    text-align: right;
+}
+
+.reason-textarea {
+    border: 2px solid var(--dark-border);
+    border-radius: 12px;
+    background: var(--dark-input-bg);
+    color: var(--dark-text);
+    font-size: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.3s ease;
+    resize: vertical;
+    min-height: 140px;
+    width: 100%;
+    padding: 1rem;
+    line-height: 1.6;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reason-textarea:focus {
+    border-color: var(--dark-primary);
+    box-shadow: 0 0 0 0.3rem rgba(58, 123, 213, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--dark-input-bg);
+    color: var(--dark-text);
+    outline: none;
+}
+
+.reason-textarea::placeholder {
+    color: var(--dark-secondary);
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.form-text {
+    color: var(--dark-secondary);
+    font-size: 0.95rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid var(--dark-primary);
+}
+
+/* Enhanced Alerts */
+.alert {
+    border-radius: 12px;
+    border: none;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
+    border-left: 4px solid var(--dark-warning);
+    color: var(--dark-warning);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+    border-left: 4px solid var(--dark-success);
+    color: var(--dark-success);
+}
+
+.alert ul {
+    padding-left: 1.5rem;
+}
+
+.alert li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+/* Enhanced Buttons */
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-transform: none;
+    letter-spacing: 0.5px;
+}
+
+.btn-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, var(--dark-warning) 0%, #e0a800 100%);
+    border: none;
+    color: #000;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--dark-success) 0%, #1e7e34 100%);
+    border: none;
+    color: #fff;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--dark-secondary) 0%, #5a5a5a 100%);
+    border: none;
+    color: var(--dark-text);
+}
+
+/* Modal Animation */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+    transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .student-info-card {
+        padding: 1rem;
+    }
+    
+    .student-name {
+        font-size: 1.4rem;
+    }
+    
+    .reason-section {
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .reason-textarea {
+        min-height: 120px;
+        padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+}
+
 </style>
 <body>
     <div class="container-fluid">
@@ -331,6 +650,166 @@ table tbody tr:hover {
             </div>
         </div>
         </div>
+
+    <!-- Block Student Modal -->
+    <div class="modal fade show" id="blockStudentModal" tabindex="-1" aria-labelledby="blockStudentModalLabel" aria-hidden="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-ban me-3" style="font-size: 1.5rem;"></i>
+                        <h2 class="modal-title mb-0" id="blockStudentModalLabel">إيقاف الطالب</h2>
+                    </div>
+                    <i class="fa-solid fa-xmark close-modal" data-bs-dismiss="modal" aria-label="Close"></i>
+                </div>
+                <form id="blockStudentForm">
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <div class="student-info-card">
+                                <i class="fa-solid fa-user-graduate mb-3" style="font-size: 3rem; color: var(--dark-primary);"></i>
+                                <h4 class="mb-2">هل تريد إيقاف الطالب</h4>
+                                <h3 class="student-name mb-3" id="blockStudentName"></h3>
+                                <div class="divider"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="reason-section">
+                            <label for="blockReason" class="form-label">
+                                <i class="fa-solid fa-comment-dots me-2"></i>
+                                سبب الإيقاف:
+                            </label>
+                            <textarea 
+                                class="form-control modal-input reason-textarea" 
+                                id="blockReason" 
+                                name="reason" 
+                                rows="4" 
+                                cols="7"
+                                placeholder="يرجى كتابة سبب الإيقاف بالتفصيل..."
+                                required
+                            ></textarea>
+                            <div class="form-text">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                هذا السبب سيتم إرساله إلى ولي أمر الطالب
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning mt-4">
+                            <div class="d-flex align-items-start">
+                                <i class="fa-solid fa-triangle-exclamation me-3 mt-1" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <strong>تنبيه مهم:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>سيتم إرسال رسالة إلى ولي أمر الطالب بإشعار الإيقاف</li>
+                                        <li>الطالب لن يتمكن من الحضور حتى يتم إعادة تفعيله</li>
+                                        <li>سيتم تسجيل هذا الإجراء في سجل الإيقافات</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-times me-2"></i>إلغاء
+                        </button>
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <i class="fa-solid fa-ban me-2"></i>إيقاف الطالب
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unblock Student Modal -->
+    <div class="modal fade show" id="unblockStudentModal" tabindex="-1" aria-labelledby="unblockStudentModalLabel" aria-hidden="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-check-circle me-3" style="font-size: 1.5rem;"></i>
+                        <h2 class="modal-title mb-0" id="unblockStudentModalLabel">إعادة تفعيل الطالب</h2>
+                    </div>
+                    <i class="fa-solid fa-xmark close-modal" data-bs-dismiss="modal" aria-label="Close"></i>
+                </div>
+                <form id="unblockStudentForm">
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <div class="student-info-card">
+                                <i class="fa-solid fa-user-check mb-3" style="font-size: 3rem; color: var(--dark-success);"></i>
+                                <h4 class="mb-2">هل تريد إعادة تفعيل الطالب</h4>
+                                <h3 class="student-name mb-3" id="unblockStudentName"></h3>
+                                <div class="divider"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="reason-section">
+                            <label for="unblockReason" class="form-label">
+                                <i class="fa-solid fa-comment-dots me-2"></i>
+                                سبب إعادة التفعيل (اختياري):
+                            </label>
+                            <textarea 
+                                class="form-control modal-input reason-textarea" 
+                                id="unblockReason" 
+                                name="reason" 
+                                rows="4" 
+                                cols="7"
+                                placeholder="يرجى كتابة سبب إعادة التفعيل (اختياري)..."
+                            ></textarea>
+                            <div class="form-text">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                هذا السبب اختياري وسيتم إرساله إلى ولي أمر الطالب
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-success mt-4">
+                            <div class="d-flex align-items-start">
+                                <i class="fa-solid fa-check-circle me-3 mt-1" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <strong>معلومات مهمة:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>سيتم إرسال رسالة إلى ولي أمر الطالب بإشعار إعادة التفعيل</li>
+                                        <li>الطالب سيكون قادراً على الحضور مرة أخرى</li>
+                                        <li>سيتم تسجيل هذا الإجراء في سجل الإيقافات</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-times me-2"></i>إلغاء
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fa-solid fa-check me-2"></i>إعادة التفعيل
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Block History Modal -->
+    <div class="modal fade show" id="blockHistoryModal" tabindex="-1" aria-labelledby="blockHistoryModalLabel" aria-hidden="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="blockHistoryModalLabel">سجل الإيقافات</h2>
+                    <i class="fa-solid fa-xmark close-modal" data-bs-dismiss="modal" aria-label="Close"></i>
+                </div>
+                <div class="modal-body">
+                    <h4>سجل الإيقافات للطالب: <span id="historyStudentName"></span></h4>
+                    <div id="blockHistoryContent">
+                        <div class="text-center">
+                            <div class="spinner mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <!--  END Modal -->
             <div class="col-lg-10 ">
@@ -480,10 +959,40 @@ table tbody tr:hover {
                                             </ul>
                                         </div>
                                     </div>
+                                    <div class="row mt-3" id="blockingInfoSection" style="display: none;">
+                                        <div class="col-md-12">
+                                            <div class="alert alert-danger">
+                                                <h5><i class="fa-solid fa-ban"></i> الطالب موقوف</h5>
+                                                <ul class="list-group">
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span>سبب الإيقاف:</span>
+                                                        <strong id="detailBlockReason"></strong>
+                                                    </li>
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span>تاريخ الإيقاف:</span>
+                                                        <strong id="detailBlockedAt"></strong>
+                                                    </li>
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span>تم الإيقاف بواسطة:</span>
+                                                        <strong id="detailBlockedBy"></strong>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="row mt-3">
                                         <div class="col-md-12 text-center">
                                             <button type="button" class="btn btn-primary me-2" onclick="editAdvancedStudent()">
                                                 تعديل البيانات <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-warning me-2" id="blockStudentBtn" onclick="showBlockStudentModal()" style="display: none;">
+                                                إيقاف الطالب <i class="fa-solid fa-ban"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-success me-2" id="unblockStudentBtn" onclick="showUnblockStudentModal()" style="display: none;">
+                                                إعادة التفعيل <i class="fa-solid fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-info me-2" onclick="showBlockHistory()">
+                                                سجل الإيقافات <i class="fa-solid fa-history"></i>
                                             </button>
                                             <button type="button" class="btn btn-danger" onclick="deleteAdvancedStudent()">
                                                 حذف الطالب <i class="fa-solid fa-trash"></i>
@@ -545,13 +1054,15 @@ table tbody tr:hover {
                                         <th style="padding: 10px;"># </th>
                                         <th style="padding-left: 20px;">Student Name</th>
                                         <th style="padding-left: 20px;">Code</th>
+                                        <th style="padding-left: 20px;">Status</th>
                                         <th style="padding-left: 20px;"> Created At</th>
                                         <th style="padding-left: 20px;"> Last Update</th>
                                         <th style="padding-left: 20px;"> Amount </th>
                                         <th style="padding-left: 20px;"> Amount Remaining</th>
 
-                                        <th style="padding-left: 20px;"></th>
-                                        <th style="padding-left: 20px;"></th>
+                                        <th style="padding-left: 20px;">View</th>
+                                        <th style="padding-left: 20px;">Block/Unblock</th>
+                                        <th style="padding-left: 20px;">Delete</th>
                                     </thead>
 
                                     <tbody >
@@ -563,6 +1074,17 @@ table tbody tr:hover {
                                                     <td><%= counter %></td>
                                                     <td  style="line-height: 20px;"><span ><i class="fa-solid "></i></span><%= student.Username %></td>
                                                     <td id="code" ><%= student.Code %></td>
+                                                    <td>
+                                                        <% if (student.blocked === true) { %>
+                                                            <span class="badge bg-danger">
+                                                                <i class="fa-solid fa-ban"></i> موقوف
+                                                            </span>
+                                                        <% } else { %>
+                                                            <span class="badge bg-success">
+                                                                <i class="fa-solid fa-check"></i> نشط
+                                                            </span>
+                                                        <% } %>
+                                                    </td>
                                                     <td id="code" ><%= student.createdAt.toLocaleDateString() %></td>
                                                     <td id="code" ><%= student.updatedAt.toLocaleDateString() %></td>
                                                     <td id="code" ><%= student.balance %></td>
@@ -576,6 +1098,17 @@ table tbody tr:hover {
                                                       </button>
                                                     </td>
                                                     
+                                                    <td class="enter">
+                                                        <% if (student.blocked === true) { %>
+                                                            <button type="button" class="btn btn-success btn-sm" onclick="showUnblockStudentModalRow('<%= student._id %>', '<%= student.Username %>')">
+                                                                <i class="fa-solid fa-check"></i> إعادة التفعيل
+                                                            </button>
+                                                        <% } else { %>
+                                                            <button type="button" class="btn btn-warning btn-sm" onclick="showBlockStudentModalRow('<%= student._id %>', '<%= student.Username %>')">
+                                                                <i class="fa-solid fa-ban"></i> إيقاف 
+                                                            </button>
+                                                        <% } %>
+                                                    </td>
 
                                                      <td class="enter">
                                                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#exampleModal2" data-id="<%= student._id %>" onclick="getIdToDelete('<%= student._id %>')">
@@ -738,6 +1271,100 @@ table tbody tr:hover {
 
     });
 
+    // Block student form submission
+    document.getElementById('blockStudentForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Get student ID from either advanced search or table row
+      const studentId = window.advancedStudentId || window.currentStudentId;
+      if (!studentId) {
+        alert('لم يتم العثور على بيانات الطالب');
+        return;
+      }
+      
+      const reason = document.getElementById('blockReason').value.trim();
+      if (!reason) {
+        alert('يرجى إدخال سبب الإيقاف');
+        return;
+      }
+      
+      // Show spinner
+      const spinner = document.getElementById('spinner');
+      if (spinner) spinner.classList.remove('d-none');
+      
+      fetch(`/teacher/blockStudent/${studentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: reason })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (spinner) spinner.classList.add('d-none');
+        
+        if (data.message) {
+          alert(data.message);
+          // Close modal and refresh page
+          const modal = bootstrap.Modal.getInstance(document.getElementById('blockStudentModal'));
+          modal.hide();
+          location.reload();
+        } else {
+          alert('حدث خطأ أثناء إيقاف الطالب');
+        }
+      })
+      .catch(error => {
+        if (spinner) spinner.classList.add('d-none');
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إيقاف الطالب');
+      });
+    });
+
+    // Unblock student form submission
+    document.getElementById('unblockStudentForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Get student ID from either advanced search or table row
+      const studentId = window.advancedStudentId || window.currentStudentId;
+      if (!studentId) {
+        alert('لم يتم العثور على بيانات الطالب');
+        return;
+      }
+      
+      const reason = document.getElementById('unblockReason').value.trim();
+      
+      // Show spinner
+      const spinner = document.getElementById('spinner');
+      if (spinner) spinner.classList.remove('d-none');
+      
+      fetch(`/teacher/unblockStudent/${studentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: reason })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (spinner) spinner.classList.add('d-none');
+        
+        if (data.message) {
+          alert(data.message);
+          // Close modal and refresh page
+          const modal = bootstrap.Modal.getInstance(document.getElementById('unblockStudentModal'));
+          modal.hide();
+          location.reload();
+        } else {
+          alert('حدث خطأ أثناء إعادة تفعيل الطالب');
+        }
+      })
+      .catch(error => {
+        if (spinner) spinner.classList.add('d-none');
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إعادة تفعيل الطالب');
+      });
+    });
+
 
 </script>
 
@@ -781,8 +1408,25 @@ table tbody tr:hover {
         document.getElementById('detailAbsences').textContent = data.absences || '0';
         document.getElementById('detailAttendingType').textContent = data.attendingType || 'غير متوفر';
         
-        // Store student ID for edit/delete operations
+        // Handle blocking information
+        if (data.blocked) {
+          document.getElementById('detailBlockReason').textContent = data.blockReason || 'غير محدد';
+          document.getElementById('detailBlockedAt').textContent = data.blockedAt ? new Date(data.blockedAt).toLocaleDateString('ar-EG') : 'غير محدد';
+          document.getElementById('detailBlockedBy').textContent = data.blockedBy || 'غير محدد';
+          document.getElementById('blockingInfoSection').style.display = 'block';
+          
+          // Show/hide appropriate buttons
+          document.getElementById('blockStudentBtn').style.display = 'none';
+          document.getElementById('unblockStudentBtn').style.display = 'inline-block';
+        } else {
+          document.getElementById('blockingInfoSection').style.display = 'none';
+          document.getElementById('blockStudentBtn').style.display = 'inline-block';
+          document.getElementById('unblockStudentBtn').style.display = 'none';
+        }
+        
+        // Store student data for operations
         window.advancedStudentId = data._id;
+        window.advancedStudentData = data;
         
         // Show the student details container
         document.getElementById('studentDetailsContainer').style.display = 'block';
@@ -826,6 +1470,107 @@ table tbody tr:hover {
     
     // Show the delete confirmation modal
     const modal = new bootstrap.Modal(document.getElementById('exampleModal2'));
+    modal.show();
+  }
+
+  // Function to show block student modal
+  function showBlockStudentModal() {
+    if (!window.advancedStudentId || !window.advancedStudentData) {
+      alert('لم يتم العثور على بيانات الطالب');
+      return;
+    }
+    
+    document.getElementById('blockStudentName').textContent = window.advancedStudentData.Username;
+    document.getElementById('blockReason').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('blockStudentModal'));
+    modal.show();
+  }
+
+  // Function to show unblock student modal
+  function showUnblockStudentModal() {
+    if (!window.advancedStudentId || !window.advancedStudentData) {
+      alert('لم يتم العثور على بيانات الطالب');
+      return;
+    }
+    
+    document.getElementById('unblockStudentName').textContent = window.advancedStudentData.Username;
+    document.getElementById('unblockReason').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('unblockStudentModal'));
+    modal.show();
+  }
+
+  // Function to show block history
+  function showBlockHistory() {
+    if (!window.advancedStudentId || !window.advancedStudentData) {
+      alert('لم يتم العثور على بيانات الطالب');
+      return;
+    }
+    
+    document.getElementById('historyStudentName').textContent = window.advancedStudentData.Username;
+    
+    // Show loading spinner
+    document.getElementById('blockHistoryContent').innerHTML = '<div class="text-center"><div class="spinner mx-auto"></div></div>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('blockHistoryModal'));
+    modal.show();
+    
+    // Fetch block history
+    fetch(`/teacher/blockHistory/${window.advancedStudentId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.blockHistory && data.blockHistory.length > 0) {
+          let historyHTML = '<div class="table-responsive"><table class="table table-striped">';
+          historyHTML += '<thead><tr><th>الإجراء</th><th>السبب</th><th>التاريخ</th><th>بواسطة</th></tr></thead><tbody>';
+          
+          data.blockHistory.forEach(record => {
+            const date = new Date(record.timestamp).toLocaleDateString('ar-EG');
+            const time = new Date(record.timestamp).toLocaleTimeString('ar-EG');
+            const actionText = record.action === 'blocked' ? 'إيقاف' : 'إعادة تفعيل';
+            const actionClass = record.action === 'blocked' ? 'text-danger' : 'text-success';
+            
+            historyHTML += `<tr>
+              <td class="${actionClass}"><strong>${actionText}</strong></td>
+              <td>${record.reason || 'لا يوجد سبب'}</td>
+              <td>${date} ${time}</td>
+              <td>${record.blockedBy || record.unblockedBy || 'غير محدد'}</td>
+            </tr>`;
+          });
+          
+          historyHTML += '</tbody></table></div>';
+          document.getElementById('blockHistoryContent').innerHTML = historyHTML;
+        } else {
+          document.getElementById('blockHistoryContent').innerHTML = '<div class="alert alert-info">لا يوجد سجل إيقافات لهذا الطالب</div>';
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching block history:', error);
+        document.getElementById('blockHistoryContent').innerHTML = '<div class="alert alert-danger">حدث خطأ في جلب سجل الإيقافات</div>';
+      });
+  }
+
+  // Function to show block student modal from table row
+  function showBlockStudentModalRow(studentId, studentName) {
+    window.currentStudentId = studentId;
+    window.currentStudentName = studentName;
+    
+    document.getElementById('blockStudentName').textContent = studentName;
+    document.getElementById('blockReason').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('blockStudentModal'));
+    modal.show();
+  }
+
+  // Function to show unblock student modal from table row
+  function showUnblockStudentModalRow(studentId, studentName) {
+    window.currentStudentId = studentId;
+    window.currentStudentName = studentName;
+    
+    document.getElementById('unblockStudentName').textContent = studentName;
+    document.getElementById('unblockReason').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('unblockStudentModal'));
     modal.show();
   }
 </script>

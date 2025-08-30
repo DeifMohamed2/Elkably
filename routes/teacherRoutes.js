@@ -74,6 +74,11 @@ router.post("/searchForUser", authMiddleware,teacherController.searchForUser);
 
 router.put("/updateUserData/:studentID", authMiddleware,teacherController.updateUserData);
 
+// Blocking routes
+router.post("/blockStudent/:studentID", authMiddleware, teacherController.blockStudent);
+router.post("/unblockStudent/:studentID", authMiddleware, teacherController.unblockStudent);
+router.get("/blockHistory/:studentID", authMiddleware, teacherController.getStudentBlockHistory);
+
 
 // ==================  END Student Requests  ================= //
 

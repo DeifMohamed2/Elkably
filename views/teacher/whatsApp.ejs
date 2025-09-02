@@ -487,6 +487,17 @@
                                         <label for="maxGrade">الدرجة النهائية</label>
                                         <input type="text" id="maxGrade" class="form-control" placeholder="مثال: 100">
                                     </div>
+                                    <div class="col-md-4 mb-4">
+                                        <label for="studentPhoneColumnName">عمود أرقام الطلاب (اختياري)</label>
+                                        <input type="text" id="studentPhoneColumnName" class="form-control" placeholder="اسم العمود في ملف الإكسل">
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <label for="sendToStudents">إرسال للطلاب أيضاً</label>
+                                        <select id="sendToStudents" class="form-control">
+                                            <option value="false">لا</option>
+                                            <option value="true">نعم</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="upload-container">
@@ -673,6 +684,8 @@
             const phoneCloumnName = document.getElementById('phoneCloumnName');
             const gradeCloumnName = document.getElementById('gradeCloumnName');
             const nameCloumnName = document.getElementById('nameCloumnName');
+            const studentPhoneColumnName = document.getElementById('studentPhoneColumnName');
+            const sendToStudents = document.getElementById('sendToStudents');
             const quizName = document.getElementById('quizName');
             const maxGrade = document.getElementById('maxGrade');
 
@@ -685,6 +698,8 @@
                 phoneCloumnName: phoneCloumnName.value,
                 gradeCloumnName: gradeCloumnName.value,
                 nameCloumnName: nameCloumnName.value,
+                studentPhoneColumnName: studentPhoneColumnName.value,
+                sendToStudents: sendToStudents.value,
                 quizName: quizName.value,
                 maxGrade: maxGrade.value,
                 dataToSend: data

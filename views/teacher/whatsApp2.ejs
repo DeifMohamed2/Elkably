@@ -369,6 +369,13 @@
                                     <label for="maxGrade">الدرجة النهائية</label>
                                     <input type="text" id="maxGrade" value="" class="form-control" placeholder="مثال: 100">
                                 </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sendToStudents">إرسال للطلاب أيضاً</label>
+                                    <select id="sendToStudents" class="form-control">
+                                        <option value="false">لا</option>
+                                        <option value="true">نعم</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -555,6 +562,7 @@
                                     <td>${student.Code}</td>
                                     <td>${student.parentPhone}</td>
                                     <td><input type="text" name="quizGrade${index + 1}" class="form-control mx-auto" value="" dir="ltr"></td>
+                                    <td class="hidden">${student.phone || ''}</td>
                                 </tr>
                             `;
                         });
@@ -611,6 +619,7 @@
             } else if (optionSelect.value === 'gradeMsg') {
                 const quizName = document.getElementById('quizName').value;
                 const maxGrade = document.getElementById('maxGrade').value;
+                const sendToStudents = document.getElementById('sendToStudents').value;
 
                 if (!quizName || !maxGrade) {
                     isValid = false;
@@ -623,6 +632,7 @@
                     const studentName = row.cells[1].innerText;
                     const studentCode = row.cells[2].innerText;
                     const parentPhone = row.cells[3].innerText;
+                    const studentPhone = row.cells[5].innerText; // Hidden cell with student phone
                     const gradeInput = row.querySelector(
                         `input[name="quizGrade${index + 1}"]`
                     );
@@ -631,7 +641,9 @@
                         studentName,
                         studentCode,
                         parentPhone,
+                        studentPhone,
                         grade,
+                        sendToStudents,
                     });
                 });
             } else if (optionSelect.value === 'sendMsg') {

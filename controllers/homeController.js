@@ -326,6 +326,10 @@ const public_Register_post = async (req, res) => {
     errors.schoolName = '- يجب ادخال اسم المدرسه';
   }
 
+  if (!bookTaken) {
+    errors.bookTaken = '- يجب اختيار حالة استلام الكتاب';
+  }
+
   // If there are any errors, render the form again with the errors object
 
   if (Object.keys(errors).length > 0) {
@@ -358,7 +362,7 @@ const public_Register_post = async (req, res) => {
       groupTime: groupTime,
       GradeLevel: GradeLevel,
       attendingType: attendingType,
-      bookTaken: bookTaken,
+      bookTaken: bookTaken === 'true',
       schoolName: schoolName,
       balance: balance,
     });

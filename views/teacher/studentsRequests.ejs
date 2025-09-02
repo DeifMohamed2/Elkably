@@ -1059,6 +1059,7 @@ table tbody tr:hover {
                                         <th style="padding-left: 20px;"> Last Update</th>
                                         <th style="padding-left: 20px;"> Amount </th>
                                         <th style="padding-left: 20px;"> Amount Remaining</th>
+                                        <th style="padding-left: 20px;"> Book Taken </th>
 
                                         <th style="padding-left: 20px;">View</th>
                                         <th style="padding-left: 20px;">Block/Unblock</th>
@@ -1089,6 +1090,17 @@ table tbody tr:hover {
                                                     <td id="code" ><%= student.updatedAt.toLocaleDateString() %></td>
                                                     <td id="code" ><%= student.balance %></td>
                                                     <td id="code" ><%= student.amountRemaining %></td>
+                                                    <td>
+                                                        <% if (student.bookTaken === true) { %>
+                                                            <span class="badge bg-success">
+                                                                <i class="fa-solid fa-book"></i> تم الاستلام
+                                                            </span>
+                                                        <% } else { %>
+                                                            <span class="badge bg-warning">
+                                                                <i class="fa-solid fa-book-open"></i> لم يتم الاستلام
+                                                            </span>
+                                                        <% } %>
+                                                    </td>
                                            
                                                   
 
@@ -1124,7 +1136,7 @@ table tbody tr:hover {
                                    
                                         <% } else { %>
                                             <tr style="text-align: center;">
-                                                <td colspan="8">
+                                                <td colspan="9">
                                                     <h1>لا يوجد .. يمكنك التأكد من البحث مجددا </h1>
                                                 </td>
                                             </tr>

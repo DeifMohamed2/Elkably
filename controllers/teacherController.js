@@ -76,6 +76,7 @@ const studentsRequests_get = async (req, res) => {
         blockReason: 1,
         blockedAt: 1,
         blockedBy: 1,
+        bookTaken: 1,
       })
         .sort({ subscribe: 1, createdAt: 1 })
         .skip((page - 1) * perPage)
@@ -134,6 +135,7 @@ const searchForUser = async (req, res) => {
       blockReason: 1,
       blockedAt: 1,
       blockedBy: 1,
+      bookTaken: 1,
     });
 
     res.render('teacher/studentsRequests', {
@@ -171,6 +173,7 @@ const converStudentRequestsToExcel = async (req, res) => {
       createdAt: 1,
       updatedAt: 1,
       subscribe: 1,
+      bookTaken: 1,
     });
 
     // Create a new Excel workbook
@@ -187,6 +190,7 @@ const converStudentRequestsToExcel = async (req, res) => {
       'Markez',
       'createdAt',
       'subscribe',
+      'Book Taken',
     ]);
     headerRow.font = { bold: true };
     headerRow.fill = {
@@ -210,6 +214,7 @@ const converStudentRequestsToExcel = async (req, res) => {
         user.Markez,
         user.createdAt.toLocaleDateString(),
         user.subscribe,
+        user.bookTaken ? 'Yes' : 'No',
       ]);
 
       // Apply different fill color based on subscription status
@@ -316,6 +321,12 @@ const updateUserData = async (req, res) => {
       return res.status(400).json({ error: 'Student ID is required.' });
     }
 
+    // Get the current student data to compare changes
+    const currentStudent = await User.findById(studentID);
+    if (!currentStudent) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
     // Build the update object dynamically
     const updateFields = {};
     if (Username) updateFields.Username = Username;
@@ -326,15 +337,9 @@ const updateUserData = async (req, res) => {
       updateFields.amountRemaining = amountRemaining;
     if (GradeLevel) updateFields.GradeLevel = GradeLevel;
     if (attendingType) updateFields.attendingType = attendingType;
-    if (bookTaken) updateFields.bookTaken = bookTaken;
+    if (bookTaken !== undefined) updateFields.bookTaken = bookTaken === 'true';
     if (schoolName) updateFields.schoolName = schoolName;
     if (absences) updateFields.absences = absences
-
-    // Optional fields with additional checks
-    // if (centerName) updateFields.centerName = centerName;
-    // if (Grade) updateFields.Grade = Grade;
-    // if (gradeType) updateFields.gradeType = gradeType;
-    // if (groupTime) updateFields.groupTime = groupTime;
 
     // Update the student document
     const updatedUser = await User.findByIdAndUpdate(studentID, updateFields, {
@@ -344,33 +349,34 @@ const updateUserData = async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    // Handle group update only if centerName is provided
-    // if (centerName) {
-    //   console.log('Updating group data...');
-    //   // Remove the student from any previous group
-    //   await Group.updateMany(
-    //     { students: updatedUser._id },
-    //     { $pull: { students: updatedUser._id } }
-    //   );
+    // Send WhatsApp notification if book status changed to taken
+    if (bookTaken !== undefined && currentStudent.bookTaken !== updatedUser.bookTaken && updatedUser.bookTaken === true) {
+      try {
+        const bookStatusMessage = `✅ *عزيزي ولي أمر الطالب ${updatedUser.Username}*،\n
+نود إعلامكم بأنه تم *تحديث حالة الكتاب* للطالب.\n
+*الكتاب: تم استلامه* ✅\n
+تاريخ التحديث: ${new Date().toLocaleDateString('ar-EG', {timeZone: 'Africa/Cairo'})}\n
+الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}\n\n
+شكراً لتعاونكم.
+Elkably Team`;
 
-    //   // Find the new group
-    //   const newGroup = await Group.findOne({
-    //     CenterName: centerName,
-    //     Grade,
-    //     gradeType,
-    //     GroupTime: groupTime,
-    //   });
-
-    //   if (!newGroup) {
-    //     return res.status(404).json({ error: 'Target group not found.' });
-    //   }
-
-    //   // Add the student to the new group
-    //   if (!newGroup.students.includes(updatedUser._id)) {
-    //     newGroup.students.push(updatedUser._id);
-    //     await newGroup.save();
-    //   }
-    // }
+        const sendResult = await sendWappiMessage(
+          bookStatusMessage, 
+          updatedUser.parentPhone, 
+          req.userData.phone, 
+          false, 
+          updatedUser.parentPhoneCountryCode
+        );
+        
+        if (!sendResult.success) {
+          console.warn(`Warning: Failed to send book status notification to ${updatedUser.Username}'s parent: ${sendResult.message}`);
+        } else {
+          console.log(`Book status notification sent successfully to ${updatedUser.Username}'s parent`);
+        }
+      } catch (msgErr) {
+        console.warn(`Warning: Error sending book status notification to ${updatedUser.Username}'s parent: ${msgErr.message}`);
+      }
+    }
 
     // Redirect or send a success response
     res
@@ -2725,6 +2731,8 @@ const sendGradeMessages = async (req, res) => {
     phoneCloumnName,
     gradeCloumnName,
     nameCloumnName,
+    studentPhoneColumnName,
+    sendToStudents,
     dataToSend,
     quizName,
     maxGrade,
@@ -2735,17 +2743,16 @@ const sendGradeMessages = async (req, res) => {
     nMessages: n,
   });
 
-
-
   try {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     for (const student of dataToSend) {
       const grade = student[gradeCloumnName] ?? 0; // Default grade to 0 if undefined or null
-      const phone = student[phoneCloumnName];
+      const parentPhone = student[phoneCloumnName];
+      const studentPhone = studentPhoneColumnName ? student[studentPhoneColumnName] : null;
       const name = student[nameCloumnName];
 
-      console.log(quizName, student, grade, phone);
+      console.log(quizName, student, grade, parentPhone, studentPhone);
 
       let message = `
 السلام عليكم 
@@ -2753,17 +2760,34 @@ const sendGradeMessages = async (req, res) => {
 برجاء العلم ان تم حصول الطالب ${name} على درجة (${grade}) من (${maxGrade}) في (${quizName}) 
       `;
 
-      try {
-        await sendWappiMessage(message, phone,req.userData.phone,true)
-        .then(() => {
-          req.io.emit('sendingMessages', {
-            nMessages: ++n,
-          });
-          console.log(`Message sent successfully to ${name}`);
-        })
-        
-      } catch (err) {
-        console.error(`Error sending message to ${name}:`, err);
+      // Send to parents
+      if (parentPhone) {
+        try {
+          await sendWappiMessage(message, parentPhone, req.userData.phone, true)
+            .then(() => {
+              req.io.emit('sendingMessages', {
+                nMessages: ++n,
+              });
+              console.log(`Message sent successfully to parent of ${name}`);
+            });
+        } catch (err) {
+          console.error(`Error sending message to parent of ${name}:`, err);
+        }
+      }
+
+      // Send to students if enabled and phone exists
+      if (sendToStudents && studentPhone) {
+        try {
+          await sendWappiMessage(message, studentPhone, req.userData.phone, true)
+            .then(() => {
+              req.io.emit('sendingMessages', {
+                nMessages: ++n,
+              });
+              console.log(`Message sent successfully to student ${name}`);
+            });
+        } catch (err) {
+          console.error(`Error sending message to student ${name}:`, err);
+        }
       }
 
       // Introduce a random delay between 1 and 5 seconds
@@ -3057,14 +3081,39 @@ ${message}
           }
         }
       } else {
-        // Original behavior for other message types
-        try {
-          await sendWappiMessage(message, student.parentPhone, req.userData.phone);
-          req.io.emit('sendingMessages', { nMessages: ++n });
-          console.log(`Message sent successfully to ${student.studentName}`);
-        } catch (err) {
-          console.error(`Error sending message to ${student.studentName}:`, err);
-          errorNumbers.push(student.parentPhone);
+        // Handle grade messages with optional student phone
+        if (option === 'gradeMsg') {
+          // Send to parents
+          try {
+            await sendWappiMessage(message, student.parentPhone, req.userData.phone);
+            req.io.emit('sendingMessages', { nMessages: ++n });
+            console.log(`Message sent to parent of ${student.studentName}`);
+          } catch (err) {
+            console.error(`Error sending message to parent of ${student.studentName}:`, err);
+            errorNumbers.push(student.parentPhone);
+          }
+          
+          // Send to students if enabled and phone exists
+          if (student.sendToStudents === 'true' && student.studentPhone) {
+            try {
+              await sendWappiMessage(message, student.studentPhone, req.userData.phone);
+              req.io.emit('sendingMessages', { nMessages: ++n });
+              console.log(`Message sent to student ${student.studentName}`);
+            } catch (err) {
+              console.error(`Error sending message to student ${student.studentName}:`, err);
+              errorNumbers.push(student.studentPhone);
+            }
+          }
+        } else {
+          // Original behavior for other message types
+          try {
+            await sendWappiMessage(message, student.parentPhone, req.userData.phone);
+            req.io.emit('sendingMessages', { nMessages: ++n });
+            console.log(`Message sent successfully to ${student.studentName}`);
+          } catch (err) {
+            console.error(`Error sending message to ${student.studentName}:`, err);
+            errorNumbers.push(student.parentPhone);
+          }
         }
       }
 

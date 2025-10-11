@@ -3354,22 +3354,26 @@ const deleteRegisterGroup = async (req, res) => {
     const group = await Group.findById(id);
     if (!group) return res.status(404).json({ message: 'Group not found' });
 
-    // Professional note: deleting a group will remove all students from this group
-    // and clear their group affiliation and attendance records related to this group.
+    // Professional note: deleting a group will completely remove all students from this group
+    // from the entire system, including their attendance records and group affiliation.
 
-    // 1) Remove group reference from students and clear their current group fields
-    await User.updateMany(
-      { _id: { $in: group.students } },
-      { $set: { centerName: null, Grade: null, gradeType: null, groupTime: null } }
-    );
+    // 1) Get student count for logging
+    const studentCount = group.students ? group.students.length : 0;
 
-    // 2) Delete attendance records for this group
+    // 2) Delete all students in this group from the system entirely
+    await User.deleteMany({ _id: { $in: group.students } });
+
+    // 3) Delete attendance records for this group
     await Attendance.deleteMany({ groupId: group._id });
 
-    // 3) Remove the group
+    // 4) Remove the group
     await Group.deleteOne({ _id: group._id });
 
-    res.status(200).json({ message: 'Group and related records deleted successfully' });
+    console.log(`Group deleted successfully. Removed ${studentCount} students from the system.`);
+    res.status(200).json({ 
+      message: 'Group and all associated students deleted successfully', 
+      studentsRemoved: studentCount 
+    });
   } catch (error) {
     console.error('Error deleting group:', error);
     res.status(500).json({ message: 'Failed to delete group' });

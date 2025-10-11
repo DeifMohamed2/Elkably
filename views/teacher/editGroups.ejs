@@ -192,12 +192,17 @@
         }
 
         async function deleteItem(id) {
-            if (!confirm('Are you sure?')) return;
+            if (!confirm('Are you sure? This will permanently delete the group AND all students in this group from the entire system. This action cannot be undone.')) return;
             const res = await fetch(`/teacher/registerGroups/${id}`, { method: 'DELETE' });
             const data = await res.json();
             if (!res.ok) {
                 alert(data.message || 'Failed to delete');
                 return;
+            }
+            if (data.studentsRemoved > 0) {
+                alert(`Group deleted successfully. ${data.studentsRemoved} students were also removed from the system.`);
+            } else {
+                alert('Group deleted successfully.');
             }
             loadGroups();
         }

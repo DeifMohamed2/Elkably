@@ -50,7 +50,12 @@ router.get("/reset-password/:id/:token", homeController.reset_password_get);
 router.post("/reset-password/:id/:token", homeController.reset_password_post);
 router.post("/Register", authMiddlewareForRegister, homeController.public_Register_post);
 
+// API endpoint for creating online students
+router.post("/api/createOnlineStudent", homeController.create_online_student);
 
+// Excel registration endpoints
+router.post("/Register/excel", authMiddlewareForRegister, homeController.registerStudentsFromExcel);
+router.post("/Register/exportErrors", authMiddlewareForRegister, homeController.exportRegistrationErrors);
 
 
         

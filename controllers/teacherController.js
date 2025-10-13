@@ -3313,6 +3313,39 @@ const listRegisterGroups = async (req, res) => {
   }
 };
 
+// List users not assigned to any group (not present in any Group.students)
+const listStudentsWithoutGroup = async (req, res) => {
+  try {
+    const { centerName, Grade, gradeType } = req.query;
+
+    // Collect all student ObjectIds that are members of any group
+    const groups = await Group.find({}).select('students').lean();
+    const assignedIdsSet = new Set();
+    for (const g of groups) {
+      if (Array.isArray(g.students)) {
+        for (const s of g.students) assignedIdsSet.add(String(s));
+      }
+    }
+
+    const filter = {};
+    if (centerName) filter.centerName = centerName;
+    if (Grade) filter.Grade = Grade;
+    if (gradeType) filter.gradeType = gradeType;
+
+    // Users whose _id not in assigned set
+    const users = await User.find(filter)
+      .select('Username Code phone parentPhone centerName Grade gradeType groupTime createdAt updatedAt')
+      .lean();
+
+    const unassigned = users.filter(u => !assignedIdsSet.has(String(u._id)));
+
+    res.status(200).json({ count: unassigned.length, students: unassigned });
+  } catch (error) {
+    console.error('Error listing students without group:', error);
+    res.status(500).json({ message: 'Failed to load students without group' });
+  }
+};
+
 const createRegisterGroup = async (req, res) => {
   try {
     const { centerName, Grade, gradeType, groupTime, displayText, isActive } = req.body;
@@ -3390,6 +3423,49 @@ const getGroupStudents = async (req, res) => {
   } catch (error) {
     console.error('Error fetching group students:', error);
     res.status(500).json({ message: 'Failed to fetch group students' });
+  }
+};
+
+// Clear all students from a group without deleting the group or students
+const clearRegisterGroupStudents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    const removedCount = (group.students || []).length;
+    group.students = [];
+    await group.save();
+
+    return res.status(200).json({ message: 'All students removed from group successfully', removedCount });
+  } catch (error) {
+    console.error('Error clearing group students:', error);
+    res.status(500).json({ message: 'Failed to clear group students' });
+  }
+};
+
+// Remove a single student from a register group (do NOT delete the group or the student)
+const removeStudentFromRegisterGroup = async (req, res) => {
+  try {
+    const { id, studentId } = req.params;
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    const wasMember = group.students?.some((s) => s.equals ? s.equals(studentId) : String(s) === String(studentId));
+    if (!wasMember) {
+      return res.status(400).json({ message: 'Student is not in this group' });
+    }
+
+    // Pull student from the group without deleting the student
+    await Group.updateOne({ _id: id }, { $pull: { students: studentId } });
+
+    // Optionally, keep student data intact. We are NOT clearing student's center/group fields to avoid schema validation issues.
+
+    const updated = await Group.findById(id).populate('students', 'Username Code');
+    res.status(200).json({ message: 'Student removed from group successfully', remainingCount: updated?.students?.length || 0 });
+  } catch (error) {
+    console.error('Error removing student from group:', error);
+    res.status(500).json({ message: 'Failed to remove student from group' });
   }
 };
 
@@ -4043,6 +4119,9 @@ module.exports = {
   updateRegisterGroup,
   deleteRegisterGroup,
   getGroupStudents,
+  removeStudentFromRegisterGroup,
+  clearRegisterGroupStudents,
+  listStudentsWithoutGroup,
 
   logOut,
   setWebhook,

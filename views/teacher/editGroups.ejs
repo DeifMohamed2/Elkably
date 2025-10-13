@@ -101,6 +101,7 @@
                                                         <th>Absences</th>
                                                         <th>Amount</th>
                                                         <th>Remaining</th>
+                                                        <th class="text-end">Actions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="studentsTbody"></tbody>
@@ -122,6 +123,7 @@
     <script>
         const groupsTableBody = document.querySelector('#groupsTable tbody');
         const form = document.getElementById('createGroupForm');
+        let currentGroupId = null;
 
         async function loadGroups() {
             groupsTableBody.innerHTML = '';
@@ -142,6 +144,7 @@
                     <td class="text-nowrap text-end">
                         <button class="btn btn-sm btn-outline-info me-2" onclick="showStudents('${item._id}')">Show</button>
                         <button class="btn btn-sm btn-warning me-2" onclick="updateItem('${item._id}')">Update</button>
+                        <button class="btn btn-sm btn-outline-danger me-2" onclick="clearStudents('${item._id}')">Clear Students</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteItem('${item._id}')">Delete</button>
                     </td>
                 `;
@@ -215,6 +218,7 @@
             const res = await fetch(`/teacher/registerGroups/${id}/students`);
             const data = await res.json();
             if (!res.ok) { panel.classList.add('d-none'); return; }
+            currentGroupId = id;
             data.students.forEach((s, i) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -226,14 +230,49 @@
                     <td>${s.absences ?? 0}</td>
                     <td>${s.balance ?? 0}</td>
                     <td>${s.amountRemaining ?? 0}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeStudent('${id}','${s._id}')">Remove</button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
+        async function removeStudent(groupId, studentId) {
+            if (!confirm('Remove this student from the group?')) return;
+            const res = await fetch(`/teacher/registerGroups/${groupId}/students/${studentId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.message || 'Failed to remove student');
+                return;
+            }
+            // Refresh list
+            if (currentGroupId) showStudents(currentGroupId);
+        }
+
+        async function clearStudents(groupId) {
+            if (!confirm('This will remove all students from this group. The group and student records will remain. Continue?')) return;
+            const res = await fetch(`/teacher/registerGroups/${groupId}/students`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.message || 'Failed to clear students');
+                return;
+            }
+            // Reload groups and clear panel if current group cleared
+            loadGroups();
+            if (currentGroupId === groupId) {
+                const panel = document.getElementById('studentsPanel');
+                const tbody = document.getElementById('studentsTbody');
+                panel.classList.add('d-none');
+                tbody.innerHTML = '';
+            }
+        }
+
         window.updateItem = updateItem;
         window.deleteItem = deleteItem;
         window.showStudents = showStudents;
+        window.removeStudent = removeStudent;
+        window.clearStudents = clearStudents;
         loadGroups();
     </script>
 </body>

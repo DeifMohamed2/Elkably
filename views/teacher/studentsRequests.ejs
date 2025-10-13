@@ -289,6 +289,12 @@ table tbody tr:hover {
 .enter button {
     margin: 2px;
 }
+/* Inline quick filter for table */
+#tableFilterInline {
+    background-color: var(--dark-input-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
 
 /* Responsive table */
 @media (max-width: 768px) {
@@ -877,6 +883,11 @@ table tbody tr:hover {
                                                 <button type="submit" class="btn btn-primary">بحث</button>
                                             </div>
                                         </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" id="tableFilterInline" class="form-control" placeholder="فلتر سريع داخل الجدول (الاسم/الكود/الحالة)">
+                                            </div>
+                                        </div>
                                     </form>
                                 </div>
                             </div>
@@ -997,6 +1008,9 @@ table tbody tr:hover {
                                             <button type="button" class="btn btn-danger" onclick="deleteAdvancedStudent()">
                                                 حذف الطالب <i class="fa-solid fa-trash"></i>
                                             </button>
+                                            <button type="button" id="assignGroupBtn" class="btn btn-outline-info ms-2" style="display:none;">
+                                                اضف إلى جروب
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1009,6 +1023,13 @@ table tbody tr:hover {
                     <div class="row">
                         <div class="col-md-12  col-sm-12">
                             <div class="student-table">
+                                <div class="d-flex align-items-center mb-2" dir="ltr">
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="filterNoGroup">
+                                        <label class="form-check-label" for="filterNoGroup">إظهار الطلاب بدون جروب فقط</label>
+                                    </div>
+                                    <button type="button" id="loadNoGroupBtn" class="btn btn-outline-primary btn-sm">تحميل</button>
+                                </div>
                                 <form action="/teacher/searchForUser" method="post">
 
                                     <div class="row" style="margin-bottom: 0 !important;">
@@ -1062,6 +1083,7 @@ table tbody tr:hover {
                                         <th style="padding-left: 20px;"> Book Taken </th>
 
                                         <th style="padding-left: 20px;">View</th>
+                                        <th style="padding-left: 20px;">اضف إلى جروب</th>
                                         <th style="padding-left: 20px;">Block/Unblock</th>
                                         <th style="padding-left: 20px;">Delete</th>
                                     </thead>
@@ -1103,11 +1125,19 @@ table tbody tr:hover {
                                                     </td>
                                            
                                                   
-
+                                                
                                                     <td class="enter">
                                                       <button type="button" class="primary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-id="<%= student._id %>" onclick="populateModal('<%= student._id %>')">
                                                       View Data<i class="fa-solid fa-pen-to-square me-3"></i>
                                                       </button>
+                                                    </td>
+                                                    <td class="enter">
+                                                        <% const noGroup = !(student.centerName && student.Grade && student.gradeType && student.groupTime); %>
+                                                        <% if (noGroup) { %>
+                                                            <button type="button" class="btn btn-outline-info btn-sm" onclick="openAssignForCode('<%= student.Code %>')">اضف إلى جروب</button>
+                                                        <% } else { %>
+                                                            <span class="badge bg-secondary">موجود بجروب</span>
+                                                        <% } %>
                                                     </td>
                                                     
                                                     <td class="enter">
@@ -1439,6 +1469,10 @@ table tbody tr:hover {
         // Store student data for operations
         window.advancedStudentId = data._id;
         window.advancedStudentData = data;
+        // Toggle assign button visibility (show if not in group)
+        const assignBtn = document.getElementById('assignGroupBtn');
+        const hasGroup = Boolean(data.centerName && data.Grade && data.gradeType && data.groupTime);
+        assignBtn.style.display = hasGroup ? 'none' : 'inline-block';
         
         // Show the student details container
         document.getElementById('studentDetailsContainer').style.display = 'block';
@@ -1454,6 +1488,209 @@ table tbody tr:hover {
         document.getElementById('studentDetailsContainer').style.display = 'none';
       });
   });
+
+  // Inline quick filter
+  const filterInput = document.getElementById('tableFilterInline');
+  if (filterInput) {
+    filterInput.addEventListener('input', () => {
+      const q = filterInput.value.toLowerCase();
+      const rows = document.querySelectorAll('#myTable tbody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    });
+  }
+
+  // Load students without group (optional filters)
+  const loadNoGroupBtn = document.getElementById('loadNoGroupBtn');
+  const filterNoGroup = document.getElementById('filterNoGroup');
+  if (loadNoGroupBtn && filterNoGroup) {
+    loadNoGroupBtn.addEventListener('click', async () => {
+      const isChecked = filterNoGroup.checked;
+      if (!isChecked) {
+        alert('فعّل خيار إظهار الطلاب بدون جروب');
+        return;
+      }
+
+      // Optionally pick current selects if present
+      const center = document.getElementById('centerName')?.value || '';
+      const grade = document.getElementById('Grade')?.value || '';
+      const type = document.getElementById('gradeType')?.value || '';
+
+      const params = new URLSearchParams();
+      if (center) params.append('centerName', center);
+      if (grade) params.append('Grade', grade);
+      if (type) params.append('gradeType', type);
+
+      const res = await fetch('/teacher/students/no-group' + (params.toString() ? `?${params.toString()}` : ''));
+      const data = await res.json();
+      if (!res.ok) { alert(data.message || 'فشل تحميل الطلاب'); return; }
+
+      const tbody = document.querySelector('#myTable tbody');
+      tbody.innerHTML = '';
+      let c = 0;
+      data.students.forEach(student => {
+        c++;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c}</td>
+          <td style="line-height: 20px;">${student.Username}</td>
+          <td id="code">${student.Code}</td>
+          <td><span class="badge bg-success">نشط</span></td>
+          <td>${student.createdAt ? new Date(student.createdAt).toLocaleDateString('ar-EG') : ''}</td>
+          <td>${student.updatedAt ? new Date(student.updatedAt).toLocaleDateString('ar-EG') : ''}</td>
+          <td>${student.balance ?? 0}</td>
+          <td>${student.amountRemaining ?? 0}</td>
+          <td><span class="badge bg-warning"><i class="fa-solid fa-book-open"></i> -</span></td>
+          <td class="enter">
+            <button type="button" class="primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal('${student._id || ''}')">View Data<i class="fa-solid fa-pen-to-square me-3"></i></button>
+          </td>
+          <td class="enter">
+            <button type="button" class="btn btn-outline-info btn-sm" onclick="openAssignForCode('${student.Code}')">اضف إلى جروب</button>
+          </td>
+          <td class="enter">
+            <button type="button" class="btn btn-warning btn-sm" disabled><i class="fa-solid fa-ban"></i></button>
+          </td>
+          <td class="enter">
+            <button type="button" class="btn btn-outline-danger" disabled>Delete<i class="fa-solid fa-trash me-3"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  // Assign to group flow (modal injected on demand)
+  const assignBtn = document.getElementById('assignGroupBtn');
+  if (assignBtn) {
+    assignBtn.addEventListener('click', async () => {
+      if (!window.advancedStudentData) return;
+      const modalHtml = `
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">إسناد الطالب إلى جروب</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">السنتر</label>
+          <select id="mCenter" class="form-select"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">الصف</label>
+          <select id="mGrade" class="form-select"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">النوع</label>
+          <select id="mType" class="form-select"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">المجموعة</label>
+          <select id="mTime" class="form-select"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" id="confirmAssign" class="btn btn-primary">إسناد</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+      // Inject once
+      if (!document.getElementById('assignModal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      }
+      const assignModalEl = document.getElementById('assignModal');
+      const modal = new bootstrap.Modal(assignModalEl);
+
+      // Load options
+      const res = await fetch('/teacher/groupOptions');
+      const opts = await res.json();
+      if (!res.ok) { alert(opts.message || 'فشل في تحميل بيانات الجروبات'); return; }
+      const mCenter = document.getElementById('mCenter');
+      const mGrade = document.getElementById('mGrade');
+      const mType = document.getElementById('mType');
+      const mTime = document.getElementById('mTime');
+      mCenter.innerHTML = `<option value="">اختر</option>` + opts.centers.map(c=>`<option value="${c}">${c}</option>`).join('');
+      mGrade.innerHTML = '';
+      mType.innerHTML = '';
+      mTime.innerHTML = '';
+
+      const updateGrades = () => {
+        const center = mCenter.value;
+        const grades = opts.centerNames[center] || [];
+        mGrade.innerHTML = `<option value="">اختر</option>` + grades.map(g=>`<option value="${g.value}">${g.text}</option>`).join('');
+        mType.innerHTML = '';
+        mTime.innerHTML = '';
+      };
+      const updateTypes = () => {
+        const grade = mGrade.value;
+        const types = opts.gradeTypeOptions[grade] || [];
+        mType.innerHTML = `<option value="">اختر</option>` + types.map(t=>`<option value="${t.value}">${t.text}</option>`).join('');
+        mTime.innerHTML = '';
+      };
+      const updateTimes = () => {
+        const center = mCenter.value;
+        const grade = mGrade.value;
+        const type = mType.value;
+        const times = opts.groupTimes?.[center]?.[grade]?.[type] || [];
+        mTime.innerHTML = `<option value="">اختر</option>` + times.map(t=>`<option value="${t.value}">${t.text}</option>`).join('');
+      };
+
+      mCenter.onchange = updateGrades;
+      mGrade.onchange = updateTypes;
+      mType.onchange = updateTimes;
+
+      modal.show();
+
+      document.getElementById('confirmAssign').onclick = async () => {
+        const payload = {
+          centerName: mCenter.value,
+          Grade: mGrade.value,
+          gradeType: mType.value,
+          groupTime: mTime.value,
+        };
+        if (!payload.centerName || !payload.Grade || !payload.gradeType || !payload.groupTime) {
+          alert('الرجاء اختيار كل الحقول');
+          return;
+        }
+        const code = window.advancedStudentData?.Code;
+      const res2 = await fetch(`/teacher/transferStudent/${encodeURIComponent(code)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const d2 = await res2.json();
+        if (!res2.ok) { alert(d2.message || 'فشل الإسناد'); return; }
+        modal.hide();
+        // refresh header and toggle button if details section exists
+        const detailCenter = document.getElementById('detailCenter');
+        if (detailCenter) {
+          detailCenter.textContent = payload.centerName;
+          document.getElementById('detailGrade').textContent = payload.Grade;
+          document.getElementById('detailGradeType').textContent = payload.gradeType;
+          document.getElementById('detailGroupTime').textContent = payload.groupTime;
+          document.getElementById('assignGroupBtn').style.display = 'none';
+        }
+        // also update row button to badge
+        const rows = document.querySelectorAll('#myTable tbody tr');
+        rows.forEach(tr => {
+          if (tr.querySelector && tr.querySelector('#code') && tr.querySelector('#code').innerText.trim() === code) {
+            const cells = tr.querySelectorAll('td');
+            if (cells && cells.length > 0) {
+              const addBtnCell = cells[cells.length - 3]; // View, Add, Block, Delete -> Add is third from end
+              if (addBtnCell) addBtnCell.innerHTML = '<span class="badge bg-secondary">موجود بجروب</span>';
+            }
+          }
+        });
+        alert('تم الإسناد بنجاح');
+      };
+    });
+  }
   
   // Function to edit the student from advanced search
   function editAdvancedStudent() {
@@ -1470,6 +1707,16 @@ table tbody tr:hover {
     modal.show();
   }
   
+  // Open assign modal for a specific code (row-level action)
+  async function openAssignForCode(code) {
+    // Reuse the same modal builder as advanced search assign button
+    const assignBtn = document.getElementById('assignGroupBtn');
+    if (!assignBtn) return;
+    // Ensure advancedStudentData has Code
+    window.advancedStudentData = { Code: code };
+    assignBtn.click();
+  }
+
   // Function to delete the student from advanced search
   function deleteAdvancedStudent() {
     if (!window.advancedStudentId) {

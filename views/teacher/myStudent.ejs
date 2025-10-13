@@ -21,6 +21,8 @@
         text-align: left; /* Align text to the left for readability */
     }
 
+    
+</style>
 </style>
 
     <body>
@@ -82,7 +84,46 @@
                                 <button type="button" id="GetStudentData" class="btn btn-outline-warning btn-md me-3 mt-5">Get Data</button>
 
                                 <div class="student-table ">
-                                    <input type="number" class="serachOnaddCard" name="attendeeID" id="attendeeID" placeholder="Student Code" required>
+                                    <div class="d-flex gap-2 mb-3">
+                                        <input type="text" class="serachOnaddCard form-control" name="attendeeID" id="attendeeID" placeholder="Student Code" required>
+                                        <button type="button" id="searchStudentBtn" class="btn btn-primary">Search</button>
+                                    </div>
+
+                                    <div id="studentSummary" class="student-summary-card hidden">
+                                        <div class="student-summary-grid">
+                                            <div>
+                                                <div class="label">Name</div>
+                                                <div id="sName">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="label">Code</div>
+                                                <div id="sCode">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="label">Center</div>
+                                                <div id="sCenter">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="label">Group</div>
+                                                <div id="sGroup">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="label">Absences</div>
+                                                <div id="sAbsences">0</div>
+                                            </div>
+                                            <div>
+                                                <div class="label">Amount</div>
+                                                <div id="sAmount">0</div>
+                                            </div>
+                                            <div>
+                                                <div class="label">Remaining</div>
+                                                <div id="sRemaining">0</div>
+                                            </div>
+                                            <div class="actions">
+                                                <button type="button" id="assignGroupBtn" class="btn btn-outline-info hidden">Assign to Group</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <table id="myTable">
                                         <thead>
@@ -94,6 +135,9 @@
                                         </thead>
                                         <tbody></tbody>
                                     </table>
+                                    <div class="mt-2">
+                                        <input type="text" id="tableFilter" class="form-control" placeholder="Filter table (status/date)">
+                                    </div>
                                 </div>
                             </div>
 
@@ -127,6 +171,46 @@ const attendeeID = document.getElementById('attendeeID');
 const startDate = document.getElementById('startDate');
 const endDate = document.getElementById('endDate');
 const fetchAllDates = document.getElementById('fetchAllDates');
+const searchStudentBtn = document.getElementById('searchStudentBtn');
+const studentSummary = document.getElementById('studentSummary');
+const assignGroupBtn = document.getElementById('assignGroupBtn');
+const tableFilter = document.getElementById('tableFilter');
+
+let currentStudent = null;
+
+searchStudentBtn.addEventListener('click', async () => {
+    try {
+        const code = attendeeID.value?.trim();
+        if (!code) return;
+        const res = await fetch(`/teacher/advancedStudentSearch/${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.message || 'Not found');
+            return;
+        }
+        currentStudent = data;
+        // Fill summary
+        document.getElementById('sName').innerText = data.Username || '-';
+        document.getElementById('sCode').innerText = data.Code || '-';
+        document.getElementById('sCenter').innerText = data.centerName || '-';
+        document.getElementById('sGroup').innerText = data.groupTime ? `${data.Grade || ''} ${data.gradeType || ''} - ${data.groupTime}` : '-';
+        document.getElementById('sAbsences').innerText = data.absences ?? 0;
+        document.getElementById('sAmount').innerText = data.balance ?? 0;
+        document.getElementById('sRemaining').innerText = data.amountRemaining ?? 0;
+        studentSummary.classList.remove('hidden');
+
+        // Show assign button only if not in group
+        const hasGroup = Boolean(data.centerName && data.Grade && data.gradeType && data.groupTime);
+        if (!hasGroup) {
+            assignGroupBtn.classList.remove('hidden');
+        } else {
+            assignGroupBtn.classList.add('hidden');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Failed to fetch student');
+    }
+});
 
 GetStudentData.addEventListener('click', async () => {
     try {
@@ -179,8 +263,8 @@ GetStudentData.addEventListener('click', async () => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${index + 1}</td>
-                <td>----</td>
-                <td>----</td>
+                <td>${item.centerName || data.centerName || '----'}</td>
+                <td>${item.groupTime || data.groupTime || '----'}</td>
                 <td dir='ltr'>${item.date} - ${item.time}</td>
                 <td style="font-weight: bold; font-size:20px; color:${statusColor};">
                     ${item.status}
@@ -204,6 +288,17 @@ GetStudentData.addEventListener('click', async () => {
     }
 });
 
+// Simple client-side filter for table rows
+tableFilter.addEventListener('input', () => {
+    const q = tableFilter.value.toLowerCase();
+    const rows = document.querySelectorAll('#myTable tbody tr');
+    rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+    });
+});
+
+// Assignment UI moved to studentsRequests.ejs
 
     const ConvertToExcel = document.getElementById('ConvertToExcel');
 

@@ -187,6 +187,9 @@ router.post('/registerGroups', authMiddleware, teacherController.createRegisterG
 router.put('/registerGroups/:id', authMiddleware, teacherController.updateRegisterGroup);
 router.delete('/registerGroups/:id', authMiddleware, teacherController.deleteRegisterGroup);
 router.get('/registerGroups/:id/students', authMiddleware, teacherController.getGroupStudents);
+router.delete('/registerGroups/:id/students/:studentId', authMiddleware, teacherController.removeStudentFromRegisterGroup);
+router.delete('/registerGroups/:id/students', authMiddleware, teacherController.clearRegisterGroupStudents);
+router.get('/students/no-group', authMiddleware, teacherController.listStudentsWithoutGroup);
 
 // ==================  Send Registration Message  ================= //
 

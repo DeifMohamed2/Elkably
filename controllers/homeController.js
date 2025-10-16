@@ -4,7 +4,8 @@ const wasender = require('../utils/wasender');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const qrcode = require('qrcode');
-const Excel = require('exceljs'); 
+const Excel = require('exceljs');
+const axios = require('axios'); 
 
 
 const jwtSecret = process.env.JWTSECRET;
@@ -396,6 +397,28 @@ const public_Register_post = async (req, res) => {
               
               console.log("QR code sending result:", qrResult);
               
+              // Send student data to external system
+              // Only send to external system if center is Online
+              if (centerName === 'Online') {
+                try {
+                  console.log("Sending student data to external system...");
+                  const externalResult = await sendStudentToExternalSystem({
+                    studentName: Username,
+                    studentPhone: `${phoneCountryCode || '20'}${phone}`,
+                    parentPhone: `${parentPhoneCountryCode || '20'}${parentPhone}`,
+                    studentCode: Code
+                  });
+                  
+                  if (externalResult.success) {
+                    console.log("Student data sent to external system successfully");
+                  } else {
+                    console.error("Failed to send student data to external system:", externalResult.error);
+                  }
+                } catch (externalError) {
+                  console.error("Error sending to external system:", externalError);
+                  // Don't fail the registration if external system fails
+                }
+              }
               res
                 .status(201)
                 .redirect('Register');
@@ -1014,6 +1037,45 @@ const exportRegistrationErrors = async (req, res) => {
 };
 
 // =================================================== END Excel Registration =================================================== //
+
+// =================================================== External System API =================================================== //
+
+// Helper function to send student data to external system
+async function sendStudentToExternalSystem(studentData) {
+  try {
+    const externalApiUrl = process.env.EXTERNAL_SYSTEM_URL || 'https://9dabc5e0a5aa.ngrok-free.app';
+    const apiKey = process.env.EXTERNAL_SYSTEM_API_KEY || 'SNFIDNWL11SGNDWJD@##SSNWLSGNE!21121';
+
+    const payload = {
+      studentName: studentData.studentName,
+      studentPhone: studentData.studentPhone,
+      parentPhone: studentData.parentPhone,
+      studentCode: studentData.studentCode,
+      apiKey: apiKey
+    };
+
+    console.log('Sending student data to external system:', payload);
+
+    const response = await axios.post(`${externalApiUrl}/auth/api/create-student-external`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true' // To bypass ngrok browser warning
+      },
+      timeout: 10000 // 10 seconds timeout
+    });
+
+    console.log('External system response:', response.data);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Error sending student to external system:', error.message);
+    // Don't throw error - just log it so registration can continue
+    return { success: false, error: error.message };
+  }
+}
+
+
+
+// =================================================== END External System API =================================================== //
 
 module.exports = {
   home_page,

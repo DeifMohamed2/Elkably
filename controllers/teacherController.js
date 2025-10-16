@@ -161,18 +161,9 @@ const converStudentRequestsToExcel = async (req, res) => {
     // Fetch user data
     const users = await User.find(query, {
       Username: 1,
-      Email: 1,
-      gov: 1,
-      Markez: 1,
-      gender: 1,
       phone: 1,
-      WhatsApp: 1,
       parentPhone: 1,
-      place: 1,
       Code: 1,
-      createdAt: 1,
-      updatedAt: 1,
-      subscribe: 1,
       bookTaken: 1,
     });
 
@@ -186,51 +177,32 @@ const converStudentRequestsToExcel = async (req, res) => {
       'Student Code',
       'Student Phone',
       'Parent Phone',
-      'Government',
-      'Markez',
-      'createdAt',
-      'subscribe',
       'Book Taken',
     ]);
     headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFF00' },
-    };
 
-    // Add user data to the worksheet with alternating row colors
+    // Set column widths
+    worksheet.columns = [
+      { width: 5 },   // #
+      { width: 25 },  // User Name
+      { width: 15 },  // Student Code
+      { width: 15 },  // Student Phone
+      { width: 15 },  // Parent Phone
+      { width: 12 },  // Book Taken
+    ];
+
+    // Add user data to the worksheet
     let c = 0;
     users.forEach((user) => {
       c++;
-      const row = worksheet.addRow([
+      worksheet.addRow([
         c,
         user.Username,
         user.Code,
         user.phone,
-        user.WhatsApp,
         user.parentPhone,
-        user.gov,
-        user.Markez,
-        user.createdAt.toLocaleDateString(),
-        user.subscribe,
         user.bookTaken ? 'Yes' : 'No',
       ]);
-
-      // Apply different fill color based on subscription status
-      if (!user.subscribe) {
-        row.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FF0000' },
-        }; // Red fill for non-subscribed users
-      } else if (c % 2 === 0) {
-        row.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'DDDDDD' },
-        }; // Alternate fill color for subscribed users
-      }
     });
 
     const excelBuffer = await workbook.xlsx.writeBuffer();

@@ -20,7 +20,7 @@ app.use(express.json());
 const dbURI = 'mongodb+srv://deif:1qaz2wsx@3devway.aa4i6ga.mongodb.net/elkably?retryWrites=true&w=majority&appName=Cluster0'
 let io;
 
-mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, maxPoolSize: 10 })
     .then((result) => {
         const server = app.listen(8400);
         

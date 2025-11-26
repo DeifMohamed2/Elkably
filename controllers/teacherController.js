@@ -1,10 +1,9 @@
 const User = require('../models/User');
 const Group  = require('../models/Group');
-// Removed WhatsAppInstance model – fully API-driven via Wasender
 const Card = require('../models/Card');
 const Attendance = require('../models/Attendance'); 
 
-const wasender = require('../utils/wasender');
+const { sendSmsMessage } = require('../utils/smsSender');
 const Excel = require('exceljs');
 const QRCode = require('qrcode');
 
@@ -321,15 +320,17 @@ const updateUserData = async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    // Send WhatsApp notification if book status changed to taken
+    // Send SMS notification if book status changed to taken
     if (bookTaken !== undefined && currentStudent.bookTaken !== updatedUser.bookTaken && updatedUser.bookTaken === true) {
       try {
-        const bookStatusMessage = `✅ *عزيزي ولي أمر الطالب ${updatedUser.Username}*،\n
-نود إعلامكم بأنه تم *تحديث حالة الكتاب* للطالب.\n
-*الكتاب: تم استلامه* ✅\n
-تاريخ التحديث: ${new Date().toLocaleDateString('ar-EG', {timeZone: 'Africa/Cairo'})}\n
-الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}\n\n
-شكراً لتعاونكم.
+        const now = new Date();
+        const dateStamp = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' });
+        const timeStamp = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
+        const firstName = (updatedUser.Username || '').split(' ')[0];
+        const bookStatusMessage = `Parent of ${firstName}
+Book status updated
+Book received
+Thank you
 Elkably Team`;
 
         const sendResult = await sendWappiMessage(
@@ -404,12 +405,15 @@ const blockStudent = async (req, res) => {
       { new: true }
     );
 
-    // Send WhatsApp message to parent about the blocking
+    // Send SMS message to parent about the blocking
     if (student.parentPhone) {
-      const blockMessage = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأنه تم *إيقاف الطالب مؤقتاً* عن الحضور.\n
-السبب: *${reason.trim()}*\n
-
+      const firstName = (student.Username || '').split(' ')[0];
+      const now = new Date();
+      const dateStamp = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' });
+      const timeStamp = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
+      const blockMessage = `Parent of ${firstName}
+Student suspended from attendance
+Reason ${reason.trim()}
 Elkably Team`;
 
       try {
@@ -478,15 +482,16 @@ const unblockStudent = async (req, res) => {
       { new: true }
     );
 
-    // Send WhatsApp message to parent about the unblocking
+    // Send SMS message to parent about the unblocking
     if (student.parentPhone) {
-      const unblockMessage = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأنه تم *إعادة تفعيل الطالب* ويمكنه الحضور مرة أخرى.\n
-${reason ? `السبب: *${reason.trim()}*` : ''}\n
-تاريخ إعادة التفعيل: ${new Date().toLocaleDateString('ar-EG', {timeZone: 'Africa/Cairo'})}\n
-الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}\n\n
-*يمكن للطالب الآن الحضور بشكل طبيعي.*\n\n
-شكراً لتعاونكم.
+      const firstName = (student.Username || '').split(' ')[0];
+      const now = new Date();
+      const dateStamp = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' });
+      const timeStamp = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
+      const unblockMessage = `Parent of ${firstName}
+Student reactivated
+${reason ? `Reason ${reason.trim()}\n` : ''}Student may attend next class
+Thank you
 Elkably Team`;
 
       try {
@@ -609,7 +614,7 @@ const convertToExcelAllUserData = async (req, res) => {
         // Create a new Excel workbook
         const workbook = new Excel.Workbook();
         const worksheet = workbook.addWorksheet('Users Data');
-        const Header = worksheet.addRow([`بيانات الطالب ${user.Username} `]);
+        const Header = worksheet.addRow([`Student data for ${user.Username}`]);
         Header.getCell(1).alignment = { horizontal: 'center' }; // Center align the text
         Header.font = { bold: true, size: 16 };
         Header.fill = {
@@ -620,10 +625,10 @@ const convertToExcelAllUserData = async (req, res) => {
         worksheet.mergeCells('A1:H1');
         worksheet.addRow();
         const headerRowUserBasicInfo = worksheet.addRow([
-          'اسم الطالب',
-          'كود الطالب ',
-          'رقم هاتف الطالب',
-          'رقم هاتف ولي الامر',
+          'Student Name',
+          'Student Code',
+          'Student Phone',
+          'Parent Phone',
         ]);
         headerRowUserBasicInfo.font = { bold: true };
         headerRowUserBasicInfo.fill = {
@@ -669,15 +674,15 @@ const convertToExcelAllUserData = async (req, res) => {
           c++;
           let homeWork, Exam;
           if (data.prerequisites == 'WithOutExamAndHW') {
-            homeWork = 'لا يوجد';
-            Exam = 'لا يوجد';
+            homeWork = 'Not required';
+            Exam = 'Not required';
           } else if (data.prerequisites == 'WithExamaAndHw') {
-            homeWork = data.isHWIsUploaded ? 'تم الرفع' : 'لم يُرفع';
-            Exam = data.isUserEnterQuiz ? 'تم الدخول' : 'لم يدخل';
+            homeWork = data.isHWIsUploaded ? 'Submitted' : 'Not submitted';
+            Exam = data.isUserEnterQuiz ? 'Completed' : 'Not completed';
           } else if (data.prerequisites == 'WithHw') {
-            homeWork = data.isHWIsUploaded ? 'تم الرفع' : 'لم يُرفع';
+            homeWork = data.isHWIsUploaded ? 'Submitted' : 'Not submitted';
           } else {
-            Exam = data.isUserEnterQuiz ? 'تم الدخول' : 'لم يدخل';
+            Exam = data.isUserEnterQuiz ? 'Completed' : 'Not completed';
           }
 
           const headerRowUserVideoInfo = worksheet.addRow([
@@ -685,8 +690,8 @@ const convertToExcelAllUserData = async (req, res) => {
             data.videoName,
             data.numberOfWatches,
             data.videoAllowedAttemps,
-            new Date(data.fristWatch).toLocaleDateString() || 'لم يشاهد بعد',
-            new Date(data.lastWatch).toLocaleDateString() || 'لم يشاهد بعد',
+            new Date(data.fristWatch).toLocaleDateString() || 'Not watched',
+            new Date(data.lastWatch).toLocaleDateString() || 'Not watched',
             homeWork,
             Exam,
             data.isVideoPrepaid
@@ -706,11 +711,11 @@ const convertToExcelAllUserData = async (req, res) => {
         });
         const headerRowUserQuizInfo = worksheet.addRow([
           '#',
-          'اسم الامتحان',
-          'تاريخ الحل ',
-          'مده الحل ',
-          ' درجه الامتحان ',
-          'حاله الشراء ',
+          'Quiz Name',
+          'Solve Date',
+          'Solve Time',
+          'Score',
+          'Purchase Status',
         ]);
         headerRowUserQuizInfo.font = { bold: true };
         headerRowUserQuizInfo.fill = {
@@ -725,8 +730,8 @@ const convertToExcelAllUserData = async (req, res) => {
           const headerRowUserQuizInfo = worksheet.addRow([
             cq,
             data.quizName,
-            new Date(data.solvedAt).toLocaleDateString() || 'لم يحل',
-            data.solveTime || 'لم يحل',
+            new Date(data.solvedAt).toLocaleDateString() || 'Not solved',
+            data.solveTime || 'Not solved',
             data.questionsCount + '/' + data.Score,
             data.isQuizPrepaid
               ? data.quizPurchaseStatus
@@ -765,7 +770,7 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
-async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
+async function sendWappiMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
   try {
     // Skip if phone number is missing or invalid
     const phoneAsString = (typeof phone === 'string' ? phone : String(phone || '')).trim();
@@ -773,42 +778,6 @@ async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, 
       console.warn('Skipping message - No phone number provided');
       return { success: false, message: 'No phone number provided' };
     }
-    
-    // Get all sessions to find the one with matching phone number
-    const sessionsResponse = await wasender.getAllSessions();
-    if (!sessionsResponse.success) {
-      console.error(`Failed to get sessions: ${sessionsResponse.message}`);
-      return { success: false, message: `Failed to get sessions: ${sessionsResponse.message}` };
-    }
-    
-    const sessions = sessionsResponse.data;
-    let targetSession = null;
-    
-    // Find session by admin phone number
-    if (adminPhone == '01065057897') {
-      targetSession = sessions.find(s => s.phone_number === '+201065057897' || s.phone_number === '01065057897');
-    } else if (adminPhone == '01055640148') {
-      targetSession = sessions.find(s => s.phone_number === '+201055640148' || s.phone_number === '01055640148');
-    } else if (adminPhone == '01147929010') {
-      targetSession = sessions.find(s => s.phone_number === '+201147929010' || s.phone_number === '01147929010');
-    }
-    
-    // If no specific match, try to find any connected session
-    if (!targetSession) {
-      targetSession = sessions.find(s => s.status === 'connected');
-    }
-    
-    if (!targetSession) {
-      console.error('No connected WhatsApp session found');
-      return { success: false, message: 'No connected WhatsApp session found' };
-    }
-    
-    if (!targetSession.api_key) {
-      console.error('Session API key not available');
-      return { success: false, message: 'Session API key not available' };
-    }
-    
-    console.log(`Using session: ${targetSession.name} (${targetSession.phone_number})`);
     
     // Format the phone number properly
     let countryCodeWithout0 = countryCode ? String(countryCode).replace(/^0+/, '') : '20'; // Remove leading zeros, default to 20
@@ -824,29 +793,21 @@ async function sendWasenderMessage(message, phone, adminPhone, isExcel = false, 
     // Ensure leading country indicator '2' for Egypt if missing
     if (!phoneNumber.startsWith('2')) phoneNumber = `2${phoneNumber}`;
     
-    // Format for WhatsApp (add @s.whatsapp.net suffix)
-    const formattedPhone = `${phoneNumber}@s.whatsapp.net`;
+    console.log('Sending SMS to:', phoneNumber);
     
-    console.log('Sending message to:', formattedPhone);
-    
-    // Use the session-specific API key to send the message
-    const response = await wasender.sendTextMessage(targetSession.api_key, formattedPhone, message);
+    // Send SMS using the SMS sender utility
+    const response = await sendSmsMessage(phoneNumber, message, countryCodeWithout0);
     
     if (!response.success) {
-      console.error(`Failed to send message: ${response.message}`);
-      return { success: false, message: `Failed to send message: ${response.message}` };
+      console.error(`Failed to send SMS: ${response.message}`);
+      return { success: false, message: `Failed to send SMS: ${response.message}` };
     }
     
     return { success: true, data: response.data };
   } catch (err) {
-    console.error('Error sending WhatsApp message:', err.message);
+    console.error('Error sending SMS:', err.message);
     return { success: false, message: err.message };
   }
-}
-
-// Keep the old function for backward compatibility
-async function sendWappiMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
-  return sendWasenderMessage(message, phone, adminPhone, isExcel, countryCode);
 }
 
 
@@ -916,13 +877,13 @@ const addCardGet = async (req, res) => {
 //           // Send a WhatsApp notification to the student if they have a phone number
 //           if (student.phone) {
 //             try {
-//               const message = `مرحباً ${student.Username}،
-              
-// تم تغيير كود الطالب الخاص بك.
-// الكود الجديد: ${finalCode}
-
-// يرجى استخدام هذا الكود الجديد عند التعامل مع المنصة.
-// شكراً لتفهمك.`;
+//               const message = `Hello ${student.Username},
+//
+// Your student code has been updated.
+// New code: ${finalCode}
+//
+// Please use this code for all platform actions.
+// Thank you for your understanding.`;
               
 //               // Use the instanceID3 for Online center (consistent with sendQRCode function)
 //               await waziper.sendMessage(
@@ -998,15 +959,15 @@ const addCardToStudent = async (req, res) => {
           cardId: assignedCard,
         }
       ).then((result) => {
-        return res.status(200).json({ message: 'تم اضافه الكارت للطالب بنجاح' ,Username   : userByCode.Username});
+        return res.status(200).json({ message: 'Card assigned to student successfully' ,Username   : userByCode.Username});
       }).catch((err) => {
         console.error(err);
-        return res.status(500).json({ message: 'يبدو ان هناك خطأ ما ' ,Username   : null});
+        return res.status(500).json({ message: 'An unexpected error occurred' ,Username   : null});
       });
 
   } catch (error) {
     console.error('Error adding card:', error);
-    return res.status(500).json({ message:'يبدو ان هناك خطأ ما ' ,Username   : null});
+    return res.status(500).json({ message:'An unexpected error occurred' ,Username   : null});
   }
 };
 
@@ -1027,14 +988,15 @@ const markAttendance = async (req, res) => {
 
   try {
 
-let HWmessage ='';
-if(attendWithOutHW){
-  HWmessage = '*تم تسجيل حضور الطالب بدون واجب*';
-}else if(HWwithOutSteps){
-  HWmessage = '*لقد قام الطالب بحل الواجب لكن بدون خطوات*';
-}else{
-  HWmessage = '*لقد قام الطالب بحل الواجب بالخطوات*';
-}
+  // Short but clear homework status text for SMS
+  let HWmessage = '';
+  if (attendWithOutHW) {
+    HWmessage = 'HomeWork not submitted';
+  } else if (HWwithOutSteps) {
+    HWmessage = 'HomeWork submitted without steps';
+  } else {
+    HWmessage = 'HomeWork submitted with steps';
+  }
     // Exact matching for attendId - no flexible matching
     const codeParam = String(attendId).trim();
     const orConditions = [
@@ -1192,24 +1154,23 @@ if(attendWithOutHW){
       await attendance.populate('studentsPresent');
       await attendance.populate('studentsExcused');
 
-      let message = '';
+      let statusLine = '';
       console.log(isSolving);
-      if(isSolving == 'true'){
-        message = 'تأخر في حضور ال Solving Session';
-      }else{
-        message = 'تأخر في الحضور ';
+      if (isSolving == 'true') {
+        statusLine = 'Late for solving session';
+      } else {
+        statusLine = 'Late for class';
       }
 
-      const messageWappi = `⚠️ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-      نود إعلامكم بأنه تم التحديث ابنكم قد *${message} اليوم*.\n
-      وقد تم تسجيل حضوره *متأخرًا*.\n
-      وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
-      عدد مرات الغياب: *${student.absences}*.\n\n
-      *يرجى الانتباه لمواعيد الحضور مستقبلًا*.\n\n
-      ${HWmessage}\n
-      التاريخ: ${today}
-      الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
-      *شكرًا لتعاونكم.*`;
+      const lateTimeStamp = new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
+      const firstName = (student.Username || '').split(' ')[0];
+      const messageWappi = `Parent of ${firstName}
+${statusLine}
+Student marked late today
+Group ${centerName} - ${Grade} - ${GroupTime}
+Absences ${student.absences}
+${HWmessage}
+Thank you`;
 
       // Send the message via the waapi (already present)
 
@@ -1282,39 +1243,35 @@ if(attendWithOutHW){
       }
   let message2 = '';
   console.log(isSolving);
-      if (isSolving=='true') {
-        message2 = 'حضر ال Solving Session';
-        console.log(message2);
-      } else {
-        message2 = 'حضر';
-        console.log(message2);
-      }      
+  if (isSolving == 'true') {
+    message2 = 'attended the solving session';
+    console.log(message2);
+  } else {
+    message2 = 'attended on time';
+    console.log(message2);
+  }
 
 let messageWappi = '';
+const presentTimeStamp = new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
+const firstName = (student.Username || '').split(' ')[0];
 if(student.centerName==="Online"){
-  messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم قد *حضر اليوم*.\n
-وقد تم تسجيل حضوره *بنجاح*.\n
-وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
-عدد مرات الغياب: *${student.absences}*.\n\n
-سيتم ارسال لحضراتكم تقرير عن حالة الطالب خلال الحصة\n
-التاريخ: ${today}
-الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
-*شكرًا لتعاونكم.*
+  messageWappi = `Parent of ${firstName}
+Student attended today
+Attended successfully
+Group ${centerName} - ${Grade} - ${GroupTime}
+Absences ${student.absences}
+Session report will be shared
+Thank you
 Elkably Team`;
 }else{
- messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم قد *${message2} اليوم في المعاد المحدد*.\n
-وقد تم تسجيل حضوره *بنجاح*.\n
-وحضر في جروب *${centerName} - ${Grade} - ${GroupTime}*.\n
-عدد مرات الغياب: *${student.absences}*.\n
-${HWmessage}\n
-التاريخ: ${today}
-الوقت: ${new Date().toLocaleTimeString('ar-EG', {timeZone: 'Africa/Cairo'})}
-*شكرًا لتعاونكم.*
-Elkably Team
-`;
-    
+ messageWappi = `Parent of ${firstName}
+Student ${message2}
+Attended successfully
+Group ${centerName} - ${Grade} - ${GroupTime}
+Absences ${student.absences}
+${HWmessage}
+Thank you
+Elkably Team`;
 }
 
       // Send the message via the waapi (already present)
@@ -1748,12 +1705,12 @@ const finalizeAttendance = async (req, res) => {
         };
       }
 
-// const messageWappi = `✅ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-// نود إعلامكم بأن ابنكم قد *حضر اليوم في المعاد المحدد*.\n
-// وقد تم تسجيل حضوره *بنجاح*.\n
-// المبلغ المتبقي من سعر الحصة هو: *${student.amountRemaining} جنيه*.\n
-// عدد مرات الغياب: *${student.absences}*.\n\n
-// *شكرًا لتعاونكم.*`;
+// const messageWappi = `Parent of ${student.Username}\n
+// Student attended on time today.\n
+// Attendance recorded successfully.\n
+// Remaining balance: ${student.amountRemaining} EGP.\n
+// Absences: ${student.absences}.\n\n
+// Thank you for your cooperation.`;
 
 
 //       // Send the message via the waapi (already present)
@@ -1843,19 +1800,20 @@ const finalizeAttendance = async (req, res) => {
 
 let subMessage = '';
 if (student.absences >= 3) {
-  subMessage = `\n\n❌ *وفقًا لعدد مرات الغياب التي تم تسجيلها لابنكم*، يرجى العلم أنه *لن يتمكن من دخول الحصة القادمة*.`;
+  subMessage = 'Student cannot attend the next class';
 }
-let subMessage2 = '';
-if(isSolving=='true'){
-
-  subMessage2 = 'في Solving Session';
+let subMessage2 = 'today';
+if (isSolving == 'true') {
+  subMessage2 = 'during the solving session';
 }
 
-const messageWappi = `❌ *عزيزي ولي أمر الطالب ${student.Username}*،\n
-نود إعلامكم بأن ابنكم *لم يحضر ${subMessage2} اليوم*.\n
-وقد تم تسجيل غيابه .\n
-عدد مرات الغياب: *${student.absences}*.${subMessage}\n\n
-*شكرًا لتعاونكم.*`;
+const absentTimeStamp = new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
+const firstName = (student.Username || '').split(' ')[0];
+const messageWappi = `Parent of ${firstName}
+Student absent ${subMessage2}
+Absences ${student.absences}
+${subMessage}
+Thank you`;
  
 
       // Send the message via the waapi (already present)
@@ -2726,11 +2684,11 @@ const sendGradeMessages = async (req, res) => {
 
       console.log(quizName, student, grade, parentPhone, studentPhone);
 
-      let message = `
-السلام عليكم 
-مع حضرتك assistant mr kably EST/ACT math teacher 
-برجاء العلم ان تم حصول الطالب ${name} على درجة (${grade}) من (${maxGrade}) في (${quizName}) 
-      `;
+      const firstName = (name || '').split(' ')[0];
+      let message = `Assistant Mr Kably EST/ACT Math Teacher
+Student ${firstName}
+Score ${grade} out of ${maxGrade}
+Quiz ${quizName}`;
 
       // Send to parents
       if (parentPhone) {
@@ -2795,17 +2753,15 @@ const sendMessages = async (req, res) => {
     for (const student of dataToSend) {
       let msg = '';
       console.log(student[HWCloumnName]);
+      const firstName = (student[nameCloumnName] || '').split(' ')[0];
       if (!student[HWCloumnName]) {
-        msg = `لم يقم الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`;
+        msg = `Student ${firstName} HomeWork not submitted today`;
       } else {
-        msg = `لقد قام الطالب ${student[nameCloumnName]} بحل واجب حصة اليوم`;
+        msg = `Student ${firstName} HomeWork submitted today`;
       }
 
-      let theMessage = `
-السلام عليكم 
-مع حضرتك assistant mr kably EST/ACT math teacher 
-${msg}
-      `;
+      let theMessage = `Assistant Mr Kably EST/ACT Math Teacher
+${msg}`;
 
       try {
         await sendWappiMessage(theMessage, student[phoneCloumnName],req.userData.phone,true)
@@ -2860,14 +2816,12 @@ const sendGeneralMessages = async (req, res) => {
 
     for (const student of dataToSend) {
       const studentName = student[nameColumnName];
+      const firstName = (studentName || '').split(' ')[0];
       // Replace {name} placeholder with actual student name
-      let personalizedMessage = messageContent.replace(/{name}/g, studentName);
+      let personalizedMessage = messageContent.replace(/{name}/g, firstName);
       
-      let theMessage = `
-السلام عليكم 
-مع حضرتك assistant mr kably EST/ACT math teacher 
-${personalizedMessage}
-      `;
+      let theMessage = `Assistant Mr Kably EST/ACT Math Teacher
+${personalizedMessage}`;
 
       // Send to parents if selected
       if (sendTarget === 'parents' || sendTarget === 'both') {
@@ -2958,70 +2912,42 @@ const submitData = async (req, res) => {
 
   const getMessage = (student) => {
     if (option === 'HWStatus') {
+      const firstName = (student.studentName || '').split(' ')[0];
       if (student.hwStatus === 'yes' || student.hwStatus === 'no') studentsIds.push(student.studentId);
       return student.hwStatus === 'no'
-        ? `
-السلام عليكم   
-مع حضرتك Assistant Mr Kably، EST/ACT  Math Teacher .
-
-نود إعلامكم بأن الطالب *${student.studentName}* قد حضر حصة اليوم ولكنه لم يقم بحل واجب الحصة.
-
-نرجو منكم متابعة الطالب لحل الواجبات لضمان تحقيق أفضل النتائج.
-
-شكراً لتعاونكم.
-      `
+        ? `Assistant Mr Kably EST/ACT Math Teacher
+Student ${firstName}
+Attended today
+HomeWork not submitted`
         : student.hwStatus === 'none'
-        ? `
-السلام عليكم   
-مع حضرتك Assistant Mr Kably، EST/ACT EST/ACT Math Teacher.
-
-نود إعلامكم بأن الطالب *${student.studentName}* لم يحضر اليوم ولم يقم بعمل الواجب.
-
-نرجو منكم متابعة الطالب لضمان تحقيق أفضل النتائج.
-
-شكراً لتعاونكم.
-      `
-        : `
-السلام عليكم   
-مع حضرتك Assistant Mr Kably، EST/ACT Math Teacher.
-
-نود إعلامكم بأن الطالب *${
-            student.studentName
-          }* قد حضر حصة اليوم وقام بحل واجب الحصة.
-
-${
-  student.solvStatus === 'true'
-    ? 'كما قام بحل الواجب بالخطوات.'
-    : 'ولكن لم يقم بحل الواجب بالخطوات.'
-}
-
-شكراً لتعاونكم.
-      `;
+        ? `Assistant Mr Kably EST/ACT Math Teacher
+Student ${firstName}
+Absent today
+HomeWork not submitted`
+        : `Assistant Mr Kably EST/ACT Math Teacher
+Student ${firstName}
+HomeWork submitted today
+${student.solvStatus === 'true' ? 'HomeWork submitted with steps' : 'HomeWork submitted without steps'}`;
     }
 
     if (option === 'gradeMsg') {
+      const firstName = (student.studentName || '').split(' ')[0];
       return student.grade
-        ? `
-السلام عليكم
-مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
-برجاء العلم ان تم حصول الطالب ${student.studentName} على درجة (${student.grade}) من (${maxGrade}) في (${quizName})
-`
-        : `
-السلام عليكم
-مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
-برجاء العلم ان الطالب ${student.studentName} لم يقم بحضور امتحان (${quizName}) بتاريخ ${new Date().toLocaleDateString()}
-`;
+        ? `Assistant Mr Kably EST/ACT Math Teacher
+Student ${firstName}
+Score ${student.grade} out of ${maxGrade}
+Quiz ${quizName}`
+        : `Assistant Mr Kably EST/ACT Math Teacher
+Student ${firstName}
+Did not attend quiz ${quizName}`;
     }
 
     if (option === 'sendMsg') {
+      const firstName = (student.studentName || '').split(' ')[0];
       // Replace {name} placeholder with actual student name
-      let message = messageContent.replace(/{name}/g, student.studentName);
-      return `
-السلام عليكم
-مع حضرتك Assistant Mr Kably EST/ACT Math Teacher
-
-${message}
-      `;
+      let message = messageContent.replace(/{name}/g, firstName);
+      return `Assistant Mr Kably EST/ACT Math Teacher
+${message}`;
     }
   };
 
@@ -3505,256 +3431,48 @@ const connectWhatsapp_get = (req, res) => {
 };
 
 const createInstance = async (req, res) => {
-  const { phoneNumber, name } = req.body;
-  try {
-    console.log(`Creating Wasender session (phone: ${phoneNumber || '-'}, name: ${name || '-'})`);
-    
-    // Create session with proper payload including required fields
-    const sessionPayload = {
-      name: name || 'WhatsApp Session',
-      phone_number: phoneNumber || null,
-      account_protection: true,  // Required field
-      log_messages: true,        // Required field
-      webhook_enabled: false,
-      webhook_events: []
-    };
-    
-    const resp = await wasender.createSession(sessionPayload);
-    
-    if (!resp.success) {
-      return res.status(400).json(resp);
-    }
-    
-    // Use the created session data from API response
-    const created = resp.data;
-    
-    // If API doesn't return session data, create a fallback
-    if (!created || !created.id) {
-      const fallbackInstance = {
-        id: `WA${Date.now()}`,
-        name: name || 'WhatsApp Session',
-        phone_number: phoneNumber || '-',
-        status: 'disconnected',
-        account_protection: true,
-        log_messages: true,
-        webhook_url: null,
-        webhook_enabled: false,
-        webhook_events: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      return res.status(201).json({ success: true, data: fallbackInstance });
-    }
-    
-    return res.status(201).json({ success: true, data: created });
-  } catch (error) {
-    console.error('Error creating Wasender session:', error.message);
-    return res.status(500).json({ success: false, message: 'Failed to create session', error: error.message });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.' 
+  });
 };
 
 const getInstances = async (req, res) => {
-  try {
-    const resp = await wasender.getAllSessions();
-    if (!resp.success) {
-      return res.status(401).json(resp);
-    }
-    return res.json(resp);
-  } catch (error) {
-    console.error('Error fetching sessions from Wasender:', error.message);
-    return res.status(500).json({ success: false, message: 'Failed to fetch sessions', error: error.message });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.',
+    data: []
+  });
 };
 
 const testWasenderAuth = async (req, res) => {
-  try {
-    const resp = await wasender.testAuth();
-    return res.json(resp);
-  } catch (error) {
-    console.error('Error testing Wasender auth:', error.message);
-    return res.status(500).json({ success: false, message: 'Failed to test authentication', error: error.message });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.' 
+  });
 };
 
 const checkRealInstanceStatus = async (req, res) => {
-  const { instanceId } = req.params;
-  try {
-    console.log(`Checking status for session: ${instanceId}`);
-    
-    // Get session details
-    const detailsResult = await wasender.getSessionDetails(instanceId);
-    if (!detailsResult.success) {
-      console.error('Failed to get session details:', detailsResult.message);
-      return res.status(500).json({ 
-        success: false, 
-        message: `Failed to get session details: ${detailsResult.message}` 
-      });
-    }
-    
-    const session = detailsResult.data;
-    const waStatus = (session.status || 'unknown').toString().toUpperCase();
-    
-    console.log(`Session status: ${waStatus}`);
-
-    // Map to UI statuses
-    const mapStatus = (s) => {
-      switch (s) {
-        case 'CONNECTED':
-        case 'AUTHENTICATED':
-        case 'READY':
-          return 'connected';
-        case 'CONNECTING':
-        case 'INITIALIZING':
-          return 'connecting';
-        case 'NEED_SCAN':
-        case 'REQUIRE_QR':
-        case 'UNPAIRED':
-        case 'UNPAIRED_IDLE':
-          return 'qr';
-        case 'LOGGED_OUT':
-        case 'DISCONNECTED':
-          return 'disconnected';
-        default:
-          return 'disconnected';
-      }
-    };
-
-    const status = mapStatus(waStatus);
-    
-    console.log(`Mapped status: ${status}`);
-
-    return res.json({ 
-      success: true, 
-      apiStatus: waStatus, 
-      status,
-      session: {
-        id: session.id,
-        name: session.name,
-        phone_number: session.phone_number,
-        status: session.status,
-        last_active_at: session.last_active_at
-      }
-    });
-  } catch (error) {
-    console.error('Error checking session status:', error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Error checking session status', 
-      error: error.message 
-    });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.',
+    status: 'disconnected'
+  });
 };
 
 const generateQrCode = async (req, res) => {
-  const { instanceId } = req.params;
-  
-  try {
-    console.log(`Generating QR code for session: ${instanceId}`);
-    
-    // Step 1: Connect the session first
-    const connectResult = await wasender.connectSession(instanceId);
-    if (!connectResult.success) {
-      console.error('Failed to connect session:', connectResult.message);
-      return res.status(500).json({ 
-        success: false, 
-        message: `Failed to connect session: ${connectResult.message}` 
-      });
-    }
-    
-    console.log('Session connected successfully, getting QR code...');
-    
-    // Step 2: Get the QR code
-    const qrResult = await wasender.getQRCode(instanceId);
-    if (!qrResult.success) {
-      console.error('Failed to get QR code:', qrResult.message);
-      return res.status(500).json({ 
-        success: false, 
-        message: `Failed to get QR code: ${qrResult.message}` 
-      });
-    }
-    
-    let qrCodeData = qrResult.data?.qrcode || null;
-    if (!qrCodeData) {
-      console.error('No QR code data received');
-      return res.status(500).json({ 
-        success: false, 
-        message: 'No QR code data received from API' 
-      });
-    }
-    
-    console.log('Raw QR code data received, converting to image...');
-    
-    // Convert the raw QR code data to a proper image
-    // The Wasender API returns raw QR code data that needs to be converted
-    try {
-      // Generate QR code as data URL
-      const qrImageDataUrl = await QRCode.toDataURL(qrCodeData, {
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-        quality: 0.92,
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        width: 300
-      });
-      
-      console.log('QR code converted to image successfully');
-      
-      // Emit socket event for real-time updates
-      if (req.io) {
-        req.io.emit('instance-status-change', { 
-          instanceId, 
-          status: 'qr', 
-          qrCode: qrImageDataUrl 
-        });
-      }
-      
-      return res.json({ 
-        success: true, 
-        qrCode: qrImageDataUrl, 
-        status: 'qr',
-        expiresIn: 45 // QR codes expire in 45 seconds
-      });
-      
-    } catch (qrError) {
-      console.error('Error converting QR code to image:', qrError);
-      
-      // Fallback: return the raw data with instructions
-      return res.json({ 
-        success: true, 
-        qrCode: qrCodeData, 
-        status: 'qr',
-        note: 'Raw QR data - needs manual conversion',
-        instructions: 'Please scan this QR code data manually or use a QR code generator',
-        expiresIn: 45
-      });
-    }
-    
-  } catch (error) {
-    console.error('Error generating QR code:', error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error while generating QR code',
-      error: error.message 
-    });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.' 
+  });
 };
 
 
 const deleteInstance = async (req, res) => {
-  const { instanceId } = req.params;
-  
-  try {
-    try { await wasender.disconnectSession(instanceId); } catch (_) {}
-    try { await wasender.deleteSession(instanceId); } catch (_) {}
-    if (req.io) req.io.emit('instance-deleted', { instanceId });
-    return res.json({ success: true, message: 'Session deleted' });
-  } catch (error) {
-    console.error('Error deleting session:', error.message);
-    return res.status(500).json({ success: false, message: 'Failed to delete session', error: error.message });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.' 
+  });
 };
 
 // Note: Wasender API doesn't have a direct webhook setting endpoint
@@ -3790,17 +3508,10 @@ const setWebhook = async (req, res) => {
 };
 
 const rebootInstance = async (req, res) => {
-  const { instanceId } = req.params;
-  
-  try {
-    try { await wasender.disconnectSession(instanceId); } catch (_) {}
-    await wasender.connectSession(instanceId);
-    if (req.io) req.io.emit('instance-status-change', { instanceId, status: 'connecting' });
-    return res.json({ success: true, message: 'Reconnecting initiated' });
-  } catch (error) {
-    console.error('Error reconnecting session:', error.message);
-    return res.status(500).json({ success: false, message: 'Failed to reconnect', error: error.message });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.' 
+  });
 };
 
 // =================================================== Send Registration Message =================================================== //
@@ -3839,24 +3550,22 @@ const sendRegistrationMessage = async (req, res) => {
         // Determine sender phone and message based on center name
         if (student.centerName === "Online") {
           senderPhone = "01147929010"; // Online center phone
-          message = `السلام عليكم 
-برجاء العلم ان تم فتح تسجيل الكورسات من يوم 8/2 الى يوم 8/15 
-و لن يقبل اي حجز بعد هذا الموعد  
-برجاء التواصل معنا للحجز`;
+          message = `Assistant Mr Kably
+Online registration runs 8/2 to 8/15
+Slots close after this deadline
+Contact us to reserve`;
         } else if (student.centerName === "GTA") {
           senderPhone = "01065057897"; // GTA center phone
-          message = `السلام عليكم 
-برجاء العلم ان تم فتح التسجيل في السنتر من يوم 8/2 الى يوم 8/15 
-و لن يقبل اي حجز بعد هذا الموعد 
-بمبلغ 700 جنيه شامل اول حصة + الكتاب 
-برجاء التوجه لأقرب سنتر سواء التجمع و المعادي لحجز الاماكن`;
+          message = `Assistant Mr Kably
+Center registration runs 8/2 to 8/15
+Fee 700 EGP includes first class and book
+Visit GTA or Maadi center to reserve`;
         } else if (student.centerName === "tagmo3") { // Default to Tagamo3
           senderPhone = "01055640148"; // Tagamo3 center phone
-          message = `السلام عليكم 
-برجاء العلم ان تم فتح التسجيل في السنتر من يوم 8/2 الى يوم 8/15 
-و لن يقبل اي حجز بعد هذا الموعد 
-بمبلغ 700 جنيه شامل اول حصة + الكتاب 
-برجاء التوجه لأقرب سنتر سواء التجمع و المعادي لحجز الاماكن`;
+          message = `Assistant Mr Kably
+Center registration runs 8/2 to 8/15
+Fee 700 EGP includes first class and book
+Visit Tagamo3 center to reserve`;
         } 
         // Send message to parent
         try {
@@ -3933,87 +3642,10 @@ const sendRegistrationMessage = async (req, res) => {
 // =================================================== END Send Registration Message =================================================== //
 
 const regenerateQrCode = async (req, res) => {
-  const { instanceId } = req.params;
-  
-  try {
-    console.log(`Regenerating QR code for session: ${instanceId}`);
-    
-    // Use the new regenerate method
-    const qrResult = await wasender.regenerateQRCode(instanceId);
-    if (!qrResult.success) {
-      console.error('Failed to regenerate QR code:', qrResult.message);
-      return res.status(500).json({ 
-        success: false, 
-        message: `Failed to regenerate QR code: ${qrResult.message}` 
-      });
-    }
-    
-    let qrCodeData = qrResult.data?.qrcode || null;
-    if (!qrCodeData) {
-      console.error('No QR code data received after regeneration');
-      return res.status(500).json({ 
-        success: false, 
-        message: 'No QR code data received after regeneration' 
-      });
-    }
-    
-    console.log('New QR code data received, converting to image...');
-    
-    // Convert the raw QR code data to a proper image
-    try {
-      const qrImageDataUrl = await QRCode.toDataURL(qrCodeData, {
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-        quality: 0.92,
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        width: 300
-      });
-      
-      console.log('New QR code converted to image successfully');
-      
-      // Emit socket event for real-time updates
-      if (req.io) {
-        req.io.emit('instance-status-change', { 
-          instanceId, 
-          status: 'qr', 
-          qrCode: qrImageDataUrl 
-        });
-      }
-      
-      return res.json({ 
-        success: true, 
-        qrCode: qrImageDataUrl, 
-        status: 'qr',
-        expiresIn: 45,
-        regenerated: true
-      });
-      
-    } catch (qrError) {
-      console.error('Error converting regenerated QR code to image:', qrError);
-      
-      return res.json({ 
-        success: true, 
-        qrCode: qrCodeData, 
-        status: 'qr',
-        note: 'Raw QR data - needs manual conversion',
-        instructions: 'Please scan this QR code data manually or use a QR code generator',
-        expiresIn: 45,
-        regenerated: true
-      });
-    }
-    
-  } catch (error) {
-    console.error('Error regenerating QR code:', error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error while regenerating QR code',
-      error: error.message 
-    });
-  }
+  return res.status(410).json({ 
+    success: false, 
+    message: 'WhatsApp service has been replaced with SMS. Please use SMS for all notifications.' 
+  });
 };
 
 

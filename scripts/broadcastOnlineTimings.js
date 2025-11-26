@@ -1,43 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const wasender = require('../utils/wasender');
-
-// Helper function to find the appropriate Wasender session for Online center
-async function findOnlineWasenderSession() {
-  try {
-    // Get all sessions to find the one with matching phone number
-    const sessionsResponse = await wasender.getAllSessions();
-    if (!sessionsResponse.success) {
-      throw new Error(`Failed to get sessions: ${sessionsResponse.message}`);
-    }
-    
-    const sessions = sessionsResponse.data;
-    let targetSession = null;
-    
-    // Find Online center session by admin phone number
-    targetSession = sessions.find(s => s.phone_number === '+201147929010' || s.phone_number === '01147929010');
-    
-    // If no specific match, try to find any connected session
-    if (!targetSession) {
-      targetSession = sessions.find(s => s.status === 'connected');
-    }
-    
-    if (!targetSession) {
-      throw new Error('No connected WhatsApp session found');
-    }
-    
-    if (!targetSession.api_key) {
-      throw new Error('Session API key not available');
-    }
-    
-    console.log(`Using session: ${targetSession.name} (${targetSession.phone_number}) for Online center`);
-    return targetSession;
-  } catch (err) {
-    console.error('Error finding Wasender session:', err.message);
-    throw err;
-  }
-}
+const { sendSmsMessage } = require('../utils/smsSender');
 
 // CLI flags
 const args = process.argv.slice(2);
@@ -65,7 +29,7 @@ function shouldIncludeByOnlyFlag(groupName) {
 }
 
 function formatPhoneEgypt(countryCode, rawPhone) {
-  // Normalize and build E.164-like without plus for Wasender (e.g., 2011XXXXXXXXX)
+  // Normalize and build phone number for SMS (e.g., 2011XXXXXXXXX)
   const cc = (countryCode || '20').replace(/\D/g, '');
   let phone = String(rawPhone || '').replace(/\D/g, '');
   if (!phone) return null;
@@ -95,21 +59,19 @@ async function sendToNumber(number, message) {
   }
   
   try {
-    // Find the appropriate session for Online center
-    const targetSession = await findOnlineWasenderSession();
+    // Extract country code from number (assuming Egyptian numbers start with 20)
+    const countryCode = '20';
     
-    // Format phone number for Wasender API
-    const formattedPhone = `${number}@s.whatsapp.net`;
-    
-    const response = await wasender.sendTextMessage(targetSession.api_key, formattedPhone, message);
+    // Send SMS using the SMS sender utility
+    const response = await sendSmsMessage(number, message, countryCode);
     
     if (!response.success) {
-      throw new Error(`Failed to send message: ${response.message}`);
+      throw new Error(`Failed to send SMS: ${response.message}`);
     }
     
-    console.log('Message sent successfully to:', number);
+    console.log('SMS sent successfully to:', number);
   } catch (error) {
-    console.error('Error sending message to', number, ':', error.message);
+    console.error('Error sending SMS to', number, ':', error.message);
     throw error;
   }
 }

@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Group = require('../models/Group');
-const wasender = require('../utils/wasender');
+const { sendSmsMessage } = require('../utils/smsSender');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const qrcode = require('qrcode');
@@ -9,80 +9,37 @@ const axios = require('axios');
 
 
 const jwtSecret = process.env.JWTSECRET;
-// Helper function to find the appropriate Wasender session based on center name
-async function findWasenderSession(centerName) {
+
+async function sendQRCode(phone, message, studentCode, centerName) {
   try {
-    // Get all sessions to find the one with matching phone number
-    const sessionsResponse = await wasender.getAllSessions();
-    if (!sessionsResponse.success) {
-      throw new Error(`Failed to get sessions: ${sessionsResponse.message}`);
+    console.log('Sending student code via SMS for center:', centerName);
+
+    // Extract phone number from chatId format if needed
+    let phoneNumber = phone;
+    if (phone.includes('@c.us')) {
+      phoneNumber = phone.replace('@c.us', '');
     }
     
-    const sessions = sessionsResponse.data;
-    let targetSession = null;
-    
-    // Find session by center name mapping to admin phone numbers
-    if (centerName === 'GTA') {
-      targetSession = sessions.find(s => s.phone_number === '+201065057897' || s.phone_number === '01065057897');
-    } else if (centerName === 'tagmo3') {
-      targetSession = sessions.find(s => s.phone_number === '+201055640148' || s.phone_number === '01055640148');
-    } else if (centerName === 'Online') {
-      targetSession = sessions.find(s => s.phone_number === '+201147929010' || s.phone_number === '01147929010');
+    // Get country code from phone or use default
+    let countryCode = '20';
+    if (phoneNumber.startsWith('2')) {
+      countryCode = '20';
     }
     
-    // If no specific match, try to find any connected session
-    if (!targetSession) {
-      targetSession = sessions.find(s => s.status === 'connected');
-    }
+    // Create SMS message with student code (since SMS can't send images)
+    const smsMessage = `Student Code: ${studentCode}. ${message}`;
     
-    if (!targetSession) {
-      throw new Error('No connected WhatsApp session found');
-    }
+    // Send SMS
+    const result = await sendSmsMessage(phoneNumber, smsMessage, countryCode);
     
-    if (!targetSession.api_key) {
-      throw new Error('Session API key not available');
-    }
-    
-    console.log(`Using session: ${targetSession.name} (${targetSession.phone_number}) for center: ${centerName}`);
-    return targetSession;
-  } catch (err) {
-    console.error('Error finding Wasender session:', err.message);
-    throw err;
-  }
-}
-
-
-
-async function sendQRCode(chatId, message, studentCode, centerName) {
-  try {
-    console.log('Sending QR code for center:', centerName);
-
-    // Find the appropriate session for this center
-    const targetSession = await findWasenderSession(centerName);
-    
-    // Format phone number for Wasender API (remove @c.us suffix and add @s.whatsapp.net)
-    const phoneNumber = chatId.replace('@c.us', '') + '@s.whatsapp.net';
-    console.log('Sending to phone number:', phoneNumber);
-    
-    // Create a publicly accessible URL for the QR code
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(studentCode)}`;
-    
-    // Send the QR code as an image message
-    const mediaResponse = await wasender.sendImageMessage(
-      targetSession.api_key,
-      phoneNumber,
-      qrCodeUrl,
-      message
-    );
-
-    if (!mediaResponse.success) {
-      throw new Error(`Failed to send QR code: ${mediaResponse.message}`);
+    if (!result.success) {
+      throw new Error(`Failed to send SMS: ${result.message}`);
     }
 
-    console.log('QR code sent successfully:', mediaResponse.data);
+    console.log('Student code sent successfully via SMS');
     return { success: true };
   } catch (error) {
-    console.error('Error sending QR code:', error);
+    console.error('Error sending student code via SMS:', error);
     return { success: false, error: error.message };
   }
 }
@@ -385,12 +342,22 @@ const public_Register_post = async (req, res) => {
             try {
               console.log("Attempting to send QR code to student...");
               
-              // Use the formatted phone with country code
+              // Send student code via SMS
+              const firstName = (Username || '').split(' ')[0];
+              const studentInfo = `Student Name: ${firstName}
+Code: ${Code}
+Grade: ${Grade}
+Level: ${GradeLevel}
+Type: ${attendingType}
+Book: ${bookTaken ? 'Yes' : 'No'}
+School: ${schoolName}
+Balance: ${balance}
+Center: ${centerName}
+Grade Type: ${gradeType}
+Time: ${groupTime}`;
               const qrResult = await sendQRCode(
-                `2${phone}@c.us`,
-                `This is your QR Code \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade} \n\n Grade Level: ${GradeLevel} \n\n Attendance Type: ${attendingType} \n\n Book Taken: ${
-                  bookTaken ? 'Yes' : 'No'
-                } \n\n School: ${schoolName} \n\n Balance: ${balance} \n\n Center Name: ${centerName} \n\n Grade Type: ${gradeType} \n\n Group Time: ${groupTime} `,
+                phone,
+                studentInfo,
                 Code,
                 centerName
               );
@@ -475,34 +442,25 @@ const send_verification_code = async (req, res) => {
   try {
     const { phone } = req.body;
     const code = Math.floor(Math.random() * 400000 + 600000);
-    const message = `كود التحقق الخاص بك هو ${code}`;
+    const message = `Your verification code is
+${code}`;
 
     console.log(`Sending verification code ${code} to phone number: ${phone}`);
     
     // Get country code from request or use default (20 for Egypt)
     const countryCode = req.body.phoneCountryCode || '20';
-    
-    // Format phone number for Wasender API
-    const phoneNumber = `${countryCode}${phone}@s.whatsapp.net`;
 
     try {
-      console.log(`Using Wasender API to send message to ${phoneNumber} with country code ${countryCode}`);
+      console.log(`Using SMS to send verification code to ${phone} with country code ${countryCode}`);
       
-      // Use GTA center for verification codes
-      const targetSession = await findWasenderSession('GTA');
-      
-      // Send the message via the Wasender API
-      const response = await wasender.sendTextMessage(
-        targetSession.api_key,
-        phoneNumber,
-        message
-      );
+      // Send the message via SMS
+      const response = await sendSmsMessage(phone, message, countryCode);
 
       if (!response.success) {
-        throw new Error(`Failed to send message: ${response.message}`);
+        throw new Error(`Failed to send SMS: ${response.message}`);
       }
 
-      console.log('Verification code sent successfully:', response.data);
+      console.log('Verification code sent successfully via SMS');
       
       // Store the verification code and phone in the session or database
       req.session.verificationCode = code; // Assuming session middleware is used
@@ -511,9 +469,9 @@ const send_verification_code = async (req, res) => {
       // Send a successful response
       res.status(201).json({ success: true, data: response.data });
     } catch (err) {
-      // Handle any error that occurs during the Wasender API call
+      // Handle any error that occurs during the SMS call
       console.error('Error sending verification code:', err);
-      console.error('Error details:', err.response?.data || err.message);
+      console.error('Error details:', err.message);
       res.status(500).json({ success: false, error: err.message });
     }
   } catch (error) {
@@ -552,19 +510,16 @@ const forgetPassword_post = async (req, res) => {
       });
       const link = `http://localhost:3000/reset-password/${user._id}/${token}`;
 
-      // Send reset password link via WhatsApp using Wasender API
+      // Send reset password link via SMS
       try {
-        // Format phone number for Wasender API
-        const phoneNumber = `2${phone}@s.whatsapp.net`;
-        const message = `رابط إعادة تعيين كلمة المرور الخاص بك: ${link}`;
+        const message = `Password reset link
+${link}`;
+        const countryCode = '20';
         
-        // Use GTA center for password reset
-        const targetSession = await findWasenderSession('GTA');
-        
-        const response = await wasender.sendTextMessage(targetSession.api_key, phoneNumber, message);
+        const response = await sendSmsMessage(phone, message, countryCode);
         
         if (!response.success) {
-          throw new Error(`Failed to send message: ${response.message}`);
+          throw new Error(`Failed to send SMS: ${response.message}`);
         }
         
         res.render('forgetPassword', {
@@ -728,9 +683,18 @@ const create_online_student = async (req, res) => {
     // Try to send QR code if phone number is provided
     try {
       if (phone) {
+        const firstName = (Username || '').split(' ')[0];
+        const studentInfo = `Welcome!
+Student: ${firstName}
+Code: ${Code}
+Grade: ${Grade || 'Unknown'}
+Level: ${GradeLevel || 'Unknown'}
+Type: ${attendingType}
+School: ${schoolName || 'Unknown'}
+Center: ${centerName}`;
         await sendQRCode(
-          `2${phone}@c.us`,
-          `Welcome to our online platform! \n\n Student Name: ${Username} \n\n Student Code: ${Code} \n\n Grade: ${Grade || 'Unknown'} \n\n Grade Level: ${GradeLevel || 'Unknown'} \n\n Attendance Type: ${attendingType} \n\n School: ${schoolName || 'Unknown'} \n\n Center Name: ${centerName}`,
+          phone,
+          studentInfo,
           Code,
           centerName
         );
@@ -900,11 +864,21 @@ const registerStudentsFromExcel = async (req, res) => {
         // Try to send QR code if phone number is provided
         try {
           if (student.phone) {
+            const firstName = (student.Username || '').split(' ')[0];
+            const studentInfo = `Student: ${firstName}
+Code: ${student.Code}
+Grade: ${student.Grade}
+Level: ${student.GradeLevel}
+Type: ${student.attendingType}
+Book: ${student.bookTaken ? 'Yes' : 'No'}
+School: ${student.schoolName}
+Balance: ${student.balance}
+Center: ${student.centerName}
+Grade Type: ${student.gradeType}
+Time: ${student.groupTime}`;
             await sendQRCode(
-              `2${student.phone}@c.us`,
-              `This is your QR Code \n\n Student Name: ${student.Username} \n\n Student Code: ${student.Code} \n\n Grade: ${student.Grade} \n\n Grade Level: ${student.GradeLevel} \n\n Attendance Type: ${student.attendingType} \n\n Book Taken: ${
-                student.bookTaken ? 'Yes' : 'No'
-              } \n\n School: ${student.schoolName} \n\n Balance: ${student.balance} \n\n Center Name: ${student.centerName} \n\n Grade Type: ${student.gradeType} \n\n Group Time: ${student.groupTime}`,
+              student.phone,
+              studentInfo,
               student.Code,
               student.centerName
             );

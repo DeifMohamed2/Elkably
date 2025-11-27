@@ -198,6 +198,14 @@ router.post('/sendRegistrationMessage', authMiddleware, teacherController.sendRe
 
 // ==================  END Send Registration Message  ================= //
 
+// ==================  All Messages SMS  ================= //
+
+router.get('/allMessagesSMS', authMiddleware, teacherController.allMessagesSMS_get);
+router.get('/allMessagesSMS/getMessages', authMiddleware, teacherController.getAllSmsMessages);
+router.get('/allMessagesSMS/getStats', authMiddleware, teacherController.getSmsMessagesStats);
+
+// ==================  END All Messages SMS  ================= //
+
 
 
 

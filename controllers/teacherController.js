@@ -4,6 +4,7 @@ const Card = require('../models/Card');
 const Attendance = require('../models/Attendance'); 
 
 const { sendSmsMessage } = require('../utils/smsSender');
+const { getSmsMessages, getAllSmsMessagesForStats } = require('../utils/sms');
 const Excel = require('exceljs');
 const QRCode = require('qrcode');
 
@@ -3641,6 +3642,122 @@ Visit Tagamo3 center to reserve`;
 
 // =================================================== END Send Registration Message =================================================== //
 
+// =================================================== All Messages SMS =================================================== //
+
+const allMessagesSMS_get = async (req, res) => {
+  res.render('teacher/allMessagesSMS', { 
+    title: 'All SMS Messages', 
+    path: req.path 
+  });
+};
+
+const getAllSmsMessages = async (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date,
+      sms_type,
+      direction,
+      from,
+      timezone = 'Africa/Cairo',
+      page = 1
+    } = req.query;
+
+    // Format dates if provided
+    let startDate = start_date;
+    let endDate = end_date;
+
+    // If dates are provided, ensure they're in the correct format
+    if (startDate && !startDate.includes(' ')) {
+      startDate = `${startDate} 00:00:00`;
+    }
+    if (endDate && !endDate.includes(' ')) {
+      endDate = `${endDate} 23:59:59`;
+    }
+
+    const result = await getSmsMessages({
+      startDate,
+      endDate,
+      smsType: sms_type,
+      direction,
+      from,
+      timezone,
+      page: parseInt(page)
+    });
+
+    if (result.status === 'error') {
+      return res.status(400).json({
+        success: false,
+        message: result.message || 'Failed to fetch SMS messages',
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: result.message || 'SMS messages fetched successfully',
+      data: result.data
+    });
+  } catch (error) {
+    console.error('Error fetching SMS messages:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error',
+      data: null
+    });
+  }
+};
+
+const getSmsMessagesStats = async (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date,
+      sms_type,
+      direction,
+      from,
+      timezone = 'Africa/Cairo'
+    } = req.query;
+
+    // Format dates if provided
+    let startDate = start_date;
+    let endDate = end_date;
+
+    // If dates are provided, ensure they're in the correct format
+    if (startDate && !startDate.includes(' ')) {
+      startDate = `${startDate} 00:00:00`;
+    }
+    if (endDate && !endDate.includes(' ')) {
+      endDate = `${endDate} 23:59:59`;
+    }
+
+    const result = await getAllSmsMessagesForStats({
+      startDate,
+      endDate,
+      smsType: sms_type,
+      direction,
+      from,
+      timezone
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Statistics fetched successfully',
+      data: result.stats,
+      total: result.total
+    });
+  } catch (error) {
+    console.error('Error fetching SMS statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error',
+      data: null
+    });
+  }
+};
+
+// =================================================== END All Messages SMS =================================================== //
+
 const regenerateQrCode = async (req, res) => {
   return res.status(410).json({ 
     success: false, 
@@ -3734,4 +3851,9 @@ module.exports = {
   // Registration Message
   sendRegistrationMessage,
   regenerateQrCode,
+
+  // All Messages SMS
+  allMessagesSMS_get,
+  getAllSmsMessages,
+  getSmsMessagesStats,
 };

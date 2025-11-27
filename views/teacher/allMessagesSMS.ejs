@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+    <%- include("./partials/head.ejs") %>
+
+<body>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.05));
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+            border-color: rgba(13, 110, 253, 0.6);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #a0a0a0;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0d6efd;
+            margin: 0;
+        }
+
+        .filters-container {
+            background-color: rgba(30, 30, 30, 0.8);
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .filters-container h4 {
+            color: #0d6efd;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid rgba(13, 110, 253, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            background-color: #2d2d2d;
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 10px rgba(13, 110, 253, 0.3);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-filter {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary-filter {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+        }
+
+        .btn-primary-filter:hover {
+            background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+        }
+
+        .btn-secondary-filter {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+            color: #ffffff;
+        }
+
+        .btn-secondary-filter:hover {
+            background: linear-gradient(135deg, #5a6268, #495057);
+            transform: translateY(-2px);
+        }
+
+        .messages-table-container {
+            background-color: rgba(30, 30, 30, 0.8);
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .table-header h4 {
+            color: #0d6efd;
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: transparent;
+        }
+
+        thead {
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.2), rgba(13, 110, 253, 0.1));
+        }
+
+        th {
+            padding: 15px;
+            text-align: right;
+            color: #0d6efd;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(13, 110, 253, 0.3);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            transform: scale(1.01);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-delivered {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+
+        .status-pending {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+
+        .status-failed {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        .message-preview {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .message-preview:hover {
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 10px 20px;
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            background-color: transparent;
+            color: #0d6efd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background-color: rgba(13, 110, 253, 0.1);
+            border-color: #0d6efd;
+            transform: translateY(-2px);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: conic-gradient(#0000 10%, #474bff);
+            -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 9px), #000 0);
+            animation: spinner-zp9dbg 1s infinite linear;
+            margin: 0 auto;
+        }
+
+        @keyframes spinner-zp9dbg {
+            to {
+                transform: rotate(1turn);
+            }
+        }
+
+        .error-message {
+            background-color: rgba(220, 53, 69, 0.2);
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 15px;
+            color: #dc3545;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background-color: rgba(40, 167, 69, 0.2);
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            color: #28a745;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0a0a0;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: rgba(13, 110, 253, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 10px 5px;
+            }
+        }
+    </style>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-2">
+                <%- include("./partials/nav.ejs") %>
+            </div>
+            <div class="col-lg-10">
+                <main>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="left" style="margin-top: 0.2rem;">
+                                <%- include("./partials/top.ejs") %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h2 style="color: #0d6efd; margin-bottom: 30px; text-align: center;">
+                                <i class="fa-solid fa-inbox"></i> جميع رسائل SMS
+                            </h2>
+
+                            <!-- Statistics Cards -->
+                            <div class="stats-container">
+                                <div class="stat-card">
+                                    <h3>إجمالي الرسائل</h3>
+                                    <p class="stat-value" id="totalMessages">0</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>تم التسليم</h3>
+                                    <p class="stat-value" id="deliveredCount">0</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>قيد الانتظار</h3>
+                                    <p class="stat-value" id="pendingCount">0</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>فشل الإرسال</h3>
+                                    <p class="stat-value" id="failedCount">0</p>
+                                </div>
+                            </div>
+
+                            <!-- Filters -->
+                            <div class="filters-container">
+                                <h4><i class="fa-solid fa-filter"></i> فلاتر البحث</h4>
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label for="startDate">من تاريخ</label>
+                                        <input type="date" id="startDate" class="form-control">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="endDate">إلى تاريخ</label>
+                                        <input type="date" id="endDate" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="filter-buttons">
+                                    <button class="btn-filter btn-primary-filter" onclick="loadMessages()">
+                                        <i class="fa-solid fa-search"></i> بحث
+                                    </button>
+                                    <button class="btn-filter btn-secondary-filter" onclick="resetFilters()">
+                                        <i class="fa-solid fa-rotate"></i> إعادة تعيين
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Messages Table -->
+                            <div class="messages-table-container">
+                                <div class="table-header">
+                                    <h4><i class="fa-solid fa-list"></i> قائمة الرسائل</h4>
+                                </div>
+
+                                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                                <div id="successMessage" class="success-message" style="display: none;"></div>
+
+                                <div class="loading-spinner" id="loadingSpinner">
+                                    <div class="spinner"></div>
+                                    <p style="margin-top: 20px; color: #a0a0a0;">جاري تحميل الرسائل...</p>
+                                </div>
+
+                                <div class="table-responsive" id="tableContainer" style="display: none;">
+                                    <table id="messagesTable">
+                                        <thead>
+                                            <tr>
+                                                <th>UID</th>
+                                                <th>إلى</th>
+                                                <th>من</th>
+                                                <th>الرسالة</th>
+                                                <th>النوع</th>
+                                                <th>الاتجاه</th>
+                                                <th>الحالة</th>
+                                                <th>عدد الرسائل</th>
+                                                <th>التكلفة</th>
+                                                <th>تاريخ الإرسال</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="messagesTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="empty-state" id="emptyState" style="display: none;">
+                                    <i class="fa-solid fa-inbox"></i>
+                                    <h3>لا توجد رسائل</h3>
+                                    <p>لا توجد رسائل متاحة للعرض بناءً على الفلاتر المحددة</p>
+                                </div>
+
+                                <!-- Pagination -->
+                                <div class="pagination-container" id="paginationContainer" style="display: none;">
+                                    <button class="pagination-btn" id="prevPageBtn" onclick="changePage(-1)">
+                                        <i class="fa-solid fa-chevron-right"></i> السابق
+                                    </button>
+                                    <span class="pagination-info" id="paginationInfo"></span>
+                                    <button class="pagination-btn" id="nextPageBtn" onclick="changePage(1)">
+                                        التالي <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let paginationData = null;
+        let isInitialLoad = true;
+
+        // Load all messages without filters on initial load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Don't set any dates - load all messages
+            loadMessages();
+        });
+
+        function getStatusBadgeClass(status) {
+            const statusLower = (status || '').toLowerCase();
+            if (statusLower.includes('delivered') || statusLower.includes('تم')) {
+                return 'status-delivered';
+            } else if (statusLower.includes('pending') || statusLower.includes('انتظار')) {
+                return 'status-pending';
+            } else if (statusLower.includes('failed') || statusLower.includes('فشل')) {
+                return 'status-failed';
+            }
+            return 'status-pending';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('ar-EG', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function updateStatistics(stats, total) {
+            document.getElementById('totalMessages').textContent = total || stats.total || 0;
+            document.getElementById('deliveredCount').textContent = stats.delivered || 0;
+            document.getElementById('pendingCount').textContent = stats.pending || 0;
+            document.getElementById('failedCount').textContent = stats.failed || 0;
+        }
+
+        async function loadStatistics() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const params = new URLSearchParams();
+            // Only add dates if they are set (not empty)
+            if (startDate && startDate.trim()) {
+                params.append('start_date', startDate);
+            }
+            if (endDate && endDate.trim()) {
+                params.append('end_date', endDate);
+            }
+
+            try {
+                const response = await fetch(`/teacher/allMessagesSMS/getStats?${params.toString()}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    updateStatistics(result.data, result.total);
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        function displayMessages(data) {
+            const tableBody = document.getElementById('messagesTableBody');
+            const tableContainer = document.getElementById('tableContainer');
+            const emptyState = document.getElementById('emptyState');
+            const paginationContainer = document.getElementById('paginationContainer');
+
+            tableBody.innerHTML = '';
+
+            if (!data || !data.data || data.data.length === 0) {
+                tableContainer.style.display = 'none';
+                emptyState.style.display = 'block';
+                paginationContainer.style.display = 'none';
+                return;
+            }
+
+            tableContainer.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            const messages = data.data;
+            // Statistics are loaded separately via loadStatistics()
+
+            messages.forEach(msg => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${msg.uid || '-'}</td>
+                    <td>${msg.to || '-'}</td>
+                    <td>${msg.from || '-'}</td>
+                    <td class="message-preview" title="${(msg.message || '').replace(/"/g, '&quot;')}">${msg.message || '-'}</td>
+                    <td>${msg.sms_type || '-'}</td>
+                    <td>${msg.direction || '-'}</td>
+                    <td><span class="status-badge ${getStatusBadgeClass(msg.status)}">${msg.status || '-'}</span></td>
+                    <td>${msg.sms_count || 0}</td>
+                    <td>${msg.cost || '0'}</td>
+                    <td>${formatDate(msg.sent_at)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Update pagination
+            if (data.current_page && data.last_page) {
+                currentPage = data.current_page;
+                totalPages = data.last_page;
+                updatePagination(data);
+                paginationContainer.style.display = 'flex';
+            } else {
+                paginationContainer.style.display = 'none';
+            }
+        }
+
+        function updatePagination(data) {
+            const paginationInfo = document.getElementById('paginationInfo');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+
+            paginationInfo.textContent = `صفحة ${data.current_page} من ${data.last_page} (إجمالي: ${data.total})`;
+
+            prevBtn.disabled = !data.prev_page_url;
+            nextBtn.disabled = !data.next_page_url;
+
+            paginationData = data;
+        }
+
+        function changePage(direction) {
+            if (direction === -1 && paginationData && paginationData.prev_page_url) {
+                currentPage--;
+                loadMessages();
+            } else if (direction === 1 && paginationData && paginationData.next_page_url) {
+                currentPage++;
+                loadMessages();
+            }
+        }
+
+        async function loadMessages() {
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const tableContainer = document.getElementById('tableContainer');
+
+            loadingSpinner.style.display = 'block';
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            tableContainer.style.display = 'none';
+
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const params = new URLSearchParams();
+            // Only add dates if they are set (not empty) - on initial load, don't add any filters
+            if (startDate && startDate.trim()) {
+                params.append('start_date', startDate + ' 00:00:00');
+            }
+            if (endDate && endDate.trim()) {
+                params.append('end_date', endDate + ' 23:59:59');
+            }
+            params.append('page', currentPage);
+
+            try {
+                // Build stats params (without page)
+                const statsParams = new URLSearchParams();
+                if (startDate && startDate.trim()) {
+                    statsParams.append('start_date', startDate + ' 00:00:00');
+                }
+                if (endDate && endDate.trim()) {
+                    statsParams.append('end_date', endDate + ' 23:59:59');
+                }
+
+                // Load messages and statistics in parallel
+                const [messagesResponse, statsResponse] = await Promise.all([
+                    fetch(`/teacher/allMessagesSMS/getMessages?${params.toString()}`),
+                    fetch(`/teacher/allMessagesSMS/getStats?${statsParams.toString()}`)
+                ]);
+
+                const messagesResult = await messagesResponse.json();
+                const statsResult = await statsResponse.json();
+
+                loadingSpinner.style.display = 'none';
+
+                if (messagesResult.success && messagesResult.data) {
+                    displayMessages(messagesResult.data);
+                    
+                    // Update statistics from all messages
+                    if (statsResult.success && statsResult.data) {
+                        updateStatistics(statsResult.data, statsResult.total);
+                    }
+                    
+                    successMessage.textContent = messagesResult.message || 'تم تحميل الرسائل بنجاح';
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    errorMessage.textContent = messagesResult.message || 'فشل في تحميل الرسائل';
+                    errorMessage.style.display = 'block';
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+                
+                isInitialLoad = false;
+            } catch (error) {
+                loadingSpinner.style.display = 'none';
+                errorMessage.textContent = 'حدث خطأ أثناء تحميل الرسائل: ' + error.message;
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        function resetFilters() {
+            // Clear all date filters to show all messages
+            document.getElementById('endDate').value = '';
+            document.getElementById('startDate').value = '';
+            currentPage = 1;
+            loadMessages();
+        }
+    </script>
+</body>
+</html>
+

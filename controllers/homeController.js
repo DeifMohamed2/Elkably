@@ -1017,8 +1017,8 @@ const exportRegistrationErrors = async (req, res) => {
 // Helper function to send student data to external system
 async function sendStudentToExternalSystem(studentData) {
   try {
-    const externalApiUrl = process.env.EXTERNAL_SYSTEM_URL || 'https://9dabc5e0a5aa.ngrok-free.app';
-    const apiKey = process.env.EXTERNAL_SYSTEM_API_KEY || 'SNFIDNWL11SGNDWJD@##SSNWLSGNE!21121';
+    const externalApiUrl = process.env.EXTERNAL_SYSTEM_URL || 'https://elkably.com';
+    const apiKey = process.env.EXTERNAL_SYSTEM_API_KEY ;
 
     const payload = {
       studentName: studentData.studentName,

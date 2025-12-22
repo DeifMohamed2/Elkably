@@ -7,6 +7,7 @@ const { sendSmsMessage } = require('../utils/smsSender');
 const { getSmsMessages, getAllSmsMessagesForStats } = require('../utils/sms');
 const Excel = require('exceljs');
 const QRCode = require('qrcode');
+const { sendStudentToExternalSystem } = require('./homeController');
 
 const dash_get = async(req, res) => {
   //   const idsToKeep = [
@@ -77,6 +78,11 @@ const studentsRequests_get = async (req, res) => {
         blockedAt: 1,
         blockedBy: 1,
         bookTaken: 1,
+        centerName: 1,
+        phone: 1,
+        parentPhone: 1,
+        phoneCountryCode: 1,
+        parentPhoneCountryCode: 1,
       })
         .sort({ subscribe: 1, createdAt: 1 })
         .skip((page - 1) * perPage)
@@ -136,6 +142,11 @@ const searchForUser = async (req, res) => {
       blockedAt: 1,
       blockedBy: 1,
       bookTaken: 1,
+      centerName: 1,
+      phone: 1,
+      parentPhone: 1,
+      phoneCountryCode: 1,
+      parentPhoneCountryCode: 1,
     });
 
     res.render('teacher/studentsRequests', {
@@ -542,6 +553,68 @@ const getStudentBlockHistory = async (req, res) => {
   } catch (error) {
     console.error('Error getting block history:', error);
     res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+// Reset student to external system (for Online students)
+const resetStudentToOnline = async (req, res) => {
+  try {
+    const { studentID } = req.params;
+
+    if (!studentID) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Student ID is required.' 
+      });
+    }
+
+    // Find the student
+    const student = await User.findById(studentID);
+    if (!student) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Student not found.' 
+      });
+    }
+
+    // Check if student is from Online center
+    if (student.centerName !== 'Online') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'This feature is only available for Online students.' 
+      });
+    }
+
+    // Prepare student data for external system
+    const studentData = {
+      studentName: student.Username,
+      studentPhone: `${student.phoneCountryCode || '20'}${student.phone}`,
+      parentPhone: `${student.parentPhoneCountryCode || '20'}${student.parentPhone}`,
+      studentCode: student.Code
+    };
+
+    // Send to external system
+    try {
+      await sendStudentToExternalSystem(studentData);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: 'تم إرسال بيانات الطالب إلى النظام الخارجي بنجاح'
+      });
+    } catch (externalError) {
+      console.error('Error sending student to external system:', externalError);
+      
+      return res.status(400).json({ 
+        success: false,
+        message: externalError.message || 'فشل في إرسال بيانات الطالب إلى النظام الخارجي'
+      });
+    }
+  } catch (error) {
+    console.error('Error resetting student to online:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'حدث خطأ في النظام' 
+    });
   }
 };
 
@@ -3781,6 +3854,7 @@ module.exports = {
   blockStudent,
   unblockStudent,
   getStudentBlockHistory,
+  resetStudentToOnline,
 
   searchToGetOneUserAllData,
   convertToExcelAllUserData,

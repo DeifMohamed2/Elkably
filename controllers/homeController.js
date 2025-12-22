@@ -305,8 +305,32 @@ const public_Register_post = async (req, res) => {
   const hashedPassword = await bcrypt.hash('1qaz2wsx', 10);
 
   try {
+    // Send student data to external system FIRST (before creating local account)
+    // Only send to external system if center is Online
+    if (centerName === 'Online') {
+      try {
+        console.log("Sending student data to external system before creating local account...");
+        await sendStudentToExternalSystem({
+          studentName: Username,
+          studentPhone: `${phoneCountryCode || '20'}${phone}`,
+          parentPhone: `${parentPhoneCountryCode || '20'}${parentPhone}`,
+          studentCode: Code
+        });
+        console.log("Student data sent to external system successfully");
+      } catch (externalError) {
+        console.error("External system rejected student creation:", externalError.message);
+        // Show the error message from external system and prevent local account creation
+        errors.externalSystem = `فشل في إنشاء الحساب في النظام الخارجي: ${externalError.message}`;
+        return res.render('Register', {
+          title: 'Register Page',
+          errors: errors,
+          firebaseError: '',
+          formData: req.body,
+        });
+      }
+    }
+
     // Format phone numbers with country codes
- 
     const user = new User({
       Username: Username,
       Password: hashedPassword,
@@ -364,28 +388,6 @@ Time: ${groupTime}`;
               
               console.log("QR code sending result:", qrResult);
               
-              // Send student data to external system
-              // Only send to external system if center is Online
-              if (centerName === 'Online') {
-                try {
-                  console.log("Sending student data to external system...");
-                  const externalResult = await sendStudentToExternalSystem({
-                    studentName: Username,
-                    studentPhone: `${phoneCountryCode || '20'}${phone}`,
-                    parentPhone: `${parentPhoneCountryCode || '20'}${parentPhone}`,
-                    studentCode: Code
-                  });
-                  
-                  if (externalResult.success) {
-                    console.log("Student data sent to external system successfully");
-                  } else {
-                    console.error("Failed to send student data to external system:", externalResult.error);
-                  }
-                } catch (externalError) {
-                  console.error("Error sending to external system:", externalError);
-                  // Don't fail the registration if external system fails
-                }
-              }
               res
                 .status(201)
                 .redirect('Register');
@@ -1049,12 +1051,77 @@ async function sendStudentToExternalSystem(studentData) {
       httpAgent: httpAgent // Use IPv4 agent
     });
 
-    console.log('External system response:', response.data);
-    return { success: true, data: response.data };
+    console.log('External system response status:', response.status);
+    console.log('External system response data:', response.data);
+
+    // Check if the external system successfully created the student
+    if (response.status === 201 && response.data && response.data.success === true) {
+      return { success: true, data: response.data };
+    } else {
+      // Extract error message from response - check multiple possible fields
+      let errorMessage = 'Unknown error from external system';
+      
+      if (response.data) {
+        errorMessage = response.data.message || 
+                      response.data.error || 
+                      (typeof response.data === 'string' ? response.data : errorMessage);
+      }
+      
+      // If still no message, use status-based message
+      if (errorMessage === 'Unknown error from external system') {
+        const statusMessages = {
+          400: 'بيانات غير صحيحة',
+          401: 'غير مصرح به - مفتاح API غير صحيح',
+          409: 'الطالب موجود بالفعل',
+          500: 'خطأ في الخادم الخارجي'
+        };
+        errorMessage = statusMessages[response.status] || `خطأ من النظام الخارجي (${response.status})`;
+      }
+      
+      const errorDetails = {
+        status: response.status,
+        message: errorMessage,
+        responseData: response.data
+      };
+
+      console.error('External system did not create student successfully:', errorDetails);
+      throw new Error(errorMessage);
+    }
   } catch (error) {
     console.error('Error sending student to external system:', error.message);
-    // Don't throw error - just log it so registration can continue
-    return { success: false, error: error.message };
+    
+    // If it's an axios error with response data, extract the error message
+    if (error.response && error.response.data) {
+      let errorMessage = error.response.data.message || 
+                        error.response.data.error || 
+                        error.message;
+      
+      // If error message is still the generic one, try to get a better message
+      if (errorMessage === error.message && error.response.data) {
+        // Check for validation errors or other structured error data
+        if (error.response.data.errors) {
+          const errorKeys = Object.keys(error.response.data.errors);
+          if (errorKeys.length > 0) {
+            errorMessage = error.response.data.errors[errorKeys[0]];
+          }
+        }
+      }
+      
+      const errorDetails = {
+        status: error.response.status,
+        message: errorMessage,
+        responseData: error.response.data
+      };
+      console.error('External system error details:', errorDetails);
+      throw new Error(errorMessage);
+    }
+    
+    // For network errors or other issues
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      throw new Error('فشل الاتصال بالنظام الخارجي. يرجى المحاولة مرة أخرى لاحقاً');
+    }
+    
+    throw new Error(`فشل الاتصال بالنظام الخارجي: ${error.message}`);
   }
 }
 

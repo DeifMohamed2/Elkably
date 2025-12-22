@@ -1019,7 +1019,7 @@ async function sendStudentToExternalSystem(studentData) {
   try {
     // Use IP address and port for VPS connection, fallback to default if not set
     // IMPORTANT: Use HTTP (not HTTPS) and include the port number
-    const externalApiUrl = 'http://82.25.101.207:8400';
+    const externalApiUrl = 'http://82.25.101.207:4091';
     const apiKey = process.env.EXTERNAL_SYSTEM_API_KEY ;
 
     const payload = {

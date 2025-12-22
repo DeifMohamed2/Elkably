@@ -1143,4 +1143,5 @@ module.exports = {
   create_online_student,
   registerStudentsFromExcel,
   exportRegistrationErrors,
+  sendStudentToExternalSystem,
 };

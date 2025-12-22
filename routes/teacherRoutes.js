@@ -79,6 +79,9 @@ router.post("/blockStudent/:studentID", authMiddleware, teacherController.blockS
 router.post("/unblockStudent/:studentID", authMiddleware, teacherController.unblockStudent);
 router.get("/blockHistory/:studentID", authMiddleware, teacherController.getStudentBlockHistory);
 
+// Reset student to external system (Online students)
+router.post("/resetStudentToOnline/:studentID", authMiddleware, teacherController.resetStudentToOnline);
+
 
 // ==================  END Student Requests  ================= //
 

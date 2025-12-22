@@ -1085,6 +1085,7 @@ table tbody tr:hover {
                                         <th style="padding-left: 20px;">View</th>
                                         <th style="padding-left: 20px;">اضف إلى جروب</th>
                                         <th style="padding-left: 20px;">Block/Unblock</th>
+                                        <th style="padding-left: 20px;">Reset to Online</th>
                                         <th style="padding-left: 20px;">Delete</th>
                                     </thead>
 
@@ -1149,6 +1150,16 @@ table tbody tr:hover {
                                                             <button type="button" class="btn btn-warning btn-sm" onclick="showBlockStudentModalRow('<%= student._id %>', '<%= student.Username %>')">
                                                                 <i class="fa-solid fa-ban"></i> إيقاف 
                                                             </button>
+                                                        <% } %>
+                                                    </td>
+
+                                                    <td class="enter">
+                                                        <% if (student.centerName === 'Online') { %>
+                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="resetStudentToOnline('<%= student._id %>', '<%= student.Username %>')" id="resetBtn_<%= student._id %>">
+                                                                <i class="fa-solid fa-rotate"></i> Reset to Online
+                                                            </button>
+                                                        <% } else { %>
+                                                            <span class="badge bg-secondary">-</span>
                                                         <% } %>
                                                     </td>
 
@@ -1533,10 +1544,15 @@ table tbody tr:hover {
       data.students.forEach(student => {
         c++;
         const tr = document.createElement('tr');
+        const isOnline = student.centerName === 'Online';
+        const resetButtonHtml = isOnline 
+          ? `<button type="button" class="btn btn-outline-primary btn-sm" onclick="resetStudentToOnline('${student._id || ''}', '${student.Username || ''}')" id="resetBtn_${student._id || ''}"><i class="fa-solid fa-rotate"></i> Reset to Online</button>`
+          : '<span class="badge bg-secondary">-</span>';
+        
         tr.innerHTML = `
           <td>${c}</td>
-          <td style="line-height: 20px;">${student.Username}</td>
-          <td id="code">${student.Code}</td>
+          <td style="line-height: 20px;">${student.Username || ''}</td>
+          <td id="code">${student.Code || ''}</td>
           <td><span class="badge bg-success">نشط</span></td>
           <td>${student.createdAt ? new Date(student.createdAt).toLocaleDateString('ar-EG') : ''}</td>
           <td>${student.updatedAt ? new Date(student.updatedAt).toLocaleDateString('ar-EG') : ''}</td>
@@ -1547,10 +1563,13 @@ table tbody tr:hover {
             <button type="button" class="primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal('${student._id || ''}')">View Data<i class="fa-solid fa-pen-to-square me-3"></i></button>
           </td>
           <td class="enter">
-            <button type="button" class="btn btn-outline-info btn-sm" onclick="openAssignForCode('${student.Code}')">اضف إلى جروب</button>
+            <button type="button" class="btn btn-outline-info btn-sm" onclick="openAssignForCode('${student.Code || ''}')">اضف إلى جروب</button>
           </td>
           <td class="enter">
             <button type="button" class="btn btn-warning btn-sm" disabled><i class="fa-solid fa-ban"></i></button>
+          </td>
+          <td class="enter">
+            ${resetButtonHtml}
           </td>
           <td class="enter">
             <button type="button" class="btn btn-outline-danger" disabled>Delete<i class="fa-solid fa-trash me-3"></i></button>
@@ -1831,6 +1850,52 @@ table tbody tr:hover {
     
     const modal = new bootstrap.Modal(document.getElementById('unblockStudentModal'));
     modal.show();
+  }
+
+  // Function to reset student to external system
+  async function resetStudentToOnline(studentId, studentName) {
+    if (!confirm(`هل تريد إعادة إرسال بيانات الطالب "${studentName}" إلى النظام الخارجي؟`)) {
+      return;
+    }
+
+    const resetBtn = document.getElementById(`resetBtn_${studentId}`);
+    if (resetBtn) {
+      resetBtn.disabled = true;
+      resetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
+    }
+
+    try {
+      const response = await fetch(`/teacher/resetStudentToOnline/${studentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert('تم إرسال بيانات الطالب إلى النظام الخارجي بنجاح');
+        if (resetBtn) {
+          resetBtn.innerHTML = '<i class="fa-solid fa-check"></i> تم الإرسال';
+          resetBtn.classList.remove('btn-outline-primary');
+          resetBtn.classList.add('btn-success');
+        }
+      } else {
+        alert(data.message || 'فشل في إرسال بيانات الطالب إلى النظام الخارجي');
+        if (resetBtn) {
+          resetBtn.disabled = false;
+          resetBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Reset to Online';
+        }
+      }
+    } catch (error) {
+      console.error('Error resetting student to online:', error);
+      alert('حدث خطأ أثناء إرسال بيانات الطالب');
+      if (resetBtn) {
+        resetBtn.disabled = false;
+        resetBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Reset to Online';
+      }
+    }
   }
 </script>
 

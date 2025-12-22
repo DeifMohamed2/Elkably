@@ -1017,7 +1017,9 @@ const exportRegistrationErrors = async (req, res) => {
 // Helper function to send student data to external system
 async function sendStudentToExternalSystem(studentData) {
   try {
-    const externalApiUrl = process.env.EXTERNAL_SYSTEM_URL || 'https://elkably.com';
+    // Use IP address and port for VPS connection, fallback to default if not set
+    // IMPORTANT: Use HTTP (not HTTPS) and include the port number
+    const externalApiUrl = 'http://82.25.101.207:8400';
     const apiKey = process.env.EXTERNAL_SYSTEM_API_KEY ;
 
     const payload = {
@@ -1029,13 +1031,22 @@ async function sendStudentToExternalSystem(studentData) {
     };
 
     console.log('Sending student data to external system:', payload);
+    console.log('External API URL:', `${externalApiUrl}/Register`);
 
-    const response = await axios.post(`${externalApiUrl}/auth/api/create-student-external`, payload, {
+    // Create HTTP agent that forces IPv4 to avoid IPv6 connection issues
+    const http = require('http');
+    const httpAgent = new http.Agent({
+      family: 4, // Force IPv4
+      keepAlive: true
+    });
+
+    const response = await axios.post(`${externalApiUrl}/Register`, payload, {
       headers: {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true' // To bypass ngrok browser warning
       },
-      timeout: 10000 // 10 seconds timeout
+      timeout: 10000, // 10 seconds timeout
+      httpAgent: httpAgent // Use IPv4 agent
     });
 
     console.log('External system response:', response.data);

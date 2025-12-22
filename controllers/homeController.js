@@ -306,28 +306,26 @@ const public_Register_post = async (req, res) => {
 
   try {
     // Send student data to external system FIRST (before creating local account)
-    // Only send to external system if center is Online
-    if (centerName === 'Online') {
-      try {
-        console.log("Sending student data to external system before creating local account...");
-        await sendStudentToExternalSystem({
-          studentName: Username,
-          studentPhone: `${phoneCountryCode || '20'}${phone}`,
-          parentPhone: `${parentPhoneCountryCode || '20'}${parentPhone}`,
-          studentCode: Code
-        });
-        console.log("Student data sent to external system successfully");
-      } catch (externalError) {
-        console.error("External system rejected student creation:", externalError.message);
-        // Show the error message from external system and prevent local account creation
-        errors.externalSystem = `فشل في إنشاء الحساب في النظام الخارجي: ${externalError.message}`;
-        return res.render('Register', {
-          title: 'Register Page',
-          errors: errors,
-          firebaseError: '',
-          formData: req.body,
-        });
-      }
+    // Send to external system for ALL centers (GTA, Tagmo3, Online, etc.) - no restrictions
+    try {
+      console.log("Sending student data to external system before creating local account...");
+      await sendStudentToExternalSystem({
+        studentName: Username,
+        studentPhone: `${phoneCountryCode || '20'}${phone}`,
+        parentPhone: `${parentPhoneCountryCode || '20'}${parentPhone}`,
+        studentCode: Code
+      });
+      console.log("Student data sent to external system successfully");
+    } catch (externalError) {
+      console.error("External system rejected student creation:", externalError.message);
+      // Show the error message from external system and prevent local account creation
+      errors.externalSystem = `فشل في إنشاء الحساب في النظام الخارجي: ${externalError.message}`;
+      return res.render('Register', {
+        title: 'Register Page',
+        errors: errors,
+        firebaseError: '',
+        formData: req.body,
+      });
     }
 
     // Format phone numbers with country codes

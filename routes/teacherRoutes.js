@@ -79,8 +79,11 @@ router.post("/blockStudent/:studentID", authMiddleware, teacherController.blockS
 router.post("/unblockStudent/:studentID", authMiddleware, teacherController.unblockStudent);
 router.get("/blockHistory/:studentID", authMiddleware, teacherController.getStudentBlockHistory);
 
-// Reset student to external system (Online students)
+// Reset student to external system (Online, Tagmo3, GTA students)
 router.post("/resetStudentToOnline/:studentID", authMiddleware, teacherController.resetStudentToOnline);
+
+// Reset entire group to external system
+router.post("/resetGroupToOnline", authMiddleware, teacherController.resetGroupToOnline);
 
 
 // ==================  END Student Requests  ================= //

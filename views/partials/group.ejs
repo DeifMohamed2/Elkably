@@ -36,6 +36,11 @@
       }
       const gradeType = document.getElementById('gradeType');
       if (gradeType) gradeType.innerHTML = '<option value="" selected>Type</option>';
+      
+      // Call updateGroupResetButton if it exists
+      if (typeof updateGroupResetButton === 'function') {
+        updateGroupResetButton();
+      }
     }
 
     function onGradeChange() {
@@ -55,6 +60,11 @@
       }
       const groupTime = document.getElementById('groupTime');
       if (groupTime) groupTime.innerHTML = '<option value="" selected>Group Time</option>';
+      
+      // Call updateGroupResetButton if it exists
+      if (typeof updateGroupResetButton === 'function') {
+        updateGroupResetButton();
+      }
     }
 
     function updateGroupTimes() {
@@ -71,6 +81,10 @@
       groupTime.innerHTML = '<option value="" selected>Group Time</option>';
 
       if (!groupTimes[selectedCenter] || !groupTimes[selectedCenter][selectedGrade]) {
+        // Call updateGroupResetButton if it exists
+        if (typeof updateGroupResetButton === 'function') {
+          updateGroupResetButton();
+        }
         return;
       }
       const times = groupTimes[selectedCenter][selectedGrade][selectedGradeType];
@@ -79,6 +93,10 @@
         option.value = 'default';
         option.textContent = 'Default Group Time';
         groupTime.appendChild(option);
+        // Call updateGroupResetButton if it exists
+        if (typeof updateGroupResetButton === 'function') {
+          updateGroupResetButton();
+        }
         return;
       }
       times.forEach(group => {
@@ -87,6 +105,11 @@
         option.textContent = group.text;
         groupTime.appendChild(option);
       });
+      
+      // Call updateGroupResetButton if it exists
+      if (typeof updateGroupResetButton === 'function') {
+        updateGroupResetButton();
+      }
     }
 
     document.addEventListener('DOMContentLoaded', async () => {

@@ -817,6 +817,31 @@ table tbody tr:hover {
         </div>
     </div>
 
+    <!-- Reset Group Results Modal -->
+    <div class="modal fade show" id="resetGroupResultsModal" tabindex="-1" aria-labelledby="resetGroupResultsModalLabel" aria-hidden="false">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h2 class="modal-title" id="resetGroupResultsModalLabel">
+                        <i class="fa-solid fa-chart-pie me-2"></i>نتائج إرسال المجموعة
+                    </h2>
+                    <i class="fa-solid fa-xmark close-modal" data-bs-dismiss="modal" aria-label="Close"></i>
+                </div>
+                <div class="modal-body">
+                    <div id="resetGroupResultsContent">
+                        <div class="text-center">
+                            <div class="spinner mx-auto"></div>
+                            <p class="mt-3">جاري المعالجة...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <!--  END Modal -->
             <div class="col-lg-10 ">
                 <main>
@@ -860,6 +885,11 @@ table tbody tr:hover {
                                   <button class="btn btn-outline-warning me-5 mt-4" >Get Data</button>
                      
                             </form>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-primary btn-lg" id="resetGroupBtn" style="display: none;" onclick="resetGroupToOnline()">
+                                <i class="fa-solid fa-users"></i> إرسال المجموعة بالكامل إلى النظام الخارجي
+                            </button>
                         </div>
                     </div>
                     
@@ -1154,9 +1184,10 @@ table tbody tr:hover {
                                                     </td>
 
                                                     <td class="enter">
-                                                        <% if (student.centerName === 'Online') { %>
+                                                        <% const allowedCenters = ['Online', 'tagmo3', 'GTA']; %>
+                                                        <% if (allowedCenters.includes(student.centerName)) { %>
                                                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="resetStudentToOnline('<%= student._id %>', '<%= student.Username %>')" id="resetBtn_<%= student._id %>">
-                                                                <i class="fa-solid fa-rotate"></i> Reset to Online
+                                                                <i class="fa-solid fa-rotate"></i> Reset to External
                                                             </button>
                                                         <% } else { %>
                                                             <span class="badge bg-secondary">-</span>
@@ -1544,9 +1575,10 @@ table tbody tr:hover {
       data.students.forEach(student => {
         c++;
         const tr = document.createElement('tr');
-        const isOnline = student.centerName === 'Online';
-        const resetButtonHtml = isOnline 
-          ? `<button type="button" class="btn btn-outline-primary btn-sm" onclick="resetStudentToOnline('${student._id || ''}', '${student.Username || ''}')" id="resetBtn_${student._id || ''}"><i class="fa-solid fa-rotate"></i> Reset to Online</button>`
+        const allowedCenters = ['Online', 'tagmo3', 'GTA'];
+        const isAllowed = allowedCenters.includes(student.centerName);
+        const resetButtonHtml = isAllowed 
+          ? `<button type="button" class="btn btn-outline-primary btn-sm" onclick="resetStudentToOnline('${student._id || ''}', '${student.Username || ''}')" id="resetBtn_${student._id || ''}"><i class="fa-solid fa-rotate"></i> Reset to External</button>`
           : '<span class="badge bg-secondary">-</span>';
         
         tr.innerHTML = `
@@ -1885,7 +1917,7 @@ table tbody tr:hover {
         alert(data.message || 'فشل في إرسال بيانات الطالب إلى النظام الخارجي');
         if (resetBtn) {
           resetBtn.disabled = false;
-          resetBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Reset to Online';
+          resetBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Reset to External';
         }
       }
     } catch (error) {
@@ -1893,10 +1925,278 @@ table tbody tr:hover {
       alert('حدث خطأ أثناء إرسال بيانات الطالب');
       if (resetBtn) {
         resetBtn.disabled = false;
-        resetBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Reset to Online';
+        resetBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Reset to External';
       }
     }
   }
+
+  // Function to reset entire group to external system
+  async function resetGroupToOnline() {
+    const centerName = document.getElementById('centerName')?.value;
+    const Grade = document.getElementById('Grade')?.value;
+    const gradeType = document.getElementById('gradeType')?.value;
+    const groupTime = document.getElementById('groupTime')?.value;
+
+    if (!centerName || !Grade || !gradeType || !groupTime) {
+      alert('الرجاء اختيار جميع الحقول (السنتر، الصف، النوع، المجموعة) أولاً');
+      return;
+    }
+
+    const allowedCenters = ['Online', 'tagmo3', 'GTA'];
+    if (!allowedCenters.includes(centerName)) {
+      alert('هذه الميزة متاحة فقط للسنترات: Online، Tagmo3، GTA');
+      return;
+    }
+
+    if (!confirm(`هل تريد إرسال جميع طلاب المجموعة (${centerName} - ${Grade} - ${gradeType} - ${groupTime}) إلى النظام الخارجي؟`)) {
+      return;
+    }
+
+    // Show modal with loading
+    const modal = new bootstrap.Modal(document.getElementById('resetGroupResultsModal'));
+    const resultsContent = document.getElementById('resetGroupResultsContent');
+    resultsContent.innerHTML = `
+      <div class="text-center">
+        <div class="spinner mx-auto"></div>
+        <p class="mt-3">جاري إرسال بيانات الطلاب...</p>
+        <p class="text-muted">يرجى الانتظار</p>
+      </div>
+    `;
+    modal.show();
+
+    try {
+      const response = await fetch('/teacher/resetGroupToOnline', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          centerName,
+          Grade,
+          gradeType,
+          groupTime
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        displayGroupResetResults(data.results, centerName, Grade, gradeType, groupTime);
+      } else {
+        resultsContent.innerHTML = `
+          <div class="alert alert-danger">
+            <h5><i class="fa-solid fa-triangle-exclamation me-2"></i>خطأ</h5>
+            <p>${data.message || 'فشل في إرسال بيانات المجموعة'}</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error resetting group to online:', error);
+      resultsContent.innerHTML = `
+        <div class="alert alert-danger">
+          <h5><i class="fa-solid fa-triangle-exclamation me-2"></i>خطأ في النظام</h5>
+          <p>حدث خطأ أثناء إرسال بيانات المجموعة: ${error.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  // Function to display group reset results professionally
+  function displayGroupResetResults(results, centerName, Grade, gradeType, groupTime) {
+    const resultsContent = document.getElementById('resetGroupResultsContent');
+    
+    const successCount = results.successful.length;
+    const failedCount = results.failed.length;
+    const totalCount = results.total;
+    const successPercentage = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
+
+    let html = `
+      <div class="mb-4">
+        <h4 class="mb-3">
+          <i class="fa-solid fa-users me-2"></i>المجموعة: ${centerName} - ${Grade} - ${gradeType} - ${groupTime}
+        </h4>
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="card bg-primary text-white">
+              <div class="card-body text-center">
+                <h3>${totalCount}</h3>
+                <p class="mb-0">إجمالي الطلاب</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-success text-white">
+              <div class="card-body text-center">
+                <h3>${successCount}</h3>
+                <p class="mb-0">نجح الإرسال</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-danger text-white">
+              <div class="card-body text-center">
+                <h3>${failedCount}</h3>
+                <p class="mb-0">فشل الإرسال</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-info text-white">
+              <div class="card-body text-center">
+                <h3>${successPercentage}%</h3>
+                <p class="mb-0">نسبة النجاح</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Successful students section
+    if (successCount > 0) {
+      html += `
+        <div class="mb-4">
+          <h5 class="text-success mb-3">
+            <i class="fa-solid fa-check-circle me-2"></i>الطلاب الذين تم إرسالهم بنجاح (${successCount})
+          </h5>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead class="table-success">
+                <tr>
+                  <th>#</th>
+                  <th>اسم الطالب</th>
+                  <th>كود الطالب</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      results.successful.forEach((student, index) => {
+        html += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${student.studentName}</td>
+            <td><span class="badge bg-primary">${student.studentCode}</span></td>
+            <td><span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>${student.message}</span></td>
+          </tr>
+        `;
+      });
+      
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Failed students section
+    if (failedCount > 0) {
+      html += `
+        <div class="mb-4">
+          <h5 class="text-danger mb-3">
+            <i class="fa-solid fa-times-circle me-2"></i>الطلاب الذين فشل إرسالهم (${failedCount})
+          </h5>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead class="table-danger">
+                <tr>
+                  <th>#</th>
+                  <th>اسم الطالب</th>
+                  <th>كود الطالب</th>
+                  <th>سبب الفشل</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      results.failed.forEach((student, index) => {
+        html += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${student.studentName}</td>
+            <td><span class="badge bg-primary">${student.studentCode}</span></td>
+            <td>
+              <span class="badge bg-danger" title="${student.reason}">
+                <i class="fa-solid fa-exclamation-triangle me-1"></i>${student.reason || student.error}
+              </span>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Summary message
+    if (failedCount === 0) {
+      html += `
+        <div class="alert alert-success">
+          <h5><i class="fa-solid fa-check-circle me-2"></i>تم بنجاح!</h5>
+          <p class="mb-0">تم إرسال جميع الطلاب (${successCount}) بنجاح إلى النظام الخارجي.</p>
+        </div>
+      `;
+    } else if (successCount === 0) {
+      html += `
+        <div class="alert alert-danger">
+          <h5><i class="fa-solid fa-times-circle me-2"></i>فشل الإرسال</h5>
+          <p class="mb-0">فشل إرسال جميع الطلاب. يرجى مراجعة الأسباب أعلاه.</p>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="alert alert-warning">
+          <h5><i class="fa-solid fa-exclamation-triangle me-2"></i>إرسال جزئي</h5>
+          <p class="mb-0">تم إرسال ${successCount} طالب بنجاح، وفشل إرسال ${failedCount} طالب. يرجى مراجعة الأسباب أعلاه.</p>
+        </div>
+      `;
+    }
+
+    resultsContent.innerHTML = html;
+  }
+
+  // Show/hide group reset button based on form selections
+  function updateGroupResetButton() {
+    const centerName = document.getElementById('centerName')?.value;
+    const Grade = document.getElementById('Grade')?.value;
+    const gradeType = document.getElementById('gradeType')?.value;
+    const groupTime = document.getElementById('groupTime')?.value;
+    const resetGroupBtn = document.getElementById('resetGroupBtn');
+
+    if (resetGroupBtn) {
+      const allowedCenters = ['Online', 'tagmo3', 'GTA'];
+      const hasAllFields = centerName && Grade && gradeType && groupTime;
+      const isAllowedCenter = allowedCenters.includes(centerName);
+
+      if (hasAllFields && isAllowedCenter) {
+        resetGroupBtn.style.display = 'block';
+      } else {
+        resetGroupBtn.style.display = 'none';
+      }
+    }
+  }
+
+  // Add event listeners to form fields
+  document.addEventListener('DOMContentLoaded', function() {
+    const centerName = document.getElementById('centerName');
+    const Grade = document.getElementById('Grade');
+    const gradeType = document.getElementById('gradeType');
+    const groupTime = document.getElementById('groupTime');
+
+    if (centerName) centerName.addEventListener('change', updateGroupResetButton);
+    if (Grade) Grade.addEventListener('change', updateGroupResetButton);
+    if (gradeType) gradeType.addEventListener('change', updateGroupResetButton);
+    if (groupTime) groupTime.addEventListener('change', updateGroupResetButton);
+
+    // Initial check
+    updateGroupResetButton();
+  });
 </script>
 
 </body>

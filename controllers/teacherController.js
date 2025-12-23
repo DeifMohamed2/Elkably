@@ -556,7 +556,7 @@ const getStudentBlockHistory = async (req, res) => {
   }
 };
 
-// Reset student to external system (for Online students)
+// Reset student to external system (for Online, Tagmo3, and GTA students)
 const resetStudentToOnline = async (req, res) => {
   try {
     const { studentID } = req.params;
@@ -577,11 +577,12 @@ const resetStudentToOnline = async (req, res) => {
       });
     }
 
-    // Check if student is from Online center
-    if (student.centerName !== 'Online') {
+    // Check if student is from allowed centers (Online, Tagmo3, GTA)
+    const allowedCenters = ['Online', 'tagmo3', 'GTA'];
+    if (!allowedCenters.includes(student.centerName)) {
       return res.status(400).json({ 
         success: false,
-        message: 'This feature is only available for Online students.' 
+        message: 'This feature is only available for Online, Tagmo3, and GTA students.' 
       });
     }
 
@@ -614,6 +615,101 @@ const resetStudentToOnline = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'حدث خطأ في النظام' 
+    });
+  }
+};
+
+// Reset entire group to external system
+const resetGroupToOnline = async (req, res) => {
+  try {
+    const { centerName, Grade, gradeType, groupTime } = req.body;
+
+    if (!centerName || !Grade || !gradeType || !groupTime) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'All group parameters are required (centerName, Grade, gradeType, groupTime).' 
+      });
+    }
+
+    // Check if center is allowed
+    const allowedCenters = ['Online', 'tagmo3', 'GTA'];
+    if (!allowedCenters.includes(centerName)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'This feature is only available for Online, Tagmo3, and GTA centers.' 
+      });
+    }
+
+    // Find the group
+    const group = await Group.findOne({
+      CenterName: centerName,
+      Grade: Grade,
+      gradeType: gradeType,
+      GroupTime: groupTime
+    }).populate('students');
+
+    if (!group) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Group not found.' 
+      });
+    }
+
+    if (!group.students || group.students.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'No students found in this group.' 
+      });
+    }
+
+    const results = {
+      total: group.students.length,
+      successful: [],
+      failed: []
+    };
+
+    // Process each student
+    for (const student of group.students) {
+      try {
+        // Prepare student data for external system
+        const studentData = {
+          studentName: student.Username,
+          studentPhone: `${student.phoneCountryCode || '20'}${student.phone}`,
+          parentPhone: `${student.parentPhoneCountryCode || '20'}${student.parentPhone}`,
+          studentCode: student.Code
+        };
+
+        // Send to external system
+        await sendStudentToExternalSystem(studentData);
+        
+        results.successful.push({
+          studentId: student._id,
+          studentName: student.Username,
+          studentCode: student.Code,
+          message: 'تم الإرسال بنجاح'
+        });
+      } catch (externalError) {
+        results.failed.push({
+          studentId: student._id,
+          studentName: student.Username,
+          studentCode: student.Code,
+          error: externalError.message || 'فشل في الإرسال',
+          reason: externalError.message || 'خطأ غير معروف'
+        });
+      }
+    }
+
+    return res.status(200).json({ 
+      success: true,
+      message: `تم معالجة ${results.total} طالب: ${results.successful.length} نجح، ${results.failed.length} فشل`,
+      results: results
+    });
+  } catch (error) {
+    console.error('Error resetting group to online:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'حدث خطأ في النظام',
+      error: error.message 
     });
   }
 };
@@ -3855,6 +3951,7 @@ module.exports = {
   unblockStudent,
   getStudentBlockHistory,
   resetStudentToOnline,
+  resetGroupToOnline,
 
   searchToGetOneUserAllData,
   convertToExcelAllUserData,

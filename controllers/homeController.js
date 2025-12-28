@@ -318,14 +318,30 @@ const public_Register_post = async (req, res) => {
       console.log("Student data sent to external system successfully");
     } catch (externalError) {
       console.error("External system rejected student creation:", externalError.message);
-      // Show the error message from external system and prevent local account creation
-      errors.externalSystem = `فشل في إنشاء الحساب في النظام الخارجي: ${externalError.message}`;
-      return res.render('Register', {
-        title: 'Register Page',
-        errors: errors,
-        firebaseError: '',
-        formData: req.body,
-      });
+      
+      // Check if the error is about the student already being registered
+      const errorMessage = externalError.message.toLowerCase();
+      const isAlreadyRegistered = 
+        errorMessage.includes('already registered') ||
+        errorMessage.includes('one number already registered') ||
+        errorMessage.includes('already exists') ||
+        errorMessage.includes('موجود بالفعل') ||
+        errorMessage.includes('مستخدم من قبل') ||
+        errorMessage.includes('duplicate');
+      
+      if (isAlreadyRegistered) {
+        // If student is already registered in external system, log it but continue with local registration
+        console.log("Student is already registered in external system, continuing with local registration...");
+      } else {
+        // For other errors, show the error message and prevent local account creation
+        errors.externalSystem = `فشل في إنشاء الحساب في النظام الخارجي: ${externalError.message}`;
+        return res.render('Register', {
+          title: 'Register Page',
+          errors: errors,
+          firebaseError: '',
+          formData: req.body,
+        });
+      }
     }
 
     // Format phone numbers with country codes

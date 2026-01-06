@@ -1304,6 +1304,9 @@ const markAttendance = async (req, res) => {
         // Update the status to 'Late' if an entry already exists
         existingHistory.status = 'Late';
         existingHistory.atTime = new Date().toLocaleTimeString();
+        existingHistory.homeworkStatus = HWmessage;
+        existingHistory.amountPaid = student.balance || 0;
+        existingHistory.amountRemaining = student.amountRemaining || 0;
 
         // Mark AttendanceHistory as modified to ensure Mongoose updates it
         student.markModified('AttendanceHistory');
@@ -1314,6 +1317,9 @@ const markAttendance = async (req, res) => {
           date: today,
           atTime: new Date().toLocaleTimeString(),
           status: 'Late',
+          homeworkStatus: HWmessage,
+          amountPaid: student.balance || 0,
+          amountRemaining: student.amountRemaining || 0,
         });
       }
 
@@ -1402,6 +1408,9 @@ Thank you`;
           date: today,
           atTime: new Date().toLocaleTimeString(),
           status: 'Present From Other Group',
+          homeworkStatus: HWmessage,
+          amountPaid: student.balance || 0,
+          amountRemaining: student.amountRemaining || 0,
         });
       } else {
         student.AttendanceHistory.push({
@@ -1409,6 +1418,9 @@ Thank you`;
           date: today,
           atTime: new Date().toLocaleTimeString(),
           status: 'Present',
+          homeworkStatus: HWmessage,
+          amountPaid: student.balance || 0,
+          amountRemaining: student.amountRemaining || 0,
         });
       }
   let message2 = '';

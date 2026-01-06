@@ -110,6 +110,11 @@ const userSchema = new Schema(
       default: [],
     },
 
+    fcmToken: {
+      type: String,
+      default: null,
+    },
+
     subscribe: {
       type: Boolean,
       required: false,

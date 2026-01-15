@@ -4117,7 +4117,27 @@ const sendNotificationFromExcel = async (req, res) => {
       });
     }
     
-    const title = req.body.title || 'Elkably Team';
+    const { 
+      title = 'Elkably Team', 
+      sendType, 
+      phoneColumn, 
+      nameColumn,
+      hwColumn,
+      quizName,
+      gradeColumn,
+      maxGrade,
+      studentPhoneColumn,
+      sendToStudents,
+      messageContent,
+      sendTarget
+    } = req.body;
+    
+    if (!sendType || !phoneColumn || !nameColumn) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى إدخال نوع الإرسال وأسماء الأعمدة المطلوبة'
+      });
+    }
     
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(req.file.buffer);
@@ -4128,6 +4148,26 @@ const sendNotificationFromExcel = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'الملف لا يحتوي على بيانات'
+      });
+    }
+    
+    // Get header row to find column indices
+    const headerRow = worksheet.getRow(1);
+    const columnIndices = {};
+    
+    headerRow.eachCell((cell, colNumber) => {
+      const cellValue = cell.value?.toString()?.trim();
+      if (cellValue === phoneColumn) columnIndices.phone = colNumber;
+      if (cellValue === nameColumn) columnIndices.name = colNumber;
+      if (hwColumn && cellValue === hwColumn) columnIndices.hw = colNumber;
+      if (gradeColumn && cellValue === gradeColumn) columnIndices.grade = colNumber;
+      if (studentPhoneColumn && cellValue === studentPhoneColumn) columnIndices.studentPhone = colNumber;
+    });
+    
+    if (!columnIndices.phone || !columnIndices.name) {
+      return res.status(400).json({
+        success: false,
+        message: 'لم يتم العثور على أعمدة الهاتف أو الاسم في الملف'
       });
     }
     
@@ -4142,34 +4182,172 @@ const sendNotificationFromExcel = async (req, res) => {
     
     for (let i = 2; i <= worksheet.rowCount; i++) {
       const row = worksheet.getRow(i);
-      const phone = row.getCell(1).value?.toString();
-      const message = row.getCell(2).value?.toString();
+      const phone = row.getCell(columnIndices.phone).value?.toString();
+      const name = row.getCell(columnIndices.name).value?.toString();
+      const studentPhone = columnIndices.studentPhone ? row.getCell(columnIndices.studentPhone).value?.toString() : null;
       
-      if (!phone || !message) {
+      if (!phone) {
         failed++;
         continue;
       }
       
       try {
-        // Find student by phone
-        const student = await User.findOne({
-          $or: [
-            { phone: { $regex: phone.replace(/\D/g, '').slice(-9) } },
-            { parentPhone: { $regex: phone.replace(/\D/g, '').slice(-9) } }
-          ]
-        });
+        let messageToSend = '';
+        let phonesToSend = [phone];
         
-        const result = await sendNotificationMessage(phone, `${title}: ${message}`);
+        if (sendType === 'hwStatus') {
+          const hwStatus = columnIndices.hw ? row.getCell(columnIndices.hw).value?.toString() : '';
+          if (!hwStatus) {
+            failed++;
+            continue;
+          }
+          const hwText = hwStatus.toLowerCase() === 'yes' || hwStatus === 'نعم' ? 'حل الواجب ✅' : 'لم يحل الواجب ❌';
+          messageToSend = `مرحباً ولي أمر الطالب ${name}\nحالة الواجب: ${hwText}`;
+        } else if (sendType === 'gradeMsg') {
+          const gradeValue = columnIndices.grade ? row.getCell(columnIndices.grade).value?.toString() : '';
+          if (!gradeValue) {
+            failed++;
+            continue;
+          }
+          messageToSend = `مرحباً ولي أمر الطالب ${name}\nنتيجة امتحان: ${quizName}\nالدرجة: ${gradeValue}/${maxGrade}`;
+          
+          if (sendToStudents === 'true' && studentPhone) {
+            phonesToSend.push(studentPhone);
+          }
+        } else if (sendType === 'sendMsg') {
+          messageToSend = messageContent.replace(/{name}/g, name || 'الطالب');
+          
+          phonesToSend = [];
+          if (sendTarget === 'parents' || sendTarget === 'both') {
+            phonesToSend.push(phone);
+          }
+          if ((sendTarget === 'students' || sendTarget === 'both') && studentPhone) {
+            phonesToSend.push(studentPhone);
+          }
+          
+          if (phonesToSend.length === 0) {
+            failed++;
+            continue;
+          }
+        }
         
+        for (const targetPhone of phonesToSend) {
+          const result = await sendNotificationMessage(targetPhone, `${title}: ${messageToSend}`);
+          
+          if (result.success) {
+            await Notification.create({
+              parentPhone: targetPhone,
+              type: sendType,
+              title: title,
+              body: messageToSend,
+              data: { sentBy: 'excel', source: 'excel_upload', sendType }
+            });
+            sent++;
+          } else {
+            failed++;
+          }
+        }
+      } catch (err) {
+        console.error('Error sending notification from excel row:', err);
+        failed++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      sent,
+      failed,
+      total,
+      message: `تم إرسال ${sent} إشعار من أصل ${total}`
+    });
+  } catch (error) {
+    console.error('Error processing excel file:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+// New function that accepts JSON data from client-side Excel parsing
+const sendNotificationFromExcelJson = async (req, res) => {
+  try {
+    const { 
+      title = 'Elkably Team', 
+      sendType, 
+      phoneColumn, 
+      nameColumn,
+      hwColumn,
+      quizName,
+      gradeColumn,
+      maxGrade,
+      studentPhoneColumn,
+      sendToStudents,
+      messageContent,
+      sendTarget,
+      excelData
+    } = req.body;
+    
+    if (!sendType || !phoneColumn || !nameColumn) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى إدخال نوع الإرسال وأسماء الأعمدة المطلوبة'
+      });
+    }
+
+    if (!excelData || !Array.isArray(excelData) || excelData.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'لا توجد بيانات في الملف'
+      });
+    }
+    
+    let sent = 0;
+    let failed = 0;
+    const total = excelData.length;
+    
+    for (const row of excelData) {
+      const phone = row[phoneColumn]?.toString();
+      const name = row[nameColumn]?.toString();
+      
+      if (!phone) {
+        failed++;
+        continue;
+      }
+      
+      try {
+        let messageToSend = '';
+        
+        if (sendType === 'hwStatus') {
+          const hwStatus = hwColumn ? row[hwColumn]?.toString() : '';
+          if (!hwStatus) {
+            failed++;
+            continue;
+          }
+          const hwText = hwStatus.toLowerCase() === 'yes' || hwStatus === 'نعم' ? 'حل الواجب ✅' : 'لم يحل الواجب ❌';
+          messageToSend = `مرحباً ولي أمر الطالب ${name}\nحالة الواجب: ${hwText}`;
+        } else if (sendType === 'gradeMsg') {
+          const gradeValue = gradeColumn ? row[gradeColumn]?.toString() : '';
+          if (!gradeValue) {
+            failed++;
+            continue;
+          }
+          messageToSend = `مرحباً ولي أمر الطالب ${name}\nنتيجة امتحان: ${quizName}\nالدرجة: ${gradeValue}/${maxGrade}`;
+        } else if (sendType === 'sendMsg') {
+          messageToSend = messageContent.replace(/{name}/g, name || 'الطالب');
+        }
+        
+        const result = await sendNotificationMessage(phone, `${title}: ${messageToSend}`);
+          
         if (result.success) {
-          // Save notification to database
+          // Map sendType to valid Notification type enum values
+          const notificationType = sendType === 'hwStatus' ? 'homework' : 'custom';
           await Notification.create({
-            studentId: student?._id,
             parentPhone: phone,
-            type: 'custom',
+            type: notificationType,
             title: title,
-            body: message,
-            data: { sentBy: 'excel', source: 'excel_upload' }
+            body: messageToSend,
+            data: { sentBy: 'excel', source: 'excel_json', sendType }
           });
           sent++;
         } else {
@@ -4189,7 +4367,7 @@ const sendNotificationFromExcel = async (req, res) => {
       message: `تم إرسال ${sent} إشعار من أصل ${total}`
     });
   } catch (error) {
-    console.error('Error processing excel file:', error);
+    console.error('Error processing excel json data:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Internal server error'
@@ -4241,6 +4419,197 @@ const sendCustomNotification = async (req, res) => {
     }
   } catch (error) {
     console.error('Error sending custom notification:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+const sendNotificationToAllParents = async (req, res) => {
+  try {
+    const { title, message } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى كتابة نص الرسالة'
+      });
+    }
+    
+    // Build query - get all parents with valid phone numbers
+    const query = { parentPhone: { $exists: true, $ne: null, $ne: '' } };
+    
+    const parents = await User.find(query)
+      .select('Username Code phone parentPhone fcmToken')
+      .lean();
+    
+    let sent = 0;
+    let failed = 0;
+    const total = parents.length;
+    
+    for (const parent of parents) {
+      try {
+        const phone = parent.parentPhone;
+        
+        if (!phone) {
+          failed++;
+          continue;
+        }
+        
+        const personalizedMessage = message.replace(/{name}/g, parent.Username || 'الطالب');
+        
+        const result = await sendNotificationMessage(phone, `${title || 'Elkably Team'}: ${personalizedMessage}`);
+        
+        if (result.success) {
+          await Notification.create({
+            studentId: parent._id,
+            parentPhone: phone,
+            type: 'broadcast',
+            title: title || 'Elkably Team',
+            body: personalizedMessage,
+            data: { sentBy: 'all_parents_broadcast' }
+          });
+          sent++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        console.error('Error sending notification to parent:', err);
+        failed++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      sent,
+      failed,
+      total,
+      message: `تم إرسال ${sent} إشعار من أصل ${total}`
+    });
+  } catch (error) {
+    console.error('Error sending notifications to all parents:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+const getGroupStudentsForNotifications = async (req, res) => {
+  try {
+    const { centerName, Grade, gradeType, groupTime, optionSelect } = req.query;
+    
+    if (!centerName || !Grade || !gradeType || !groupTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى ملء جميع الحقول المطلوبة'
+      });
+    }
+    
+    const query = { centerName, Grade, gradeType, groupTime };
+    
+    const students = await User.find(query)
+      .select('Username Code phone parentPhone fcmToken _id')
+      .lean();
+    
+    res.json({
+      success: true,
+      students
+    });
+  } catch (error) {
+    console.error('Error getting group students for notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+const sendNotificationsToGroup = async (req, res) => {
+  try {
+    const { data, centerName, Grade, gradeType, groupTime, option, quizName, maxGrade, messageContent } = req.body;
+    
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'لا توجد بيانات للإرسال'
+      });
+    }
+    
+    let sent = 0;
+    let failed = 0;
+    const errors = [];
+    
+    for (const item of data) {
+      try {
+        let messageToSend = '';
+        
+        if (option === 'HWStatus') {
+          if (item.hwStatus === 'none') continue;
+          
+          const hwText = item.hwStatus === 'yes' ? 'حل الواجب ✅' : 'لم يحل الواجب ❌';
+          const solvText = item.solvStatus === 'true' ? ' (بدون خطوات)' : '';
+          messageToSend = `مرحباً ولي أمر الطالب ${item.studentName}\nحالة الواجب: ${hwText}${solvText}`;
+        } else if (option === 'gradeMsg') {
+          if (!item.grade || item.grade === '') continue;
+          
+          messageToSend = `مرحباً ولي أمر الطالب ${item.studentName}\nنتيجة امتحان: ${quizName}\nالدرجة: ${item.grade}/${maxGrade}`;
+        } else if (option === 'sendMsg') {
+          messageToSend = messageContent.replace(/{name}/g, item.studentName || 'الطالب');
+        }
+        
+        // Only send to parent
+        if (!item.parentPhone || item.parentPhone === '-') {
+          failed++;
+          continue;
+        }
+        
+        try {
+          const result = await sendNotificationMessage(item.parentPhone, `Elkably Team: ${messageToSend}`);
+          
+          if (result.success) {
+            // Map option to valid Notification type enum values
+            const notificationType = option === 'HWStatus' ? 'homework' : 'custom';
+            await Notification.create({
+              parentPhone: item.parentPhone,
+              type: notificationType,
+              title: 'Elkably Team',
+              body: messageToSend,
+              data: { 
+                sentBy: 'group_notification',
+                centerName,
+                Grade,
+                gradeType,
+                groupTime,
+                option
+              }
+            });
+            sent++;
+          } else {
+            failed++;
+            errors.push(item.parentPhone);
+          }
+        } catch (phoneErr) {
+          console.error('Error sending to phone:', item.parentPhone, phoneErr);
+          failed++;
+          errors.push(item.parentPhone);
+        }
+      } catch (itemErr) {
+        console.error('Error processing item:', itemErr);
+        failed++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      sent,
+      failed,
+      errors,
+      message: `تم إرسال ${sent} إشعار`
+    });
+  } catch (error) {
+    console.error('Error sending notifications to group:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Internal server error'
@@ -4361,5 +4730,9 @@ module.exports = {
   searchStudentsForNotifications,
   sendNotificationsToStudents,
   sendNotificationFromExcel,
+  sendNotificationFromExcelJson,
   sendCustomNotification,
+  sendNotificationToAllParents,
+  getGroupStudentsForNotifications,
+  sendNotificationsToGroup,
 };

@@ -442,6 +442,104 @@
             color: #dc3545;
         }
 
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+
+        .table th, .table td {
+            padding: 12px 15px;
+            border: 1px solid rgba(13, 110, 253, 0.2);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-dark {
+            background-color: rgba(30, 30, 30, 0.9);
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(45, 45, 45, 0.9);
+        }
+
+        .table-striped tbody tr:nth-of-type(even) {
+            background-color: rgba(30, 30, 30, 0.9);
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+        .table input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            appearance: none;
+            background-color: #2d2d2d;
+            border: 2px solid #0d6efd;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .table input[type="radio"]:checked::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background-color: #0d6efd;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .table input[type="text"].form-control {
+            background-color: rgba(45, 45, 45, 0.9);
+            border: 1px solid rgba(13, 110, 253, 0.5);
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .table-responsive {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(13, 110, 253, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+
+        .col-md-3, .col-md-4, .col-md-6, .col-md-8, .col-md-12 {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        .mb-3 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1.5rem;
+        }
+
         @media (max-width: 768px) {
             .form-container {
                 padding: 25px;
@@ -493,31 +591,107 @@
                                     <i class="fa-solid fa-edit"></i>
                                     رسالة مخصصة
                                 </button>
+                                <button class="tab-btn" onclick="switchTab('allparents')">
+                                    <i class="fa-solid fa-users-gear"></i>
+                                    كل أولياء الأمور
+                                </button>
+                                <button class="tab-btn" onclick="switchTab('group')">
+                                    <i class="fa-solid fa-user-group"></i>
+                                    مجموعة محددة
+                                </button>
                             </div>
 
                             <!-- Tab 1: Excel Upload -->
                             <div class="tab-content active" id="excel-tab">
-                                <div class="form-container">
+                                <div class="form-container" style="max-width: 1100px;">
                                     <div class="form-header">
                                         <h3><i class="fa-solid fa-file-excel"></i> إرسال إشعارات من ملف إكسل</h3>
-                                        <p>قم برفع ملف إكسل يحتوي على بيانات الطلاب والرسائل المراد إرسالها</p>
+                                        <p>قم برفع ملف إكسل وحدد أسماء الأعمدة ونوع الإرسال</p>
                                     </div>
 
-                                    <form id="excelForm">
+                                    <form id="excelForm" enctype="multipart/form-data">
+                                        <!-- Send Type Selection -->
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-list-check"></i> نوع الإرسال</label>
+                                            <select class="form-control" id="excelSendType">
+                                                <option value="">اختر نوع الإرسال</option>
+                                                <option value="hwStatus">إرسال حالة الواجب</option>
+                                                <option value="gradeMsg">إرسال درجات الامتحان</option>
+                                                <option value="sendMsg">إرسال رسالة عامة</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Common Column Names -->
+                                        <div class="row" id="excelCommonFields">
+                                            <div class="col-md-4 mb-3">
+                                                <label><i class="fa-solid fa-phone"></i> عمود أرقام أولياء الأمور</label>
+                                                <input type="text" class="form-control" id="excelPhoneColumn" placeholder="اسم العمود في ملف الإكسل">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label><i class="fa-solid fa-user"></i> عمود أسماء الطلاب</label>
+                                                <input type="text" class="form-control" id="excelNameColumn" placeholder="اسم العمود في ملف الإكسل">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label><i class="fa-solid fa-heading"></i> عنوان الإشعار</label>
+                                                <input type="text" class="form-control" id="excelTitle" placeholder="أدخل عنوان الإشعار..." value="Elkably Team">
+                                            </div>
+                                        </div>
+
+                                        <!-- HW Status Fields -->
+                                        <div class="row hidden" id="excelHWFields">
+                                            <div class="col-md-6 mb-3">
+                                                <label><i class="fa-solid fa-clipboard-check"></i> عمود حالة الواجب</label>
+                                                <input type="text" class="form-control" id="excelHWColumn" placeholder="اسم العمود في ملف الإكسل">
+                                            </div>
+                                        </div>
+
+                                        <!-- Grade Message Fields -->
+                                        <div class="row hidden" id="excelGradeFields">
+                                            <div class="col-md-3 mb-3">
+                                                <label><i class="fa-solid fa-file-signature"></i> اسم الامتحان</label>
+                                                <input type="text" class="form-control" id="excelQuizName" placeholder="مثال: امتحان الفصل الأول">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label><i class="fa-solid fa-star"></i> عمود الدرجات</label>
+                                                <input type="text" class="form-control" id="excelGradeColumn" placeholder="اسم العمود في ملف الإكسل">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label><i class="fa-solid fa-hundred-points"></i> الدرجة النهائية</label>
+                                                <input type="text" class="form-control" id="excelMaxGrade" placeholder="مثال: 100">
+                                            </div>
+                                        </div>
+
+                                        <!-- General Message Fields -->
+                                        <div class="row hidden" id="excelMsgFields">
+                                            <div class="col-md-12 mb-3">
+                                                <label><i class="fa-solid fa-message"></i> نص الرسالة</label>
+                                                <textarea class="form-control" id="excelMessageContent" placeholder="أدخل نص الرسالة هنا... يمكنك استخدام {name} لإضافة اسم الطالب"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sample Excel Download -->
+                                        <div class="form-group" id="excelSampleSection" style="display: none;">
+                                            <div style="background: rgba(13, 110, 253, 0.1); border: 1px solid rgba(13, 110, 253, 0.3); border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                                                <div>
+                                                    <i class="fa-solid fa-circle-info" style="color: #0d6efd; margin-left: 10px;"></i>
+                                                    <span id="excelSampleText">قم بتحميل نموذج الإكسل للتعرف على تنسيق الملف المطلوب</span>
+                                                </div>
+                                                <button type="button" class="btn-submit" style="width: auto; padding: 10px 20px; font-size: 0.9rem;" onclick="downloadExcelSample()">
+                                                    <i class="fa-solid fa-download"></i>
+                                                    تحميل نموذج
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- File Upload -->
                                         <div class="form-group">
                                             <label><i class="fa-solid fa-upload"></i> ملف الإكسل</label>
                                             <div class="file-upload-area" onclick="document.getElementById('excelFile').click()">
                                                 <i class="fa-solid fa-cloud-arrow-up"></i>
                                                 <p>اضغط هنا أو اسحب الملف لرفعه</p>
-                                                <p style="font-size: 0.85rem;">يجب أن يحتوي الملف على أعمدة: رقم الهاتف، الرسالة</p>
                                                 <span class="file-name" id="excelFileName"></span>
                                             </div>
                                             <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileSelect(this, 'excelFileName')">
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label><i class="fa-solid fa-heading"></i> عنوان الإشعار</label>
-                                            <input type="text" class="form-control" id="excelTitle" placeholder="أدخل عنوان الإشعار..." value="Elkably Team">
                                         </div>
 
                                         <div id="excelAlert" class="message-alert"></div>
@@ -549,7 +723,7 @@
                                             </div>
                                         </div>
 
-                                        <button type="submit" class="btn-submit" id="excelSubmitBtn">
+                                        <button type="button" class="btn-submit" id="excelSubmitBtn" onclick="submitExcelForm()">
                                             <i class="fa-solid fa-paper-plane"></i>
                                             إرسال الإشعارات
                                         </button>
@@ -656,6 +830,221 @@
                                     </form>
                                 </div>
                             </div>
+
+                            <!-- Tab 4: All Parents -->
+                            <div class="tab-content" id="allparents-tab">
+                                <div class="form-container">
+                                    <div class="form-header">
+                                        <h3><i class="fa-solid fa-users-gear"></i> إرسال إشعارات لجميع أولياء الأمور</h3>
+                                        <p>أرسل إشعاراً واحداً لجميع أولياء الأمور المسجلين في النظام</p>
+                                    </div>
+
+                                    <form id="allParentsForm">
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-heading"></i> عنوان الإشعار</label>
+                                            <input type="text" class="form-control" id="allParentsTitle" placeholder="أدخل عنوان الإشعار..." value="Elkably Team">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-message"></i> نص الرسالة</label>
+                                            <textarea class="form-control" id="allParentsMessage" placeholder="اكتب الرسالة هنا... يمكنك استخدام {name} لإضافة اسم الطالب"></textarea>
+                                        </div>
+
+                                        <div id="allParentsAlert" class="message-alert"></div>
+
+                                        <div class="progress-container" id="allParentsProgress">
+                                            <div class="progress-bar-wrapper">
+                                                <div class="progress-bar" id="allParentsProgressBar">0%</div>
+                                            </div>
+                                            <p class="progress-text" id="allParentsProgressText">جاري إرسال الإشعارات...</p>
+                                        </div>
+
+                                        <div class="results-container" id="allParentsResults">
+                                            <div class="result-card success">
+                                                <h4><i class="fa-solid fa-check-circle"></i> تم الإرسال بنجاح</h4>
+                                                <div class="result-stats">
+                                                    <div class="result-stat">
+                                                        <div class="value" id="allParentsSent">0</div>
+                                                        <div class="label">تم الإرسال</div>
+                                                    </div>
+                                                    <div class="result-stat">
+                                                        <div class="value" id="allParentsFailed">0</div>
+                                                        <div class="label">فشل</div>
+                                                    </div>
+                                                    <div class="result-stat">
+                                                        <div class="value" id="allParentsTotal">0</div>
+                                                        <div class="label">الإجمالي</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn-submit" id="allParentsSubmitBtn">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            إرسال للجميع
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Tab 5: Group -->
+                            <div class="tab-content" id="group-tab">
+                                <div class="form-container" style="max-width: 1200px;">
+                                    <div class="form-header">
+                                        <h3><i class="fa-solid fa-user-group"></i> إرسال إشعارات لمجموعة محددة</h3>
+                                        <p>اختر المجموعة ونوع الإرسال لإرسال إشعارات مخصصة</p>
+                                    </div>
+
+                                    <!-- Group Selection -->
+                                    <div class="row mb-4">
+                                        <div class="col-md-3 mb-3">
+                                            <label><i class="fa-solid fa-building"></i> السنتر</label>
+                                            <select class="form-control" id="groupCenterName">
+                                                <option value="">اختر السنتر</option>
+                                                <option value="GTA">GTA</option>
+                                                <option value="tagmo3">Tagmo3</option>
+                                                <option value="Online">Online</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label><i class="fa-solid fa-graduation-cap"></i> الصف</label>
+                                            <select class="form-control" id="groupGrade">
+                                                <option value="">اختر الصف</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label><i class="fa-solid fa-layer-group"></i> النوع</label>
+                                            <select class="form-control" id="groupGradeType">
+                                                <option value="">اختر النوع</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label><i class="fa-solid fa-clock"></i> وقت المجموعة</label>
+                                            <select class="form-control" id="groupTime">
+                                                <option value="">اختر الوقت</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-4">
+                                        <div class="col-md-8 mb-3">
+                                            <label><i class="fa-solid fa-list-check"></i> نوع الإرسال</label>
+                                            <select class="form-control" id="groupOptionSelect">
+                                                <option value="">اختر نوع الإرسال</option>
+                                                <option value="HWStatus">إرسال حالة الواجب</option>
+                                                <option value="gradeMsg">إرسال درجات الامتحان</option>
+                                                <option value="sendMsg">إرسال رسالة عامة</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                                            <button type="button" class="btn-submit" id="groupGetDataBtn" style="height: 56px;">
+                                                <i class="fa-solid fa-search"></i>
+                                                عرض البيانات
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quiz Info Section (for gradeMsg) -->
+                                    <div class="row mb-4 hidden" id="groupQuizInfo">
+                                        <div class="col-md-6 mb-3">
+                                            <label><i class="fa-solid fa-file-signature"></i> اسم الامتحان</label>
+                                            <input type="text" class="form-control" id="groupQuizName" placeholder="مثال: امتحان الفصل الأول">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label><i class="fa-solid fa-star"></i> الدرجة النهائية</label>
+                                            <input type="text" class="form-control" id="groupMaxGrade" placeholder="مثال: 100">
+                                        </div>
+                                    </div>
+
+                                    <!-- General Message Section (for sendMsg) -->
+                                    <div class="row mb-4 hidden" id="groupMsgSection">
+                                        <div class="col-md-12 mb-3">
+                                            <label><i class="fa-solid fa-message"></i> نص الرسالة</label>
+                                            <textarea class="form-control" id="groupMsgContent" placeholder="أدخل نص الرسالة هنا... يمكنك استخدام {name} لإضافة اسم الطالب"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- HW Status Table -->
+                                    <div class="mb-4 hidden" id="groupHWStatusTable">
+                                        <div class="mb-3">
+                                            <div class="search-input-wrapper">
+                                                <i class="fa-solid fa-search"></i>
+                                                <input type="text" class="form-control" id="groupSearchStudent" placeholder="بحث بكود الطالب..." style="padding-right: 50px;">
+                                            </div>
+                                        </div>
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                            <table class="table table-dark table-striped" style="border-radius: 12px; overflow: hidden;">
+                                                <thead style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>اسم الطالب</th>
+                                                        <th>كود الطالب</th>
+                                                        <th>رقم ولي الأمر</th>
+                                                        <th>نعم</th>
+                                                        <th>لا</th>
+                                                        <th>بدون خطوات</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="groupHWStatusTbody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quiz Grades Table -->
+                                    <div class="mb-4 hidden" id="groupQuizGradesTable">
+                                        <div class="mb-3">
+                                            <div class="search-input-wrapper">
+                                                <i class="fa-solid fa-search"></i>
+                                                <input type="text" class="form-control" id="groupSearchStudent2" placeholder="بحث بكود الطالب..." style="padding-right: 50px;">
+                                            </div>
+                                        </div>
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                            <table class="table table-dark table-striped" style="border-radius: 12px; overflow: hidden;">
+                                                <thead style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>اسم الطالب</th>
+                                                        <th>كود الطالب</th>
+                                                        <th>رقم ولي الأمر</th>
+                                                        <th>الدرجة</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="groupQuizGradesTbody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div id="groupAlert" class="message-alert"></div>
+
+                                    <div class="progress-container" id="groupProgress">
+                                        <div class="progress-bar-wrapper">
+                                            <div class="progress-bar" id="groupProgressBar">0%</div>
+                                        </div>
+                                        <p class="progress-text" id="groupProgressText">جاري إرسال الإشعارات...</p>
+                                    </div>
+
+                                    <div class="results-container" id="groupResults">
+                                        <div class="result-card success">
+                                            <h4><i class="fa-solid fa-check-circle"></i> تم الإرسال بنجاح</h4>
+                                            <div class="result-stats">
+                                                <div class="result-stat">
+                                                    <div class="value" id="groupSent">0</div>
+                                                    <div class="label">تم الإرسال</div>
+                                                </div>
+                                                <div class="result-stat">
+                                                    <div class="value" id="groupFailed">0</div>
+                                                    <div class="label">فشل</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn-submit hidden" id="groupSubmitBtn">
+                                        <i class="fa-solid fa-paper-plane"></i>
+                                        إرسال الإشعارات
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </main>
@@ -663,8 +1052,14 @@
         </div>
     </div>
 
+    <%- include("../partials/group.ejs") %>
+    
+    <!-- SheetJS Library for Excel generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <script>
         let selectedStudents = [];
+        let groupStudentsData = [];
 
         function switchTab(tabName) {
             // Remove active class from all tabs and buttons
@@ -689,52 +1084,212 @@
             setTimeout(() => alert.style.display = 'none', 5000);
         }
 
-        // Excel Form Submission
-        document.getElementById('excelForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // Excel Send Type Change Handler
+        document.getElementById('excelSendType').addEventListener('change', function() {
+            const sendType = this.value;
+            
+            // Hide all specific fields
+            document.getElementById('excelHWFields').classList.add('hidden');
+            document.getElementById('excelGradeFields').classList.add('hidden');
+            document.getElementById('excelMsgFields').classList.add('hidden');
+            
+            // Show/hide sample section
+            const sampleSection = document.getElementById('excelSampleSection');
+            const sampleText = document.getElementById('excelSampleText');
+            
+            if (sendType) {
+                sampleSection.style.display = 'block';
+                if (sendType === 'hwStatus') {
+                    sampleText.textContent = 'نموذج إرسال حالة الواجب - يحتوي على: اسم الطالب، رقم ولي الأمر، حالة الواجب';
+                } else if (sendType === 'gradeMsg') {
+                    sampleText.textContent = 'نموذج إرسال الدرجات - يحتوي على: اسم الطالب، رقم ولي الأمر، الدرجة، رقم الطالب (اختياري)';
+                } else if (sendType === 'sendMsg') {
+                    sampleText.textContent = 'نموذج إرسال رسالة عامة - يحتوي على: اسم الطالب، رقم ولي الأمر، رقم الطالب';
+                }
+            } else {
+                sampleSection.style.display = 'none';
+            }
+            
+            // Show relevant fields based on send type
+            if (sendType === 'hwStatus') {
+                document.getElementById('excelHWFields').classList.remove('hidden');
+            } else if (sendType === 'gradeMsg') {
+                document.getElementById('excelGradeFields').classList.remove('hidden');
+            } else if (sendType === 'sendMsg') {
+                document.getElementById('excelMsgFields').classList.remove('hidden');
+            }
+        });
 
+        // Download Excel Sample Function
+        function downloadExcelSample() {
+            const sendType = document.getElementById('excelSendType').value;
+            if (!sendType) {
+                showAlert('excelAlert', 'يرجى اختيار نوع الإرسال أولاً', 'error');
+                return;
+            }
+            
+            // Create sample data based on send type
+            let headers = [];
+            let sampleData = [];
+            let fileName = '';
+            
+            if (sendType === 'hwStatus') {
+                headers = ['اسم الطالب', 'رقم ولي الأمر', 'حالة الواجب'];
+                sampleData = [
+                    ['أحمد محمد', '01012345678', 'نعم'],
+                    ['سارة أحمد', '01023456789', 'لا'],
+                    ['محمد علي', '01034567890', 'نعم']
+                ];
+                fileName = 'نموذج_حالة_الواجب.xlsx';
+            } else if (sendType === 'gradeMsg') {
+                headers = ['اسم الطالب', 'رقم ولي الأمر', 'الدرجة', 'رقم الطالب'];
+                sampleData = [
+                    ['أحمد محمد', '01012345678', '85', '01112345678'],
+                    ['سارة أحمد', '01023456789', '92', '01123456789'],
+                    ['محمد علي', '01034567890', '78', '01134567890']
+                ];
+                fileName = 'نموذج_درجات_الامتحان.xlsx';
+            } else if (sendType === 'sendMsg') {
+                headers = ['اسم الطالب', 'رقم ولي الأمر', 'رقم الطالب'];
+                sampleData = [
+                    ['أحمد محمد', '01012345678', '01112345678'],
+                    ['سارة أحمد', '01023456789', '01123456789'],
+                    ['محمد علي', '01034567890', '01134567890']
+                ];
+                fileName = 'نموذج_رسالة_عامة.xlsx';
+            }
+            
+            // Create workbook using SheetJS
+            const wb = XLSX.utils.book_new();
+            const wsData = [headers, ...sampleData];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Set column widths
+            ws['!cols'] = headers.map(() => ({ wch: 20 }));
+            
+            XLSX.utils.book_append_sheet(wb, ws, 'البيانات');
+            XLSX.writeFile(wb, fileName);
+        }
+
+        // Excel Form Submission
+        async function submitExcelForm() {
             const fileInput = document.getElementById('excelFile');
-            const title = document.getElementById('excelTitle').value;
+            const sendType = document.getElementById('excelSendType').value;
+            const title = document.getElementById('excelTitle').value || 'Elkably Team';
+            const phoneColumn = document.getElementById('excelPhoneColumn').value;
+            const nameColumn = document.getElementById('excelNameColumn').value;
 
             if (!fileInput.files[0]) {
                 showAlert('excelAlert', 'يرجى اختيار ملف إكسل', 'error');
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('title', title);
+            if (!sendType) {
+                showAlert('excelAlert', 'يرجى اختيار نوع الإرسال', 'error');
+                return;
+            }
+
+            if (!phoneColumn || !nameColumn) {
+                showAlert('excelAlert', 'يرجى إدخال أسماء الأعمدة المطلوبة', 'error');
+                return;
+            }
+
+            // Validate specific fields based on send type
+            if (sendType === 'hwStatus') {
+                const hwColumn = document.getElementById('excelHWColumn').value;
+                if (!hwColumn) {
+                    showAlert('excelAlert', 'يرجى إدخال عمود حالة الواجب', 'error');
+                    return;
+                }
+            } else if (sendType === 'gradeMsg') {
+                const quizName = document.getElementById('excelQuizName').value;
+                const gradeColumn = document.getElementById('excelGradeColumn').value;
+                const maxGrade = document.getElementById('excelMaxGrade').value;
+                if (!quizName || !gradeColumn || !maxGrade) {
+                    showAlert('excelAlert', 'يرجى إدخال اسم الامتحان وعمود الدرجات والدرجة النهائية', 'error');
+                    return;
+                }
+            } else if (sendType === 'sendMsg') {
+                const messageContent = document.getElementById('excelMessageContent').value;
+                if (!messageContent) {
+                    showAlert('excelAlert', 'يرجى إدخال نص الرسالة', 'error');
+                    return;
+                }
+            }
 
             const submitBtn = document.getElementById('excelSubmitBtn');
             submitBtn.disabled = true;
             document.getElementById('excelProgress').style.display = 'block';
 
-            try {
-                const response = await fetch('/teacher/sendNotifications/fromExcel', {
-                    method: 'POST',
-                    body: formData
-                });
+            // Read Excel file client-side using SheetJS
+            const file = fileInput.files[0];
+            const reader = new FileReader();
 
-                const result = await response.json();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-                document.getElementById('excelProgress').style.display = 'none';
-                document.getElementById('excelResults').style.display = 'block';
+                    // Build request data
+                    const requestData = {
+                        title: title,
+                        sendType: sendType,
+                        phoneColumn: phoneColumn,
+                        nameColumn: nameColumn,
+                        excelData: jsonData
+                    };
 
-                if (result.success) {
-                    document.getElementById('excelSent').textContent = result.sent || 0;
-                    document.getElementById('excelFailed').textContent = result.failed || 0;
-                    document.getElementById('excelTotal').textContent = result.total || 0;
-                    showAlert('excelAlert', 'تم إرسال الإشعارات بنجاح!', 'success');
-                } else {
-                    showAlert('excelAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                    // Add specific fields based on send type
+                    if (sendType === 'hwStatus') {
+                        requestData.hwColumn = document.getElementById('excelHWColumn').value;
+                    } else if (sendType === 'gradeMsg') {
+                        requestData.quizName = document.getElementById('excelQuizName').value;
+                        requestData.gradeColumn = document.getElementById('excelGradeColumn').value;
+                        requestData.maxGrade = document.getElementById('excelMaxGrade').value;
+                    } else if (sendType === 'sendMsg') {
+                        requestData.messageContent = document.getElementById('excelMessageContent').value;
+                    }
+
+                    const response = await fetch('/teacher/sendNotifications/fromExcelJson', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    const result = await response.json();
+
+                    document.getElementById('excelProgress').style.display = 'none';
+                    document.getElementById('excelResults').style.display = 'block';
+
+                    if (result.success) {
+                        document.getElementById('excelSent').textContent = result.sent || 0;
+                        document.getElementById('excelFailed').textContent = result.failed || 0;
+                        document.getElementById('excelTotal').textContent = result.total || 0;
+                        showAlert('excelAlert', 'تم إرسال الإشعارات بنجاح!', 'success');
+                    } else {
+                        showAlert('excelAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                    }
+                } catch (error) {
+                    document.getElementById('excelProgress').style.display = 'none';
+                    showAlert('excelAlert', 'حدث خطأ: ' + error.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
                 }
-            } catch (error) {
+            };
+
+            reader.onerror = function() {
                 document.getElementById('excelProgress').style.display = 'none';
-                showAlert('excelAlert', 'حدث خطأ: ' + error.message, 'error');
-            } finally {
+                showAlert('excelAlert', 'حدث خطأ في قراءة الملف', 'error');
                 submitBtn.disabled = false;
-            }
-        });
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
 
         // Student Search
         let searchTimeout;
@@ -907,6 +1462,354 @@
             } finally {
                 submitBtn.disabled = false;
             }
+        });
+
+        // All Parents Form Submission
+        document.getElementById('allParentsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('allParentsTitle').value;
+            const message = document.getElementById('allParentsMessage').value;
+
+            if (!message) {
+                showAlert('allParentsAlert', 'يرجى كتابة نص الرسالة', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('allParentsSubmitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('allParentsProgress').style.display = 'block';
+
+            try {
+                const response = await fetch('/teacher/sendNotifications/toAllParents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, message })
+                });
+
+                const result = await response.json();
+
+                document.getElementById('allParentsProgress').style.display = 'none';
+                document.getElementById('allParentsResults').style.display = 'block';
+
+                if (result.success) {
+                    document.getElementById('allParentsSent').textContent = result.sent || 0;
+                    document.getElementById('allParentsFailed').textContent = result.failed || 0;
+                    document.getElementById('allParentsTotal').textContent = result.total || 0;
+                    showAlert('allParentsAlert', 'تم إرسال الإشعارات بنجاح!', 'success');
+                    document.getElementById('allParentsMessage').value = '';
+                } else {
+                    showAlert('allParentsAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                }
+            } catch (error) {
+                document.getElementById('allParentsProgress').style.display = 'none';
+                showAlert('allParentsAlert', 'حدث خطأ: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // ==================== Group Tab Functions ====================
+        
+        // Group dropdowns change handlers
+        document.getElementById('groupCenterName').addEventListener('change', function() {
+            const centerVal = this.value;
+            const gradeSelect = document.getElementById('groupGrade');
+            gradeSelect.innerHTML = '<option value="">اختر الصف</option>';
+            
+            if (window.__groupOptions && window.__groupOptions.centerNames[centerVal]) {
+                window.__groupOptions.centerNames[centerVal].forEach(center => {
+                    const option = document.createElement('option');
+                    option.value = center.value;
+                    option.textContent = center.text;
+                    gradeSelect.appendChild(option);
+                });
+            }
+            
+            document.getElementById('groupGradeType').innerHTML = '<option value="">اختر النوع</option>';
+            document.getElementById('groupTime').innerHTML = '<option value="">اختر الوقت</option>';
+        });
+
+        document.getElementById('groupGrade').addEventListener('change', function() {
+            const selectedGrade = this.value;
+            const gradeTypeSelect = document.getElementById('groupGradeType');
+            gradeTypeSelect.innerHTML = '<option value="">اختر النوع</option>';
+            
+            if (window.__groupOptions && window.__groupOptions.gradeTypeOptions[selectedGrade]) {
+                window.__groupOptions.gradeTypeOptions[selectedGrade].forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.text;
+                    gradeTypeSelect.appendChild(option);
+                });
+            }
+            
+            document.getElementById('groupTime').innerHTML = '<option value="">اختر الوقت</option>';
+        });
+
+        document.getElementById('groupGradeType').addEventListener('change', function() {
+            const centerName = document.getElementById('groupCenterName').value;
+            const grade = document.getElementById('groupGrade').value;
+            const gradeType = this.value;
+            const groupTimeSelect = document.getElementById('groupTime');
+            groupTimeSelect.innerHTML = '<option value="">اختر الوقت</option>';
+            
+            if (window.__groupOptions && 
+                window.__groupOptions.groupTimes[centerName] && 
+                window.__groupOptions.groupTimes[centerName][grade]) {
+                const times = window.__groupOptions.groupTimes[centerName][grade][gradeType];
+                if (times && Array.isArray(times) && times.length > 0) {
+                    times.forEach(time => {
+                        const option = document.createElement('option');
+                        // Handle both object {value, text} and string formats
+                        if (typeof time === 'object' && time.value !== undefined) {
+                            option.value = time.value;
+                            option.textContent = time.text || time.value;
+                        } else {
+                            option.value = time;
+                            option.textContent = time;
+                        }
+                        groupTimeSelect.appendChild(option);
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.value = 'default';
+                    option.textContent = 'Default Group Time';
+                    groupTimeSelect.appendChild(option);
+                }
+            }
+        });
+
+        document.getElementById('groupOptionSelect').addEventListener('change', function() {
+            const selectedOption = this.value;
+            
+            // Hide all sections
+            document.getElementById('groupQuizInfo').classList.add('hidden');
+            document.getElementById('groupMsgSection').classList.add('hidden');
+            document.getElementById('groupHWStatusTable').classList.add('hidden');
+            document.getElementById('groupQuizGradesTable').classList.add('hidden');
+            document.getElementById('groupSubmitBtn').classList.add('hidden');
+            
+            // Reset data
+            groupStudentsData = [];
+        });
+
+        // Get Group Data Button
+        document.getElementById('groupGetDataBtn').addEventListener('click', async function() {
+            const centerName = document.getElementById('groupCenterName').value;
+            const grade = document.getElementById('groupGrade').value;
+            const gradeType = document.getElementById('groupGradeType').value;
+            const groupTime = document.getElementById('groupTime').value;
+            const optionSelect = document.getElementById('groupOptionSelect').value;
+
+            if (!centerName || !grade || !gradeType || !groupTime || !optionSelect) {
+                showAlert('groupAlert', 'يرجى ملء جميع الحقول المطلوبة', 'error');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...';
+
+            try {
+                const response = await fetch(`/teacher/sendNotifications/getGroupStudents?centerName=${centerName}&Grade=${grade}&gradeType=${gradeType}&groupTime=${groupTime}&optionSelect=${optionSelect}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    showAlert('groupAlert', data.message || 'حدث خطأ أثناء تحميل البيانات', 'error');
+                    return;
+                }
+
+                groupStudentsData = data.students || [];
+
+                // Hide all sections first
+                document.getElementById('groupQuizInfo').classList.add('hidden');
+                document.getElementById('groupMsgSection').classList.add('hidden');
+                document.getElementById('groupHWStatusTable').classList.add('hidden');
+                document.getElementById('groupQuizGradesTable').classList.add('hidden');
+
+                if (optionSelect === 'HWStatus') {
+                    document.getElementById('groupHWStatusTable').classList.remove('hidden');
+                    const tbody = document.getElementById('groupHWStatusTbody');
+                    tbody.innerHTML = '';
+                    groupStudentsData.forEach((student, index) => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${student.Username}</td>
+                                <td>${student.Code}</td>
+                                <td>${student.parentPhone || '-'}</td>
+                                <td><input type="radio" name="groupHwStatus${index + 1}" value="yes" style="width: 20px; height: 20px;"></td>
+                                <td><input type="radio" name="groupHwStatus${index + 1}" value="no" style="width: 20px; height: 20px;"></td>
+                                <td><input type="radio" name="groupSolvStatus${index + 1}" value="true" style="width: 20px; height: 20px;"></td>
+                                <td class="hidden">${student._id}</td>
+                            </tr>
+                        `;
+                    });
+                } else if (optionSelect === 'gradeMsg') {
+                    document.getElementById('groupQuizInfo').classList.remove('hidden');
+                    document.getElementById('groupQuizGradesTable').classList.remove('hidden');
+                    const tbody = document.getElementById('groupQuizGradesTbody');
+                    tbody.innerHTML = '';
+                    groupStudentsData.forEach((student, index) => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${student.Username}</td>
+                                <td>${student.Code}</td>
+                                <td>${student.parentPhone || '-'}</td>
+                                <td><input type="text" name="groupQuizGrade${index + 1}" class="form-control mx-auto" style="width: 80px; text-align: center;" value="" dir="ltr"></td>
+                                <td class="hidden">${student.phone || ''}</td>
+                            </tr>
+                        `;
+                    });
+                } else if (optionSelect === 'sendMsg') {
+                    document.getElementById('groupMsgSection').classList.remove('hidden');
+                }
+
+                document.getElementById('groupSubmitBtn').classList.remove('hidden');
+                showAlert('groupAlert', `تم تحميل ${groupStudentsData.length} طالب`, 'success');
+
+            } catch (error) {
+                showAlert('groupAlert', 'حدث خطأ: ' + error.message, 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fa-solid fa-search"></i> عرض البيانات';
+            }
+        });
+
+        // Group Submit Button
+        document.getElementById('groupSubmitBtn').addEventListener('click', async function() {
+            const centerName = document.getElementById('groupCenterName').value;
+            const grade = document.getElementById('groupGrade').value;
+            const gradeType = document.getElementById('groupGradeType').value;
+            const groupTime = document.getElementById('groupTime').value;
+            const optionSelect = document.getElementById('groupOptionSelect').value;
+
+            if (groupStudentsData.length === 0) {
+                showAlert('groupAlert', 'لا توجد بيانات للإرسال', 'error');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
+            document.getElementById('groupProgress').style.display = 'block';
+
+            const data = [];
+            let isValid = true;
+
+            if (optionSelect === 'HWStatus') {
+                const rows = document.querySelectorAll('#groupHWStatusTbody tr');
+                rows.forEach((row, index) => {
+                    const studentName = row.cells[1].innerText;
+                    const studentCode = row.cells[2].innerText;
+                    const parentPhone = row.cells[3].innerText;
+                    const studentId = row.cells[7].innerText;
+                    const hwStatusInput = row.querySelector(`input[name="groupHwStatus${index + 1}"]:checked`);
+                    const solvStatusInput = row.querySelector(`input[name="groupSolvStatus${index + 1}"]:checked`);
+                    const hwStatus = hwStatusInput ? hwStatusInput.value : 'none';
+                    const solvStatus = solvStatusInput ? solvStatusInput.value : 'false';
+                    data.push({ studentId, studentName, studentCode, parentPhone, hwStatus, solvStatus });
+                });
+            } else if (optionSelect === 'gradeMsg') {
+                const quizName = document.getElementById('groupQuizName').value;
+                const maxGrade = document.getElementById('groupMaxGrade').value;
+
+                if (!quizName || !maxGrade) {
+                    isValid = false;
+                    showAlert('groupAlert', 'يرجى إدخال اسم الامتحان والدرجة النهائية', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الإشعارات';
+                    document.getElementById('groupProgress').style.display = 'none';
+                    return;
+                }
+
+                const rows = document.querySelectorAll('#groupQuizGradesTbody tr');
+                rows.forEach((row, index) => {
+                    const studentName = row.cells[1].innerText;
+                    const studentCode = row.cells[2].innerText;
+                    const parentPhone = row.cells[3].innerText;
+                    const gradeInput = row.querySelector(`input[name="groupQuizGrade${index + 1}"]`);
+                    const gradeVal = gradeInput ? gradeInput.value : '0';
+                    data.push({ studentName, studentCode, parentPhone, grade: gradeVal });
+                });
+            } else if (optionSelect === 'sendMsg') {
+                const messageContent = document.getElementById('groupMsgContent').value;
+
+                if (!messageContent) {
+                    isValid = false;
+                    showAlert('groupAlert', 'يرجى إدخال نص الرسالة', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الإشعارات';
+                    document.getElementById('groupProgress').style.display = 'none';
+                    return;
+                }
+
+                groupStudentsData.forEach(student => {
+                    data.push({
+                        studentName: student.Username,
+                        studentCode: student.Code,
+                        parentPhone: student.parentPhone
+                    });
+                });
+            }
+
+            if (!isValid) return;
+
+            try {
+                const response = await fetch('/teacher/sendNotifications/toGroup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        data,
+                        centerName,
+                        Grade: grade,
+                        gradeType,
+                        groupTime,
+                        option: optionSelect,
+                        quizName: document.getElementById('groupQuizName')?.value || '',
+                        maxGrade: document.getElementById('groupMaxGrade')?.value || '',
+                        messageContent: document.getElementById('groupMsgContent')?.value || ''
+                    })
+                });
+
+                const result = await response.json();
+
+                document.getElementById('groupProgress').style.display = 'none';
+                document.getElementById('groupResults').style.display = 'block';
+
+                if (result.success) {
+                    document.getElementById('groupSent').textContent = result.sent || 0;
+                    document.getElementById('groupFailed').textContent = result.failed || 0;
+                    showAlert('groupAlert', 'تم إرسال الإشعارات بنجاح!', 'success');
+                } else {
+                    showAlert('groupAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                }
+            } catch (error) {
+                document.getElementById('groupProgress').style.display = 'none';
+                showAlert('groupAlert', 'حدث خطأ: ' + error.message, 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الإشعارات';
+            }
+        });
+
+        // Search in group tables
+        document.getElementById('groupSearchStudent').addEventListener('input', function() {
+            const filter = this.value.toUpperCase();
+            const rows = document.querySelectorAll('#groupHWStatusTbody tr');
+            rows.forEach(row => {
+                const studentCode = row.cells[2].innerText.toUpperCase();
+                row.style.display = studentCode.indexOf(filter) > -1 ? '' : 'none';
+            });
+        });
+
+        document.getElementById('groupSearchStudent2').addEventListener('input', function() {
+            const filter = this.value.toUpperCase();
+            const rows = document.querySelectorAll('#groupQuizGradesTbody tr');
+            rows.forEach(row => {
+                const studentCode = row.cells[2].innerText.toUpperCase();
+                row.style.display = studentCode.indexOf(filter) > -1 ? '' : 'none';
+            });
         });
     </script>
 </body>

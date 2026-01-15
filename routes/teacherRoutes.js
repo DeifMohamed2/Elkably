@@ -229,7 +229,11 @@ router.get('/sendNotifications', authMiddleware, teacherController.sendNotificat
 router.get('/sendNotifications/searchStudents', authMiddleware, teacherController.searchStudentsForNotifications);
 router.post('/sendNotifications/toStudents', authMiddleware, teacherController.sendNotificationsToStudents);
 router.post('/sendNotifications/fromExcel', authMiddleware, upload.single('file'), teacherController.sendNotificationFromExcel);
+router.post('/sendNotifications/fromExcelJson', authMiddleware, teacherController.sendNotificationFromExcelJson);
 router.post('/sendNotifications/custom', authMiddleware, teacherController.sendCustomNotification);
+router.post('/sendNotifications/toAllParents', authMiddleware, teacherController.sendNotificationToAllParents);
+router.get('/sendNotifications/getGroupStudents', authMiddleware, teacherController.getGroupStudentsForNotifications);
+router.post('/sendNotifications/toGroup', authMiddleware, teacherController.sendNotificationsToGroup);
 
 // ==================  END Send Notifications  ================= //
 

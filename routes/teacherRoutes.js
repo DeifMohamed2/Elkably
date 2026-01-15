@@ -204,7 +204,7 @@ router.post('/sendRegistrationMessage', authMiddleware, teacherController.sendRe
 
 // ==================  END Send Registration Message  ================= //
 
-// ==================  All Messages SMS  ================= //
+// ==================  All Messages SMS (legacy)  ================= //
 
 router.get('/allMessagesSMS', authMiddleware, teacherController.allMessagesSMS_get);
 router.get('/allMessagesSMS/getMessages', authMiddleware, teacherController.getAllSmsMessages);
@@ -212,7 +212,26 @@ router.get('/allMessagesSMS/getStats', authMiddleware, teacherController.getSmsM
 
 // ==================  END All Messages SMS  ================= //
 
+// ==================  All Notifications  ================= //
 
+router.get('/allNotifications', authMiddleware, teacherController.allNotifications_get);
+router.get('/allNotifications/getNotifications', authMiddleware, teacherController.getAllNotifications);
+router.get('/allNotifications/getStats', authMiddleware, teacherController.getNotificationsStats);
+
+// ==================  END All Notifications  ================= //
+
+// ==================  Send Notifications  ================= //
+
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.get('/sendNotifications', authMiddleware, teacherController.sendNotifications_get);
+router.get('/sendNotifications/searchStudents', authMiddleware, teacherController.searchStudentsForNotifications);
+router.post('/sendNotifications/toStudents', authMiddleware, teacherController.sendNotificationsToStudents);
+router.post('/sendNotifications/fromExcel', authMiddleware, upload.single('file'), teacherController.sendNotificationFromExcel);
+router.post('/sendNotifications/custom', authMiddleware, teacherController.sendCustomNotification);
+
+// ==================  END Send Notifications  ================= //
 
 
 module.exports = router;

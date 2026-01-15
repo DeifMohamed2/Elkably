@@ -53,10 +53,6 @@ const parentLogin = async (req, res) => {
         _id: 1,
         Username: 1,
         Code: 1,
-        Grade: 1,
-        gradeType: 1,
-        centerName: 1,
-        groupTime: 1,
         balance: 1,
         amountRemaining: 1,
         absences: 1,
@@ -156,6 +152,115 @@ const getDashboard = async (req, res) => {
       .limit(6)
       .lean();
 
+    // Get student's current group as fallback
+    let fallbackGroup = null;
+    let fallbackGroupFromStudent = null;
+    
+    try {
+      fallbackGroup = await Group.findOne({
+        CenterName: student.centerName,
+        Grade: student.Grade,
+        gradeType: student.gradeType,
+        GroupTime: student.groupTime,
+      }).lean();
+    } catch (err) {
+      console.error('Error fetching fallback group:', err);
+    }
+
+    // If no Group document found, use student's group fields directly
+    if (!fallbackGroup && student.centerName && student.Grade && student.gradeType && student.groupTime) {
+      fallbackGroupFromStudent = {
+        CenterName: student.centerName,
+        Grade: student.Grade,
+        gradeType: student.gradeType,
+        GroupTime: student.groupTime,
+        displayText: `${student.centerName} - ${student.Grade} ${student.gradeType} (${student.groupTime})`,
+      };
+    }
+
+    // Get group info for last session if available
+    let lastSessionWithGroup = null;
+    if (lastSession) {
+      let groupInfo = null;
+
+      // Try to get group from attendance reference
+      if (lastSession.attendance) {
+        try {
+          const attendanceDoc = await Attendance.findById(lastSession.attendance)
+            .populate('groupId', 'CenterName Grade gradeType GroupTime displayText')
+            .lean();
+          
+          if (attendanceDoc && attendanceDoc.groupId) {
+            groupInfo = {
+              centerName: attendanceDoc.groupId.CenterName,
+              grade: attendanceDoc.groupId.Grade,
+              gradeType: attendanceDoc.groupId.gradeType,
+              groupTime: attendanceDoc.groupId.GroupTime,
+              displayText: attendanceDoc.groupId.displayText,
+            };
+          }
+        } catch (err) {
+          console.error('Error populating group for last session:', err);
+        }
+      }
+
+      // If no group from attendance, try to find by date and student's group
+      if (!groupInfo && lastSession.date && fallbackGroup && fallbackGroup._id) {
+        try {
+          const attendanceDoc = await Attendance.findOne({
+            date: lastSession.date,
+            groupId: fallbackGroup._id,
+          })
+            .populate('groupId', 'CenterName Grade gradeType GroupTime displayText')
+            .lean();
+          
+          if (attendanceDoc && attendanceDoc.groupId) {
+            groupInfo = {
+              centerName: attendanceDoc.groupId.CenterName,
+              grade: attendanceDoc.groupId.Grade,
+              gradeType: attendanceDoc.groupId.gradeType,
+              groupTime: attendanceDoc.groupId.GroupTime,
+              displayText: attendanceDoc.groupId.displayText,
+            };
+          }
+        } catch (err) {
+          console.error('Error finding attendance by date for last session:', err);
+        }
+      }
+
+      // Use fallback group if still no group info
+      if (!groupInfo) {
+        if (fallbackGroup) {
+          groupInfo = {
+            centerName: fallbackGroup.CenterName,
+            grade: fallbackGroup.Grade,
+            gradeType: fallbackGroup.gradeType,
+            groupTime: fallbackGroup.GroupTime,
+            displayText: fallbackGroup.displayText,
+          };
+        } else if (fallbackGroupFromStudent) {
+          groupInfo = {
+            centerName: fallbackGroupFromStudent.CenterName,
+            grade: fallbackGroupFromStudent.Grade,
+            gradeType: fallbackGroupFromStudent.gradeType,
+            groupTime: fallbackGroupFromStudent.GroupTime,
+            displayText: fallbackGroupFromStudent.displayText,
+          };
+        }
+      }
+
+      lastSessionWithGroup = {
+        date: lastSession.date,
+        status: lastSession.status,
+        time: lastSession.atTime,
+        homeworkStatus: lastSession.homeworkStatus || 'N/A',
+      };
+
+      if (groupInfo) {
+        lastSessionWithGroup.group = groupInfo;
+      }
+    }
+
     // Prepare response
     const response = {
       success: true,
@@ -163,19 +268,15 @@ const getDashboard = async (req, res) => {
         _id: student._id,
         Username: student.Username,
         Code: student.Code,
-        Grade: student.Grade,
-        gradeType: student.gradeType,
-        centerName: student.centerName,
-        groupTime: student.groupTime,
       },
-      lastSession: lastSession
+      lastSession: lastSessionWithGroup || (lastSession
         ? {
             date: lastSession.date,
             status: lastSession.status,
             time: lastSession.atTime,
             homeworkStatus: lastSession.homeworkStatus || 'N/A',
           }
-        : null,
+        : null),
       payment: {
         balance: student.balance || 0,
         amountRemaining: student.amountRemaining || 0,
@@ -238,15 +339,121 @@ const getFullAttendance = async (req, res) => {
     // Sort by date descending (most recent first)
     attendanceHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Format the attendance records with full details
-    const formattedAttendance = attendanceHistory.map((record) => ({
-      date: record.date,
-      status: record.status,
-      time: record.atTime,
-      homeworkStatus: record.homeworkStatus || 'N/A',
-      amountPaid: record.amountPaid || 0,
-      amountRemaining: record.amountRemaining || 0,
-    }));
+    // Get student's current group as fallback
+    let fallbackGroup = null;
+    let fallbackGroupFromStudent = null;
+    
+    try {
+      fallbackGroup = await Group.findOne({
+        CenterName: student.centerName,
+        Grade: student.Grade,
+        gradeType: student.gradeType,
+        GroupTime: student.groupTime,
+      }).lean();
+    } catch (err) {
+      console.error('Error fetching fallback group:', err);
+    }
+
+    // If no Group document found, use student's group fields directly
+    if (!fallbackGroup && student.centerName && student.Grade && student.gradeType && student.groupTime) {
+      fallbackGroupFromStudent = {
+        CenterName: student.centerName,
+        Grade: student.Grade,
+        gradeType: student.gradeType,
+        GroupTime: student.groupTime,
+        displayText: `${student.centerName} - ${student.Grade} ${student.gradeType} (${student.groupTime})`,
+      };
+    }
+
+    // Format the attendance records with full details and populate group info
+    const formattedAttendance = await Promise.all(
+      attendanceHistory.map(async (record) => {
+        const baseRecord = {
+          date: record.date,
+          status: record.status,
+          time: record.atTime,
+          homeworkStatus: record.homeworkStatus || 'N/A',
+          amountPaid: record.amountPaid || 0,
+          amountRemaining: record.amountRemaining || 0,
+        };
+
+        let groupInfo = null;
+
+        // Try to populate group information from attendance reference
+        if (record.attendance) {
+          try {
+            const attendanceDoc = await Attendance.findById(record.attendance)
+              .populate('groupId', 'CenterName Grade gradeType GroupTime displayText')
+              .lean();
+            
+            if (attendanceDoc && attendanceDoc.groupId) {
+              groupInfo = {
+                centerName: attendanceDoc.groupId.CenterName,
+                grade: attendanceDoc.groupId.Grade,
+                gradeType: attendanceDoc.groupId.gradeType,
+                groupTime: attendanceDoc.groupId.GroupTime,
+                displayText: attendanceDoc.groupId.displayText,
+              };
+            }
+          } catch (err) {
+            console.error('Error populating group for attendance record:', err);
+          }
+        }
+
+        // If no group info from attendance reference, try to find Attendance document by date and student's group
+        if (!groupInfo && record.date) {
+          try {
+            if (fallbackGroup && fallbackGroup._id) {
+              const attendanceDoc = await Attendance.findOne({
+                date: record.date,
+                groupId: fallbackGroup._id,
+              })
+                .populate('groupId', 'CenterName Grade gradeType GroupTime displayText')
+                .lean();
+              
+              if (attendanceDoc && attendanceDoc.groupId) {
+                groupInfo = {
+                  centerName: attendanceDoc.groupId.CenterName,
+                  grade: attendanceDoc.groupId.Grade,
+                  gradeType: attendanceDoc.groupId.gradeType,
+                  groupTime: attendanceDoc.groupId.GroupTime,
+                  displayText: attendanceDoc.groupId.displayText,
+                };
+              }
+            }
+          } catch (err) {
+            console.error('Error finding attendance by date and group:', err);
+          }
+        }
+
+        // Use fallback group if still no group info found
+        if (!groupInfo) {
+          if (fallbackGroup) {
+            groupInfo = {
+              centerName: fallbackGroup.CenterName,
+              grade: fallbackGroup.Grade,
+              gradeType: fallbackGroup.gradeType,
+              groupTime: fallbackGroup.GroupTime,
+              displayText: fallbackGroup.displayText,
+            };
+          } else if (fallbackGroupFromStudent) {
+            groupInfo = {
+              centerName: fallbackGroupFromStudent.CenterName,
+              grade: fallbackGroupFromStudent.Grade,
+              gradeType: fallbackGroupFromStudent.gradeType,
+              groupTime: fallbackGroupFromStudent.GroupTime,
+              displayText: fallbackGroupFromStudent.displayText,
+            };
+          }
+        }
+
+        if (groupInfo) {
+          baseRecord.group = groupInfo;
+        }
+
+        return baseRecord;
+      })
+    );
 
     return res.status(200).json({
       success: true,
@@ -254,9 +461,6 @@ const getFullAttendance = async (req, res) => {
         _id: student._id,
         Username: student.Username,
         Code: student.Code,
-        Grade: student.Grade,
-        centerName: student.centerName,
-        groupTime: student.groupTime,
       },
       totalRecords: formattedAttendance.length,
       attendance: formattedAttendance,
@@ -393,10 +597,6 @@ const getStudents = async (req, res) => {
         _id: 1,
         Username: 1,
         Code: 1,
-        Grade: 1,
-        gradeType: 1,
-        centerName: 1,
-        groupTime: 1,
         balance: 1,
         amountRemaining: 1,
         absences: 1,

@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Group = require('../models/Group');
-const { sendSmsMessage } = require('../utils/smsSender');
+const { sendNotificationMessage, sendStudentRegistrationNotification, sendVerificationCodeNotification, sendPasswordResetNotification } = require('../utils/notificationSender');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const qrcode = require('qrcode');
@@ -12,7 +12,7 @@ const jwtSecret = process.env.JWTSECRET;
 
 async function sendQRCode(phone, message, studentCode, centerName) {
   try {
-    console.log('Sending student code via SMS for center:', centerName);
+    console.log('Sending student registration notification for center:', centerName);
 
     // Extract phone number from chatId format if needed
     let phoneNumber = phone;
@@ -26,20 +26,49 @@ async function sendQRCode(phone, message, studentCode, centerName) {
       countryCode = '20';
     }
     
-    // Create SMS message with student code (since SMS can't send images)
-    const smsMessage = `Student Code: ${studentCode}. ${message}`;
+    // Parse student info from message if it contains structured data
+    const studentInfo = {};
+    const messageLines = message.split('\n');
+    messageLines.forEach(line => {
+      if (line.includes('Student Name:')) {
+        studentInfo.studentName = line.split('Student Name:')[1]?.trim();
+      } else if (line.includes('Grade:')) {
+        studentInfo.Grade = line.split('Grade:')[1]?.trim();
+      } else if (line.includes('Level:')) {
+        studentInfo.GradeLevel = line.split('Level:')[1]?.trim();
+      } else if (line.includes('Type:')) {
+        studentInfo.attendingType = line.split('Type:')[1]?.trim();
+      } else if (line.includes('Book:')) {
+        studentInfo.bookTaken = line.split('Book:')[1]?.trim() === 'Yes';
+      } else if (line.includes('School:')) {
+        studentInfo.schoolName = line.split('School:')[1]?.trim();
+      } else if (line.includes('Balance:')) {
+        studentInfo.balance = line.split('Balance:')[1]?.trim();
+      } else if (line.includes('Center:')) {
+        studentInfo.centerName = line.split('Center:')[1]?.trim() || centerName;
+      } else if (line.includes('Grade Type:')) {
+        studentInfo.gradeType = line.split('Grade Type:')[1]?.trim();
+      } else if (line.includes('Time:')) {
+        studentInfo.groupTime = line.split('Time:')[1]?.trim();
+      }
+    });
     
-    // Send SMS
-    const result = await sendSmsMessage(phoneNumber, smsMessage, countryCode);
+    // Ensure centerName is set
+    if (!studentInfo.centerName) {
+      studentInfo.centerName = centerName;
+    }
+    
+    // Send notification with student registration details
+    const result = await sendStudentRegistrationNotification(phoneNumber, studentCode, studentInfo);
     
     if (!result.success) {
-      throw new Error(`Failed to send SMS: ${result.message}`);
+      throw new Error(`Failed to send notification: ${result.message}`);
     }
 
-    console.log('Student code sent successfully via SMS');
+    console.log('Student registration notification sent successfully');
     return { success: true };
   } catch (error) {
-    console.error('Error sending student code via SMS:', error);
+    console.error('Error sending student registration notification:', error);
     return { success: false, error: error.message };
   }
 }
@@ -467,16 +496,16 @@ ${code}`;
     const countryCode = req.body.phoneCountryCode || '20';
 
     try {
-      console.log(`Using SMS to send verification code to ${phone} with country code ${countryCode}`);
+      console.log(`Using notification to send verification code to ${phone} with country code ${countryCode}`);
       
-      // Send the message via SMS
-      const response = await sendSmsMessage(phone, message, countryCode);
+      // Send the verification code via notification
+      const response = await sendVerificationCodeNotification(phone, code, countryCode);
 
       if (!response.success) {
-        throw new Error(`Failed to send SMS: ${response.message}`);
+        throw new Error(`Failed to send notification: ${response.message}`);
       }
 
-      console.log('Verification code sent successfully via SMS');
+      console.log('Verification code sent successfully via notification');
       
       // Store the verification code and phone in the session or database
       req.session.verificationCode = code; // Assuming session middleware is used
@@ -526,16 +555,14 @@ const forgetPassword_post = async (req, res) => {
       });
       const link = `http://localhost:3000/reset-password/${user._id}/${token}`;
 
-      // Send reset password link via SMS
+      // Send reset password link via notification
       try {
-        const message = `Password reset link
-${link}`;
         const countryCode = '20';
         
-        const response = await sendSmsMessage(phone, message, countryCode);
+        const response = await sendPasswordResetNotification(phone, link, countryCode);
         
         if (!response.success) {
-          throw new Error(`Failed to send SMS: ${response.message}`);
+          throw new Error(`Failed to send notification: ${response.message}`);
         }
         
         res.render('forgetPassword', {

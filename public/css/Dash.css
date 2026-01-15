@@ -2318,7 +2318,6 @@ font-weight: bolder;
     color: white;
   }
   .active{
-    background-color: var(--color-warning);
     border-color:var(--color-background) !important;
     color: white !important;
   }

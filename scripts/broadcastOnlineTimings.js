@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const { sendSmsMessage } = require('../utils/smsSender');
+const { sendNotificationMessage } = require('../utils/notificationSender');
 
 // CLI flags
 const args = process.argv.slice(2);
@@ -62,16 +62,16 @@ async function sendToNumber(number, message) {
     // Extract country code from number (assuming Egyptian numbers start with 20)
     const countryCode = '20';
     
-    // Send SMS using the SMS sender utility
-    const response = await sendSmsMessage(number, message, countryCode);
+    // Send notification using the notification sender utility
+    const response = await sendNotificationMessage(number, message, {}, countryCode);
     
     if (!response.success) {
-      throw new Error(`Failed to send SMS: ${response.message}`);
+      throw new Error(`Failed to send notification: ${response.message}`);
     }
     
-    console.log('SMS sent successfully to:', number);
+    console.log('Notification sent successfully to:', number);
   } catch (error) {
-    console.error('Error sending SMS to', number, ':', error.message);
+    console.error('Error sending notification to', number, ':', error.message);
     throw error;
   }
 }

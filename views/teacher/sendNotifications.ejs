@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+    <%- include("./partials/head.ejs") %>
+
+<body>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .page-title {
+            color: #0d6efd;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .page-title i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #0d6efd, #6610f2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 15px 35px;
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.9));
+            color: #ffffff;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tab-btn:hover {
+            border-color: #0d6efd;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(13, 110, 253, 0.3);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            border-color: #0d6efd;
+            box-shadow: 0 10px 30px rgba(13, 110, 253, 0.4);
+        }
+
+        .tab-btn i {
+            font-size: 1.2rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-container {
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(20, 20, 20, 0.95));
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 20px;
+            padding: 35px;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(13, 110, 253, 0.3);
+        }
+
+        .form-header h3 {
+            color: #0d6efd;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .form-header p {
+            color: #a0a0a0;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #ffffff;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .form-group label i {
+            color: #0d6efd;
+            margin-left: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: rgba(45, 45, 45, 0.9);
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 20px rgba(13, 110, 253, 0.3);
+        }
+
+        .form-control::placeholder {
+            color: #888;
+        }
+
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .file-upload-area {
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.05));
+            border: 2px dashed rgba(13, 110, 253, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: #0d6efd;
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.15), rgba(13, 110, 253, 0.1));
+            transform: translateY(-3px);
+        }
+
+        .file-upload-area i {
+            font-size: 3rem;
+            color: #0d6efd;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .file-upload-area p {
+            color: #a0a0a0;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-area .file-name {
+            color: #28a745;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: #ffffff;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(13, 110, 253, 0.5);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .student-search-container {
+            margin-bottom: 25px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #0d6efd;
+        }
+
+        .search-input-wrapper input {
+            padding-right: 50px;
+        }
+
+        .student-results {
+            background: rgba(45, 45, 45, 0.95);
+            border: 2px solid rgba(13, 110, 253, 0.3);
+            border-radius: 12px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .student-result-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .student-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .student-result-item:hover {
+            background: rgba(13, 110, 253, 0.15);
+        }
+
+        .student-result-item.selected {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: #28a745;
+        }
+
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .student-name {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .student-code {
+            color: #0d6efd;
+            font-size: 0.9rem;
+        }
+
+        .student-phone {
+            color: #a0a0a0;
+            font-size: 0.85rem;
+        }
+
+        .selected-students {
+            background: rgba(40, 167, 69, 0.1);
+            border: 2px solid rgba(40, 167, 69, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .selected-students h5 {
+            color: #28a745;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .selected-student-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin: 5px;
+            font-size: 0.9rem;
+        }
+
+        .selected-student-tag .remove-btn {
+            cursor: pointer;
+            color: #dc3545;
+            transition: all 0.3s ease;
+        }
+
+        .selected-student-tag .remove-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .progress-container {
+            margin-top: 25px;
+            display: none;
+        }
+
+        .progress-bar-wrapper {
+            background: rgba(45, 45, 45, 0.9);
+            border-radius: 10px;
+            height: 25px;
+            overflow: hidden;
+            border: 1px solid rgba(13, 110, 253, 0.3);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #0d6efd, #6610f2);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 15px;
+            color: #a0a0a0;
+        }
+
+        .results-container {
+            margin-top: 25px;
+            display: none;
+        }
+
+        .result-card {
+            background: rgba(45, 45, 45, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .result-card.error {
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        .result-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .result-card.success h4 {
+            color: #28a745;
+        }
+
+        .result-card.error h4 {
+            color: #dc3545;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .result-stat {
+            background: rgba(30, 30, 30, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .result-stat .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
+        .result-stat .label {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .message-alert {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message-alert.success {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(40, 167, 69, 0.1));
+            border: 2px solid #28a745;
+            color: #28a745;
+        }
+
+        .message-alert.error {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.2), rgba(220, 53, 69, 0.1));
+            border: 2px solid #dc3545;
+            color: #dc3545;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 25px;
+            }
+
+            .tabs-container {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-2">
+                <%- include("./partials/nav.ejs") %>
+            </div>
+            <div class="col-lg-10">
+                <main>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="left" style="margin-top: 0.2rem;">
+                                <%- include("./partials/top.ejs") %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h2 class="page-title">
+                                <i class="fa-solid fa-paper-plane"></i> إرسال الإشعارات
+                            </h2>
+
+                            <!-- Tabs -->
+                            <div class="tabs-container">
+                                <button class="tab-btn active" onclick="switchTab('excel')">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                    من ملف إكسل
+                                </button>
+                                <button class="tab-btn" onclick="switchTab('students')">
+                                    <i class="fa-solid fa-users"></i>
+                                    اختيار طلاب
+                                </button>
+                                <button class="tab-btn" onclick="switchTab('custom')">
+                                    <i class="fa-solid fa-edit"></i>
+                                    رسالة مخصصة
+                                </button>
+                            </div>
+
+                            <!-- Tab 1: Excel Upload -->
+                            <div class="tab-content active" id="excel-tab">
+                                <div class="form-container">
+                                    <div class="form-header">
+                                        <h3><i class="fa-solid fa-file-excel"></i> إرسال إشعارات من ملف إكسل</h3>
+                                        <p>قم برفع ملف إكسل يحتوي على بيانات الطلاب والرسائل المراد إرسالها</p>
+                                    </div>
+
+                                    <form id="excelForm">
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-upload"></i> ملف الإكسل</label>
+                                            <div class="file-upload-area" onclick="document.getElementById('excelFile').click()">
+                                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                                <p>اضغط هنا أو اسحب الملف لرفعه</p>
+                                                <p style="font-size: 0.85rem;">يجب أن يحتوي الملف على أعمدة: رقم الهاتف، الرسالة</p>
+                                                <span class="file-name" id="excelFileName"></span>
+                                            </div>
+                                            <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileSelect(this, 'excelFileName')">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-heading"></i> عنوان الإشعار</label>
+                                            <input type="text" class="form-control" id="excelTitle" placeholder="أدخل عنوان الإشعار..." value="Elkably Team">
+                                        </div>
+
+                                        <div id="excelAlert" class="message-alert"></div>
+
+                                        <div class="progress-container" id="excelProgress">
+                                            <div class="progress-bar-wrapper">
+                                                <div class="progress-bar" id="excelProgressBar">0%</div>
+                                            </div>
+                                            <p class="progress-text" id="excelProgressText">جاري إرسال الإشعارات...</p>
+                                        </div>
+
+                                        <div class="results-container" id="excelResults">
+                                            <div class="result-card success">
+                                                <h4><i class="fa-solid fa-check-circle"></i> تم الإرسال بنجاح</h4>
+                                                <div class="result-stats">
+                                                    <div class="result-stat">
+                                                        <div class="value" id="excelSent">0</div>
+                                                        <div class="label">تم الإرسال</div>
+                                                    </div>
+                                                    <div class="result-stat">
+                                                        <div class="value" id="excelFailed">0</div>
+                                                        <div class="label">فشل</div>
+                                                    </div>
+                                                    <div class="result-stat">
+                                                        <div class="value" id="excelTotal">0</div>
+                                                        <div class="label">الإجمالي</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn-submit" id="excelSubmitBtn">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            إرسال الإشعارات
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: Select Students -->
+                            <div class="tab-content" id="students-tab">
+                                <div class="form-container">
+                                    <div class="form-header">
+                                        <h3><i class="fa-solid fa-users"></i> إرسال إشعارات لطلاب محددين</h3>
+                                        <p>ابحث واختر الطلاب الذين تريد إرسال إشعارات لهم</p>
+                                    </div>
+
+                                    <form id="studentsForm">
+                                        <div class="student-search-container">
+                                            <label><i class="fa-solid fa-search"></i> البحث عن طالب</label>
+                                            <div class="search-input-wrapper">
+                                                <i class="fa-solid fa-search"></i>
+                                                <input type="text" class="form-control" id="studentSearch" placeholder="ابحث بالاسم أو الكود أو رقم الهاتف..." oninput="searchStudents(this.value)">
+                                            </div>
+                                            <div class="student-results" id="studentResults"></div>
+                                        </div>
+
+                                        <div class="selected-students" id="selectedStudentsContainer">
+                                            <h5><i class="fa-solid fa-check-circle"></i> الطلاب المختارين:</h5>
+                                            <div id="selectedStudentsTags"></div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-heading"></i> عنوان الإشعار</label>
+                                            <input type="text" class="form-control" id="studentsTitle" placeholder="أدخل عنوان الإشعار..." value="Elkably Team">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-message"></i> نص الرسالة</label>
+                                            <textarea class="form-control" id="studentsMessage" placeholder="اكتب الرسالة هنا..."></textarea>
+                                        </div>
+
+                                        <div id="studentsAlert" class="message-alert"></div>
+
+                                        <div class="progress-container" id="studentsProgress">
+                                            <div class="progress-bar-wrapper">
+                                                <div class="progress-bar" id="studentsProgressBar">0%</div>
+                                            </div>
+                                            <p class="progress-text" id="studentsProgressText">جاري إرسال الإشعارات...</p>
+                                        </div>
+
+                                        <div class="results-container" id="studentsResults">
+                                            <div class="result-card success">
+                                                <h4><i class="fa-solid fa-check-circle"></i> تم الإرسال بنجاح</h4>
+                                                <div class="result-stats">
+                                                    <div class="result-stat">
+                                                        <div class="value" id="studentsSent">0</div>
+                                                        <div class="label">تم الإرسال</div>
+                                                    </div>
+                                                    <div class="result-stat">
+                                                        <div class="value" id="studentsFailed">0</div>
+                                                        <div class="label">فشل</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn-submit" id="studentsSubmitBtn">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            إرسال الإشعارات
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Tab 3: Custom Message -->
+                            <div class="tab-content" id="custom-tab">
+                                <div class="form-container">
+                                    <div class="form-header">
+                                        <h3><i class="fa-solid fa-edit"></i> إرسال رسالة مخصصة</h3>
+                                        <p>أرسل رسالة مخصصة لرقم هاتف محدد</p>
+                                    </div>
+
+                                    <form id="customForm">
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-phone"></i> رقم الهاتف</label>
+                                            <input type="text" class="form-control" id="customPhone" placeholder="أدخل رقم الهاتف...">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-heading"></i> عنوان الإشعار</label>
+                                            <input type="text" class="form-control" id="customTitle" placeholder="أدخل عنوان الإشعار..." value="Elkably Team">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label><i class="fa-solid fa-message"></i> نص الرسالة</label>
+                                            <textarea class="form-control" id="customMessage" placeholder="اكتب الرسالة هنا..."></textarea>
+                                        </div>
+
+                                        <div id="customAlert" class="message-alert"></div>
+
+                                        <button type="submit" class="btn-submit" id="customSubmitBtn">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            إرسال الإشعار
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedStudents = [];
+
+        function switchTab(tabName) {
+            // Remove active class from all tabs and buttons
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Add active class to selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.closest('.tab-btn').classList.add('active');
+        }
+
+        function handleFileSelect(input, fileNameId) {
+            const fileName = input.files[0]?.name || '';
+            document.getElementById(fileNameId).textContent = fileName ? `تم اختيار: ${fileName}` : '';
+        }
+
+        function showAlert(containerId, message, type) {
+            const alert = document.getElementById(containerId);
+            alert.textContent = message;
+            alert.className = `message-alert ${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        // Excel Form Submission
+        document.getElementById('excelForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('excelFile');
+            const title = document.getElementById('excelTitle').value;
+
+            if (!fileInput.files[0]) {
+                showAlert('excelAlert', 'يرجى اختيار ملف إكسل', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('title', title);
+
+            const submitBtn = document.getElementById('excelSubmitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('excelProgress').style.display = 'block';
+
+            try {
+                const response = await fetch('/teacher/sendNotifications/fromExcel', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                document.getElementById('excelProgress').style.display = 'none';
+                document.getElementById('excelResults').style.display = 'block';
+
+                if (result.success) {
+                    document.getElementById('excelSent').textContent = result.sent || 0;
+                    document.getElementById('excelFailed').textContent = result.failed || 0;
+                    document.getElementById('excelTotal').textContent = result.total || 0;
+                    showAlert('excelAlert', 'تم إرسال الإشعارات بنجاح!', 'success');
+                } else {
+                    showAlert('excelAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                }
+            } catch (error) {
+                document.getElementById('excelProgress').style.display = 'none';
+                showAlert('excelAlert', 'حدث خطأ: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Student Search
+        let searchTimeout;
+        async function searchStudents(query) {
+            clearTimeout(searchTimeout);
+            const resultsContainer = document.getElementById('studentResults');
+
+            if (query.length < 2) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/teacher/sendNotifications/searchStudents?q=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+
+                    if (result.success && result.data.length > 0) {
+                        resultsContainer.innerHTML = result.data.map(student => `
+                            <div class="student-result-item ${selectedStudents.some(s => s._id === student._id) ? 'selected' : ''}" 
+                                 onclick="toggleStudent('${student._id}', '${student.Username}', '${student.Code}', '${student.parentPhone || student.phone}')">
+                                <div class="student-info">
+                                    <span class="student-name">${student.Username}</span>
+                                    <span class="student-code">الكود: ${student.Code}</span>
+                                    <span class="student-phone">${student.parentPhone || student.phone || 'لا يوجد رقم'}</span>
+                                </div>
+                                <i class="fa-solid ${selectedStudents.some(s => s._id === student._id) ? 'fa-check-circle text-success' : 'fa-plus-circle'}"></i>
+                            </div>
+                        `).join('');
+                        resultsContainer.style.display = 'block';
+                    } else {
+                        resultsContainer.innerHTML = '<div class="student-result-item"><span class="student-info"><span class="student-name">لا توجد نتائج</span></span></div>';
+                        resultsContainer.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 300);
+        }
+
+        function toggleStudent(id, name, code, phone) {
+            const index = selectedStudents.findIndex(s => s._id === id);
+
+            if (index > -1) {
+                selectedStudents.splice(index, 1);
+            } else {
+                selectedStudents.push({ _id: id, name, code, phone });
+            }
+
+            updateSelectedStudentsUI();
+            searchStudents(document.getElementById('studentSearch').value);
+        }
+
+        function removeStudent(id) {
+            selectedStudents = selectedStudents.filter(s => s._id !== id);
+            updateSelectedStudentsUI();
+        }
+
+        function updateSelectedStudentsUI() {
+            const container = document.getElementById('selectedStudentsContainer');
+            const tagsContainer = document.getElementById('selectedStudentsTags');
+
+            if (selectedStudents.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            tagsContainer.innerHTML = selectedStudents.map(student => `
+                <span class="selected-student-tag">
+                    ${student.name} (${student.code})
+                    <span class="remove-btn" onclick="removeStudent('${student._id}')">
+                        <i class="fa-solid fa-times"></i>
+                    </span>
+                </span>
+            `).join('');
+        }
+
+        // Students Form Submission
+        document.getElementById('studentsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (selectedStudents.length === 0) {
+                showAlert('studentsAlert', 'يرجى اختيار طالب واحد على الأقل', 'error');
+                return;
+            }
+
+            const title = document.getElementById('studentsTitle').value;
+            const message = document.getElementById('studentsMessage').value;
+
+            if (!message) {
+                showAlert('studentsAlert', 'يرجى كتابة نص الرسالة', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('studentsSubmitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('studentsProgress').style.display = 'block';
+
+            try {
+                const response = await fetch('/teacher/sendNotifications/toStudents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        students: selectedStudents.map(s => s._id),
+                        title,
+                        message
+                    })
+                });
+
+                const result = await response.json();
+
+                document.getElementById('studentsProgress').style.display = 'none';
+                document.getElementById('studentsResults').style.display = 'block';
+
+                if (result.success) {
+                    document.getElementById('studentsSent').textContent = result.sent || 0;
+                    document.getElementById('studentsFailed').textContent = result.failed || 0;
+                    showAlert('studentsAlert', 'تم إرسال الإشعارات بنجاح!', 'success');
+                    
+                    // Clear selection
+                    selectedStudents = [];
+                    updateSelectedStudentsUI();
+                    document.getElementById('studentsMessage').value = '';
+                } else {
+                    showAlert('studentsAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                }
+            } catch (error) {
+                document.getElementById('studentsProgress').style.display = 'none';
+                showAlert('studentsAlert', 'حدث خطأ: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Custom Form Submission
+        document.getElementById('customForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const phone = document.getElementById('customPhone').value;
+            const title = document.getElementById('customTitle').value;
+            const message = document.getElementById('customMessage').value;
+
+            if (!phone || !message) {
+                showAlert('customAlert', 'يرجى ملء جميع الحقول المطلوبة', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('customSubmitBtn');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/teacher/sendNotifications/custom', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, title, message })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('customAlert', 'تم إرسال الإشعار بنجاح!', 'success');
+                    document.getElementById('customPhone').value = '';
+                    document.getElementById('customMessage').value = '';
+                } else {
+                    showAlert('customAlert', result.message || 'حدث خطأ أثناء الإرسال', 'error');
+                }
+            } catch (error) {
+                showAlert('customAlert', 'حدث خطأ: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

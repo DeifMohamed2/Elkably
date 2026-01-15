@@ -3,8 +3,7 @@ const Group  = require('../models/Group');
 const Card = require('../models/Card');
 const Attendance = require('../models/Attendance'); 
 
-const { sendSmsMessage } = require('../utils/smsSender');
-const { getSmsMessages, getAllSmsMessagesForStats } = require('../utils/sms');
+const { sendNotificationMessage } = require('../utils/notificationSender');
 const Excel = require('exceljs');
 const QRCode = require('qrcode');
 const { sendStudentToExternalSystem } = require('./homeController');
@@ -339,18 +338,15 @@ const updateUserData = async (req, res) => {
         const dateStamp = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' });
         const timeStamp = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
         const firstName = (updatedUser.Username || '').split(' ')[0];
-        const bookStatusMessage = `Parent of ${firstName}
-Book status updated
-Book received
-Thank you
-Elkably Team`;
+        const bookStatusMessage = `📚 ${firstName} - Book Received`;
 
         const sendResult = await sendWappiMessage(
           bookStatusMessage, 
           updatedUser.parentPhone, 
           req.userData.phone, 
           false, 
-          updatedUser.parentPhoneCountryCode
+          updatedUser.parentPhoneCountryCode,
+          updatedUser._id
         );
         
         if (!sendResult.success) {
@@ -423,10 +419,7 @@ const blockStudent = async (req, res) => {
       const now = new Date();
       const dateStamp = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' });
       const timeStamp = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
-      const blockMessage = `Parent of ${firstName}
-Student suspended from attendance
-Reason ${reason.trim()}
-Elkably Team`;
+      const blockMessage = `🚫 ${firstName} - Suspended\nReason: ${reason.trim()}`;
 
       try {
         const sendResult = await sendWappiMessage(
@@ -434,7 +427,8 @@ Elkably Team`;
           student.parentPhone, 
           req.userData.phone, 
           false, 
-          student.parentPhoneCountryCode
+          student.parentPhoneCountryCode,
+          student._id
         );
         if (!sendResult.success) {
           console.warn(`Warning: Failed to send blocking notification to ${student.Username}'s parent: ${sendResult.message}`);
@@ -500,11 +494,7 @@ const unblockStudent = async (req, res) => {
       const now = new Date();
       const dateStamp = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' });
       const timeStamp = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
-      const unblockMessage = `Parent of ${firstName}
-Student reactivated
-${reason ? `Reason ${reason.trim()}\n` : ''}Student may attend next class
-Thank you
-Elkably Team`;
+      const unblockMessage = `✅ ${firstName} - Reactivated\n${reason ? `Reason: ${reason.trim()}` : 'Ready for next class'}`;
 
       try {
         const sendResult = await sendWappiMessage(
@@ -512,7 +502,8 @@ Elkably Team`;
           student.parentPhone, 
           req.userData.phone, 
           false, 
-          student.parentPhoneCountryCode
+          student.parentPhoneCountryCode,
+          student._id
         );
         if (!sendResult.success) {
           console.warn(`Warning: Failed to send unblocking notification to ${student.Username}'s parent: ${sendResult.message}`);
@@ -940,12 +931,12 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
-async function sendWappiMessage(message, phone, adminPhone, isExcel = false, countryCode = '20') {
+async function sendWappiMessage(message, phone, adminPhone, isExcel = false, countryCode = '20', studentId = null) {
   try {
     // Skip if phone number is missing or invalid
     const phoneAsString = (typeof phone === 'string' ? phone : String(phone || '')).trim();
     if (!phoneAsString) {
-      console.warn('Skipping message - No phone number provided');
+      console.warn('Skipping notification - No phone number provided');
       return { success: false, message: 'No phone number provided' };
     }
     
@@ -963,19 +954,19 @@ async function sendWappiMessage(message, phone, adminPhone, isExcel = false, cou
     // Ensure leading country indicator '2' for Egypt if missing
     if (!phoneNumber.startsWith('2')) phoneNumber = `2${phoneNumber}`;
     
-    console.log('Sending SMS to:', phoneNumber);
+    console.log('Sending notification to:', phoneNumber);
     
-    // Send SMS using the SMS sender utility
-    const response = await sendSmsMessage(phoneNumber, message, countryCodeWithout0);
+    // Send notification using the notification sender utility (with studentId for saving to DB)
+    const response = await sendNotificationMessage(phoneNumber, message, {}, countryCodeWithout0, studentId);
     
     if (!response.success) {
-      console.error(`Failed to send SMS: ${response.message}`);
-      return { success: false, message: `Failed to send SMS: ${response.message}` };
+      console.error(`Failed to send notification: ${response.message}`);
+      return { success: false, message: `Failed to send notification: ${response.message}` };
     }
     
     return { success: true, data: response.data };
   } catch (err) {
-    console.error('Error sending SMS:', err.message);
+    console.error('Error sending notification:', err.message);
     return { success: false, message: err.message };
   }
 }
@@ -1158,14 +1149,14 @@ const markAttendance = async (req, res) => {
 
   try {
 
-  // Short but clear homework status text for SMS
+  // Homework status - full text
   let HWmessage = '';
   if (attendWithOutHW) {
-    HWmessage = 'HomeWork not submitted';
+    HWmessage = 'HW not submitted';
   } else if (HWwithOutSteps) {
-    HWmessage = 'HomeWork submitted without steps';
+    HWmessage = 'HW without steps';
   } else {
-    HWmessage = 'HomeWork submitted with steps';
+    HWmessage = 'HW with steps';
   }
     // Exact matching for attendId - no flexible matching
     const codeParam = String(attendId).trim();
@@ -1340,18 +1331,17 @@ const markAttendance = async (req, res) => {
 
       const lateTimeStamp = new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
       const firstName = (student.Username || '').split(' ')[0];
-      const messageWappi = `Parent of ${firstName}
-${statusLine}
-Student marked late today
-Group ${centerName} - ${Grade} - ${GroupTime}
-Absences ${student.absences}
-${HWmessage}
-Thank you`;
+      const messageWappi = `⏰ ${firstName} - Late
+Group: ${centerName} ${Grade} ${GroupTime}
+Absences: ${student.absences}
+Paid: ${student.balance || 0}
+Remaining: ${student.amountRemaining || 0}
+HW: ${HWmessage.replace('HW ', '')}`;
 
       // Send the message via the waapi (already present)
 
     try {
-      const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode']);
+      const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode'], student._id);
       if (!sendResult.success) {
         console.warn(`Warning: Failed to send WhatsApp message to ${student.Username}'s parent: ${sendResult.message}`);
         // Continue execution even if message sending fails
@@ -1437,28 +1427,24 @@ let messageWappi = '';
 const presentTimeStamp = new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
 const firstName = (student.Username || '').split(' ')[0];
 if(student.centerName==="Online"){
-  messageWappi = `Parent of ${firstName}
-Student attended today
-Attended successfully
-Group ${centerName} - ${Grade} - ${GroupTime}
-Absences ${student.absences}
-Session report will be shared
-Thank you
-Elkably Team`;
+  messageWappi = `✅ ${firstName} - Present
+Group: ${centerName} ${Grade} ${GroupTime}
+Absences: ${student.absences}
+Paid: ${student.balance || 0}
+Remaining: ${student.amountRemaining || 0}
+Report: Coming soon`;
 }else{
- messageWappi = `Parent of ${firstName}
-Student ${message2}
-Attended successfully
-Group ${centerName} - ${Grade} - ${GroupTime}
-Absences ${student.absences}
-${HWmessage}
-Thank you
-Elkably Team`;
+ messageWappi = `✅ ${firstName} - Present
+Group: ${centerName} ${Grade} ${GroupTime}
+Absences: ${student.absences}
+Paid: ${student.balance || 0}
+Remaining: ${student.amountRemaining || 0}
+HW: ${HWmessage.replace('HW ', '')}`;
 }
 
       // Send the message via the waapi (already present)
       try {
-        const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode']);
+        const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode'], student._id);
         if (!sendResult.success) {
           console.warn(`Warning: Failed to send WhatsApp message to ${student.Username}'s parent: ${sendResult.message}`);
           // Continue execution even if message sending fails
@@ -1603,7 +1589,7 @@ const removeAttendance = async (req, res) => {
 
     // Remove the attendance record from the student's history
     student.AttendanceHistory = student.AttendanceHistory.filter(
-      (att) => !att.attendance.equals(attendance._id) // Use .equals() for ObjectId comparison
+      (att) => !att.attendance || !att.attendance.equals(attendance._id) // Use .equals() for ObjectId comparison, with null check
     );
 
     await student.save();
@@ -1982,25 +1968,21 @@ const finalizeAttendance = async (req, res) => {
 
 let subMessage = '';
 if (student.absences >= 3) {
-  subMessage = 'Student cannot attend the next class';
+  subMessage = 'Max absences reached';
 }
 let subMessage2 = 'today';
 if (isSolving == 'true') {
-  subMessage2 = 'during the solving session';
+  subMessage2 = 'solving session';
 }
 
 const absentTimeStamp = new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Cairo' });
 const firstName = (student.Username || '').split(' ')[0];
-const messageWappi = `Parent of ${firstName}
-Student absent ${subMessage2}
-Absences ${student.absences}
-${subMessage}
-Thank you`;
+const messageWappi = `❌ ${firstName} - Absent ${subMessage2}\nAbsences: ${student.absences}${subMessage ? ' | ' + subMessage : ''}`;
  
 
       // Send the message via the waapi (already present)
       try {
-        const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode']);
+        const sendResult = await sendWappiMessage(messageWappi, student.parentPhone, req.userData.phone, false, student['parentPhoneCountryCode'], student._id);
         if (!sendResult.success) {
           console.warn(`Warning: Failed to send WhatsApp message to ${student.Username}'s parent: ${sendResult.message}`);
           // Continue execution even if message sending fails
@@ -3756,7 +3738,8 @@ Visit Tagamo3 center to reserve`;
             student.parentPhone, 
             senderPhone, 
             false, 
-            student.parentPhoneCountryCode
+            student.parentPhoneCountryCode,
+            student._id
           );
           if (!sendResult.success) {
             console.warn(`Warning: Failed to send WhatsApp message to parent: ${sendResult.message}`);
@@ -3773,7 +3756,8 @@ Visit Tagamo3 center to reserve`;
               student.phone,
               senderPhone, 
               false, 
-              student.phoneCountryCode
+              student.phoneCountryCode,
+              student._id
             );
             if (!sendResult.success) {
               console.warn(`Warning: Failed to send WhatsApp message to student: ${sendResult.message}`);
@@ -3834,50 +3818,11 @@ const allMessagesSMS_get = async (req, res) => {
 
 const getAllSmsMessages = async (req, res) => {
   try {
-    const {
-      start_date,
-      end_date,
-      sms_type,
-      direction,
-      from,
-      timezone = 'Africa/Cairo',
-      page = 1
-    } = req.query;
-
-    // Format dates if provided
-    let startDate = start_date;
-    let endDate = end_date;
-
-    // If dates are provided, ensure they're in the correct format
-    if (startDate && !startDate.includes(' ')) {
-      startDate = `${startDate} 00:00:00`;
-    }
-    if (endDate && !endDate.includes(' ')) {
-      endDate = `${endDate} 23:59:59`;
-    }
-
-    const result = await getSmsMessages({
-      startDate,
-      endDate,
-      smsType: sms_type,
-      direction,
-      from,
-      timezone,
-      page: parseInt(page)
-    });
-
-    if (result.status === 'error') {
-      return res.status(400).json({
-        success: false,
-        message: result.message || 'Failed to fetch SMS messages',
-        data: null
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: result.message || 'SMS messages fetched successfully',
-      data: result.data
+    // SMS functionality has been replaced with push notifications
+    return res.status(410).json({
+      success: false,
+      message: 'SMS functionality has been replaced with push notifications. This endpoint is no longer available.',
+      data: null
     });
   } catch (error) {
     console.error('Error fetching SMS messages:', error);
@@ -3891,41 +3836,11 @@ const getAllSmsMessages = async (req, res) => {
 
 const getSmsMessagesStats = async (req, res) => {
   try {
-    const {
-      start_date,
-      end_date,
-      sms_type,
-      direction,
-      from,
-      timezone = 'Africa/Cairo'
-    } = req.query;
-
-    // Format dates if provided
-    let startDate = start_date;
-    let endDate = end_date;
-
-    // If dates are provided, ensure they're in the correct format
-    if (startDate && !startDate.includes(' ')) {
-      startDate = `${startDate} 00:00:00`;
-    }
-    if (endDate && !endDate.includes(' ')) {
-      endDate = `${endDate} 23:59:59`;
-    }
-
-    const result = await getAllSmsMessagesForStats({
-      startDate,
-      endDate,
-      smsType: sms_type,
-      direction,
-      from,
-      timezone
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Statistics fetched successfully',
-      data: result.stats,
-      total: result.total
+    // SMS functionality has been replaced with push notifications
+    return res.status(410).json({
+      success: false,
+      message: 'SMS statistics functionality has been replaced with push notifications. This endpoint is no longer available.',
+      data: null
     });
   } catch (error) {
     console.error('Error fetching SMS statistics:', error);
@@ -3938,6 +3853,402 @@ const getSmsMessagesStats = async (req, res) => {
 };
 
 // =================================================== END All Messages SMS =================================================== //
+
+// =================================================== All Notifications =================================================== //
+
+const Notification = require('../models/Notification');
+
+const allNotifications_get = async (req, res) => {
+  res.render('teacher/allNotifications', { 
+    title: 'All Notifications', 
+    path: req.path 
+  });
+};
+
+const getAllNotifications = async (req, res) => {
+  try {
+    const { startDate, endDate, type, phone, page = 1, limit = 20 } = req.query;
+    
+    // Build query
+    const query = {};
+    
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+    
+    if (type) {
+      query.type = type;
+    }
+    
+    if (phone) {
+      query.parentPhone = { $regex: phone, $options: 'i' };
+    }
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const [notifications, total] = await Promise.all([
+      Notification.find(query)
+        .populate('studentId', 'Username Code phone parentPhone')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Notification.countDocuments(query)
+    ]);
+    
+    const totalPages = Math.ceil(total / parseInt(limit));
+    
+    res.json({
+      success: true,
+      data: notifications,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        total,
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error',
+      data: null
+    });
+  }
+};
+
+const getNotificationsStats = async (req, res) => {
+  try {
+    const { startDate, endDate, type, phone } = req.query;
+    
+    // Build match query
+    const match = {};
+    
+    if (startDate || endDate) {
+      match.createdAt = {};
+      if (startDate) {
+        match.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        match.createdAt.$lte = end;
+      }
+    }
+    
+    if (type) {
+      match.type = type;
+    }
+    
+    if (phone) {
+      match.parentPhone = { $regex: phone, $options: 'i' };
+    }
+    
+    const stats = await Notification.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    const total = await Notification.countDocuments(match);
+    
+    // Format stats
+    const formattedStats = {
+      total,
+      attendance: 0,
+      payment: 0,
+      homework: 0,
+      block: 0,
+      unblock: 0,
+      custom: 0
+    };
+    
+    stats.forEach(stat => {
+      if (stat._id && formattedStats.hasOwnProperty(stat._id)) {
+        formattedStats[stat._id] = stat.count;
+      }
+    });
+    
+    res.json({
+      success: true,
+      data: formattedStats
+    });
+  } catch (error) {
+    console.error('Error fetching notification stats:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error',
+      data: null
+    });
+  }
+};
+
+// =================================================== Send Notifications =================================================== //
+
+const sendNotifications_get = async (req, res) => {
+  res.render('teacher/sendNotifications', { 
+    title: 'Send Notifications', 
+    path: req.path 
+  });
+};
+
+const searchStudentsForNotifications = async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+    
+    const students = await User.find({
+      $or: [
+        { Username: { $regex: q, $options: 'i' } },
+        { Code: { $regex: q, $options: 'i' } },
+        { phone: { $regex: q, $options: 'i' } },
+        { parentPhone: { $regex: q, $options: 'i' } }
+      ]
+    })
+    .select('Username Code phone parentPhone fcmToken')
+    .limit(20)
+    .lean();
+    
+    res.json({ success: true, data: students });
+  } catch (error) {
+    console.error('Error searching students:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error',
+      data: []
+    });
+  }
+};
+
+const sendNotificationsToStudents = async (req, res) => {
+  try {
+    const { students, title, message } = req.body;
+    
+    if (!students || !Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى اختيار طالب واحد على الأقل'
+      });
+    }
+    
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى كتابة نص الرسالة'
+      });
+    }
+    
+    const studentDocs = await User.find({ _id: { $in: students } });
+    
+    let sent = 0;
+    let failed = 0;
+    
+    for (const student of studentDocs) {
+      try {
+        const phone = student.parentPhone || student.phone;
+        
+        if (!phone) {
+          failed++;
+          continue;
+        }
+        
+        const result = await sendNotificationMessage(phone, `${title}: ${message}`, {
+          studentCode: student.Code,
+          studentName: student.Username
+        });
+        
+        if (result.success) {
+          // Save notification to database
+          await Notification.create({
+            studentId: student._id,
+            parentPhone: phone,
+            type: 'custom',
+            title: title || 'Elkably Team',
+            body: message,
+            data: { sentBy: 'teacher' }
+          });
+          sent++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        console.error('Error sending notification to student:', err);
+        failed++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      sent,
+      failed,
+      message: `تم إرسال ${sent} إشعار بنجاح`
+    });
+  } catch (error) {
+    console.error('Error sending notifications to students:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+const sendNotificationFromExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى رفع ملف إكسل'
+      });
+    }
+    
+    const title = req.body.title || 'Elkably Team';
+    
+    const workbook = new Excel.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    
+    const worksheet = workbook.getWorksheet(1);
+    
+    if (!worksheet) {
+      return res.status(400).json({
+        success: false,
+        message: 'الملف لا يحتوي على بيانات'
+      });
+    }
+    
+    let sent = 0;
+    let failed = 0;
+    let total = 0;
+    
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header
+      total++;
+    });
+    
+    for (let i = 2; i <= worksheet.rowCount; i++) {
+      const row = worksheet.getRow(i);
+      const phone = row.getCell(1).value?.toString();
+      const message = row.getCell(2).value?.toString();
+      
+      if (!phone || !message) {
+        failed++;
+        continue;
+      }
+      
+      try {
+        // Find student by phone
+        const student = await User.findOne({
+          $or: [
+            { phone: { $regex: phone.replace(/\D/g, '').slice(-9) } },
+            { parentPhone: { $regex: phone.replace(/\D/g, '').slice(-9) } }
+          ]
+        });
+        
+        const result = await sendNotificationMessage(phone, `${title}: ${message}`);
+        
+        if (result.success) {
+          // Save notification to database
+          await Notification.create({
+            studentId: student?._id,
+            parentPhone: phone,
+            type: 'custom',
+            title: title,
+            body: message,
+            data: { sentBy: 'excel', source: 'excel_upload' }
+          });
+          sent++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        console.error('Error sending notification from excel row:', err);
+        failed++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      sent,
+      failed,
+      total,
+      message: `تم إرسال ${sent} إشعار من أصل ${total}`
+    });
+  } catch (error) {
+    console.error('Error processing excel file:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+const sendCustomNotification = async (req, res) => {
+  try {
+    const { phone, title, message } = req.body;
+    
+    if (!phone || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى ملء جميع الحقول المطلوبة'
+      });
+    }
+    
+    // Find student by phone
+    const student = await User.findOne({
+      $or: [
+        { phone: { $regex: phone.replace(/\D/g, '').slice(-9) } },
+        { parentPhone: { $regex: phone.replace(/\D/g, '').slice(-9) } }
+      ]
+    });
+    
+    const result = await sendNotificationMessage(phone, `${title || 'Elkably Team'}: ${message}`);
+    
+    if (result.success) {
+      // Save notification to database
+      await Notification.create({
+        studentId: student?._id,
+        parentPhone: phone,
+        type: 'custom',
+        title: title || 'Elkably Team',
+        body: message,
+        data: { sentBy: 'custom' }
+      });
+      
+      res.json({
+        success: true,
+        message: 'تم إرسال الإشعار بنجاح'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message || 'فشل في إرسال الإشعار'
+      });
+    }
+  } catch (error) {
+    console.error('Error sending custom notification:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+// =================================================== END Send Notifications =================================================== //
 
 const regenerateQrCode = async (req, res) => {
   return res.status(410).json({ 
@@ -4035,8 +4346,20 @@ module.exports = {
   sendRegistrationMessage,
   regenerateQrCode,
 
-  // All Messages SMS
+  // All Messages SMS (legacy - kept for compatibility)
   allMessagesSMS_get,
   getAllSmsMessages,
   getSmsMessagesStats,
+
+  // All Notifications
+  allNotifications_get,
+  getAllNotifications,
+  getNotificationsStats,
+
+  // Send Notifications
+  sendNotifications_get,
+  searchStudentsForNotifications,
+  sendNotificationsToStudents,
+  sendNotificationFromExcel,
+  sendCustomNotification,
 };

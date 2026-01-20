@@ -4,6 +4,8 @@ const Card = require('../models/Card');
 const Attendance = require('../models/Attendance'); 
 
 const { sendNotificationMessage } = require('../utils/notificationSender');
+const { sendSmsMessage } = require('../utils/smsSender');
+const { getSmsMessages, getAllSmsMessagesForStats } = require('../utils/sms');
 const Excel = require('exceljs');
 const QRCode = require('qrcode');
 const { sendStudentToExternalSystem } = require('./homeController');
@@ -931,12 +933,16 @@ const convertToExcelAllUserData = async (req, res) => {
 
 // =================================================== END MyStudent ================================================ //
 
+/**
+ * Send both SMS and Push Notification together
+ * This function sends messages via both WhySMS API and Firebase Cloud Messaging
+ */
 async function sendWappiMessage(message, phone, adminPhone, isExcel = false, countryCode = '20', studentId = null) {
   try {
     // Skip if phone number is missing or invalid
     const phoneAsString = (typeof phone === 'string' ? phone : String(phone || '')).trim();
     if (!phoneAsString) {
-      console.warn('Skipping notification - No phone number provided');
+      console.warn('Skipping message - No phone number provided');
       return { success: false, message: 'No phone number provided' };
     }
     
@@ -954,19 +960,48 @@ async function sendWappiMessage(message, phone, adminPhone, isExcel = false, cou
     // Ensure leading country indicator '2' for Egypt if missing
     if (!phoneNumber.startsWith('2')) phoneNumber = `2${phoneNumber}`;
     
-    console.log('Sending notification to:', phoneNumber);
+    console.log('Sending SMS and Notification to:', phoneNumber);
     
-    // Send notification using the notification sender utility (with studentId for saving to DB)
-    const response = await sendNotificationMessage(phoneNumber, message, {}, countryCodeWithout0, studentId);
+    // Send both SMS and Push Notification in parallel
+    const [smsResponse, notificationResponse] = await Promise.allSettled([
+      // Send SMS using the SMS sender utility
+      sendSmsMessage(phoneNumber, message, countryCodeWithout0),
+      // Send Push Notification using the notification sender utility
+      sendNotificationMessage(phoneNumber, message, {}, countryCodeWithout0, studentId)
+    ]);
     
-    if (!response.success) {
-      console.error(`Failed to send notification: ${response.message}`);
-      return { success: false, message: `Failed to send notification: ${response.message}` };
+    // Log results
+    if (smsResponse.status === 'fulfilled' && smsResponse.value.success) {
+      console.log('SMS sent successfully');
+    } else {
+      console.error('SMS failed:', smsResponse.status === 'rejected' ? smsResponse.reason : smsResponse.value?.message);
     }
     
-    return { success: true, data: response.data };
+    if (notificationResponse.status === 'fulfilled' && notificationResponse.value.success) {
+      console.log('Push notification sent successfully');
+    } else {
+      console.error('Push notification failed:', notificationResponse.status === 'rejected' ? notificationResponse.reason : notificationResponse.value?.message);
+    }
+    
+    // Return success if at least one method succeeded
+    const smsSuccess = smsResponse.status === 'fulfilled' && smsResponse.value?.success;
+    const notifSuccess = notificationResponse.status === 'fulfilled' && notificationResponse.value?.success;
+    
+    if (smsSuccess || notifSuccess) {
+      return { 
+        success: true, 
+        data: { 
+          sms: smsSuccess ? smsResponse.value.data : null,
+          notification: notifSuccess ? notificationResponse.value.data : null
+        },
+        smsSuccess,
+        notificationSuccess: notifSuccess
+      };
+    }
+    
+    return { success: false, message: 'Both SMS and Push Notification failed' };
   } catch (err) {
-    console.error('Error sending notification:', err.message);
+    console.error('Error sending message:', err.message);
     return { success: false, message: err.message };
   }
 }
@@ -3818,11 +3853,50 @@ const allMessagesSMS_get = async (req, res) => {
 
 const getAllSmsMessages = async (req, res) => {
   try {
-    // SMS functionality has been replaced with push notifications
-    return res.status(410).json({
-      success: false,
-      message: 'SMS functionality has been replaced with push notifications. This endpoint is no longer available.',
-      data: null
+    const {
+      start_date,
+      end_date,
+      sms_type,
+      direction,
+      from,
+      timezone = 'Africa/Cairo',
+      page = 1
+    } = req.query;
+
+    // Format dates if provided
+    let startDate = start_date;
+    let endDate = end_date;
+
+    // If dates are provided, ensure they're in the correct format
+    if (startDate && !startDate.includes(' ')) {
+      startDate = `${startDate} 00:00:00`;
+    }
+    if (endDate && !endDate.includes(' ')) {
+      endDate = `${endDate} 23:59:59`;
+    }
+
+    const result = await getSmsMessages({
+      startDate,
+      endDate,
+      smsType: sms_type,
+      direction,
+      from,
+      timezone,
+      page: parseInt(page)
+    });
+
+    if (result.status === 'error') {
+      return res.status(400).json({
+        success: false,
+        message: result.message || 'Failed to fetch SMS messages',
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Messages fetched successfully',
+      data: result.data || result
     });
   } catch (error) {
     console.error('Error fetching SMS messages:', error);
@@ -3836,11 +3910,41 @@ const getAllSmsMessages = async (req, res) => {
 
 const getSmsMessagesStats = async (req, res) => {
   try {
-    // SMS functionality has been replaced with push notifications
-    return res.status(410).json({
-      success: false,
-      message: 'SMS statistics functionality has been replaced with push notifications. This endpoint is no longer available.',
-      data: null
+    const {
+      start_date,
+      end_date,
+      sms_type,
+      direction,
+      from,
+      timezone = 'Africa/Cairo'
+    } = req.query;
+
+    // Format dates if provided
+    let startDate = start_date;
+    let endDate = end_date;
+
+    // If dates are provided, ensure they're in the correct format
+    if (startDate && !startDate.includes(' ')) {
+      startDate = `${startDate} 00:00:00`;
+    }
+    if (endDate && !endDate.includes(' ')) {
+      endDate = `${endDate} 23:59:59`;
+    }
+
+    const result = await getAllSmsMessagesForStats({
+      startDate,
+      endDate,
+      smsType: sms_type,
+      direction,
+      from,
+      timezone
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Statistics fetched successfully',
+      data: result.stats,
+      total: result.total
     });
   } catch (error) {
     console.error('Error fetching SMS statistics:', error);

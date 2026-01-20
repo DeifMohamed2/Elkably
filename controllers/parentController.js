@@ -619,8 +619,36 @@ const getStudents = async (req, res) => {
   }
 };
 
+/**
+ * Parent Logout API
+ * Removes FCM token from all students associated with this parent
+ */
+const parentLogout = async (req, res) => {
+  try {
+    const { parentPhone } = req.parentData;
+
+    // Remove FCM token from all students of this parent
+    await User.updateMany(
+      { parentPhone: parentPhone },
+      { $unset: { fcmToken: '' } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Parent logout error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error. Please try again.',
+    });
+  }
+};
+
 module.exports = {
   parentLogin,
+  parentLogout,
   getDashboard,
   getFullAttendance,
   getNotifications,

@@ -59,6 +59,13 @@ router.post('/login', parentController.parentLogin);
 // ======================= Protected Routes =======================
 
 /**
+ * @route   POST /api/parent/logout
+ * @desc    Logout parent and remove FCM token
+ * @access  Private
+ */
+router.post('/logout', parentAuthMiddleware, parentController.parentLogout);
+
+/**
  * @route   GET /api/parent/students
  * @desc    Get all students for authenticated parent
  * @access  Private

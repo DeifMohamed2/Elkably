@@ -254,6 +254,7 @@ const getDashboard = async (req, res) => {
         status: lastSession.status,
         time: lastSession.atTime,
         homeworkStatus: lastSession.homeworkStatus || 'N/A',
+        amountPaid: lastSession.amountPaid || 0,
       };
 
       if (groupInfo) {
@@ -275,6 +276,7 @@ const getDashboard = async (req, res) => {
             status: lastSession.status,
             time: lastSession.atTime,
             homeworkStatus: lastSession.homeworkStatus || 'N/A',
+            amountPaid: lastSession.amountPaid || 0,
           }
         : null),
       payment: {

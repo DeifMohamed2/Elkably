@@ -74,7 +74,7 @@ const parentLogin = async (req, res) => {
         studentIds: students.map((s) => s._id),
       },
       jwtSecret,
-      { expiresIn: '30d' }
+      { expiresIn: '350d' }
     );
 
     return res.status(200).json({
